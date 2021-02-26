@@ -1,5 +1,6 @@
 module SuperFluids
 
-greet() = print("Hello World!")
+include("GrossPitaevskii/GrossPitaevskii.jl")
+export Solver, solve!
 
 end # module

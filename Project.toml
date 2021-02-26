@@ -1,0 +1,4 @@
+name = "SuperFluids"
+uuid = "7b6395f6-f378-46b0-9ce4-4708ac745388"
+authors = ["Corentin Lothode <corentin.lothode@univ-rouen.fr>"]
+version = "0.1.0"

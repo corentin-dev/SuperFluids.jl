@@ -1,6 +1,8 @@
 module SuperFluids
 
+abstract type AbstractSolver{G,F,I,N,P} end
+
 include("GrossPitaevskii/GrossPitaevskii.jl")
-export Solver, solve!
+export SolverGrossPitaevskii, solve!
 
 end # module

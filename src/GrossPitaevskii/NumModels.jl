@@ -205,17 +205,17 @@ function prodA(n::NumModelBackwardEuler{F}, ϕ̃) where {F<:AbstractField2D}
    ξx, ξy = n.f.g.ξx, n.f.g.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    # perform FFT
-   mul!(ϕhat_x, plan_x, ϕ̃)
+   mul!(ϕ̃hat_x, plan_x, ϕ̃)
    # compute the laplacian and rotation in the Fourier space (x)
-   @. ϕ̃hat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕhat_x
+   @. ϕ̃hat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕ̃hat_x
    # backward FFT
-   ϕ̃x = plan_x \ ϕ_hat_x
+   ϕ̃x = plan_x \ ϕ̃hat_x
    # perform FFT
-   mul!(ϕhat_y, plan_y, ϕ)
+   mul!(ϕ̃hat_y, plan_y, ϕ̃)
    # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕ̃hat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕhat_y
+   @. ϕ̃hat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕ̃hat_y
    # backward FFT
-   ϕ̃y = plan_y \ ϕ̃_hat_y
+   ϕ̃y = plan_y \ ϕ̃hat_y
    # return
    # ( I - M A ) ϕ̃
    #
@@ -294,15 +294,15 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ∇ϕ_x = plan_x \ ∇ϕ_hat # we get grad x
    abs∇ϕ_x = sum(real.(∇ϕ_x.*conj(∇ϕ_x)))
    # compute rotx
-   ∇ϕ_hat .= im .*  Ω .* Y .* Ξx .* ϕhat_x
+   ∇ϕ_hat .= im .*  Ω .* y .* ξx .* ϕhat_x
    ldiv!(∇ϕ_x, plan_x, ∇ϕ_hat) # we get rot x
    # compute grad y
    mul!(ϕhat_y, plan_y, ϕ)
-   ∇ϕ_hat = im .* Ξy .* ϕhaty
+   ∇ϕ_hat = im .* ξy .* ϕhat_y
    ∇ϕ_y = plan_y \ ∇ϕ_hat # we get grad y
    abs∇ϕ_y = sum(real.(∇ϕ_y.*conj(∇ϕ_y)))
    # compute roty
-   ∇ϕ_hat = im .* -Ω .* X .* Ξy .* ϕhat_y
+   ∇ϕ_hat = im .* -Ω .* x .* ξy .* ϕhat_y
    ldiv!(∇ϕ_y, plan_y, ∇ϕ_hat) # we get rot y
    # computing energies (locally)
    EΩ = sum(real.(im.*conj.(ϕ).*(∇ϕ_x.+∇ϕ_y))) * Δx * Δy

@@ -40,6 +40,10 @@ function SolverGrossPitaevskii(FT=Float64,conf="GPS_input.init")
                  )
 end
 
+function initField!(s::SolverGrossPitaevskii)
+   initField!(s.init)
+end
+
 function solve!(s::SolverGrossPitaevskii)
    solve!(s.nummodel)
 end

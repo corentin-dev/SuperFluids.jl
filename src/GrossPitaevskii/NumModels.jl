@@ -41,13 +41,23 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
    β = parse(Float64,retrieve(conf, "model", "beta"))
    Ω = parse(Float64,retrieve(conf, "model", "omega"))
    if nmodel == 2
+      nkrylov = parse(Int64,retrieve(conf, "solver", "iterkrylov"))
+      tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
+      M = similar(f.ϕ)
+      b = similar(f.ϕ)
       nummodel = NumModelBackwardEuler{typeof(f),typeof(p)}(f,
-                       Δt, niter, freqbckp, coeffΔ, β, Ω, plan, ϕ_hat, p
+                       Δt, niter, freqbckp, nkrylov, tolkrylov,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p
                       )
    elseif nmodel == 3
       # should be Crank-Nicolson
+      nkrylov = parse(Int64,retrieve(conf, "solver", "iterkrylov"))
+      tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
+      M = similar(f.ϕ)
+      b = similar(f.ϕ)
       nummodel = NumModelBackwardEuler{typeof(f),typeof(p)}(f,
-                       Δt, niter, freqbckp, coeffΔ, β, Ω, plan, ϕ_hat, p
+                       Δt, niter, freqbckp, nkrylov, tolkrylov,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p
                       )
    elseif nmodel == 41
       # should be ADI1
@@ -141,7 +151,7 @@ function timeStep!(n::NumModelADI2)
 end
 
 Base.show(io::IO, n::NumModelADI2) = print(io,
-         "Splitting Order 2",
+         "Splitting Order 2\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
@@ -151,21 +161,113 @@ struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
+   nkrylov :: Integer
+   tolkrylov :: Real
    coeffΔ :: Real
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat :: Array
+   M :: Array
+   b :: Array
    potential :: P
 end
 
+function krylov!(n::AbstractNumModel, ϕ)
+   normb=sqrt(real(sum(n.b.*conj.(n.b))))
+   r = n.b - prodA(n,ϕ)
+   r₂ = copy(r)
+   p = copy(r)
+   for i = 1:n.nkrylov
+      Ap = prodA(n,p)
+      α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
+      s = r - α * Ap
+      As = prodA(n,s)
+      ω = sum(As.*conj.(s))/sum(As.*conj.(As))
+      @. ϕ = ϕ + α*p + ω*s
+      rr₂ = sum(r.*conj.(r₂))
+      r = s - ω*As
+      if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
+         break
+      end
+      β = sum(r.*conj.(r₂)) / rr₂ * α / ω
+      p = r + β * (p - ω*Ap)
+   end
+   return nothing
+end
+
+function prodA(n::NumModelBackwardEuler{F}, ϕ̃) where {F<:AbstractField2D}
+   # references
+   M, b = n.M, n.b
+   ϕ̃hat_x, ϕ̃hat_y = n.ϕ_hat, n.ϕ_hat
+   coeffΔ, Ω = n.coeffΔ, n.Ω
+   x, y = n.f.g.x, n.f.g.y
+   ξx, ξy = n.f.g.ξx, n.f.g.ξy
+   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
+   # perform FFT
+   mul!(ϕhat_x, plan_x, ϕ̃)
+   # compute the laplacian and rotation in the Fourier space (x)
+   @. ϕ̃hat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕhat_x
+   # backward FFT
+   ϕ̃x = plan_x \ ϕ_hat_x
+   # perform FFT
+   mul!(ϕhat_y, plan_y, ϕ)
+   # compute the laplacian and rotation in the Fourier space (y)
+   @. ϕ̃hat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕhat_y
+   # backward FFT
+   ϕ̃y = plan_y \ ϕ̃_hat_y
+   # return
+   # ( I - M A ) ϕ̃
+   #
+   @. ϕ̃x = ϕ̃ - M * (ϕ̃x+ϕ̃y)
+end
+
+function prodA(n::NumModelBackwardEuler{F}, ϕ̃) where {F<:AbstractField3D}
+   # references
+   M, b = n.M, n.b
+   ϕ̃hat_x, ϕ̃hat_y, ϕ̃hat_z = n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
+   coeffΔ, Ω = n.coeffΔ, n.Ω
+   x, y = n.f.g.x, n.f.g.y
+   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
+   plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
+   # perform FFT
+   mul!(ϕ̃hat_x, plan_x, ϕ̃)
+   # compute the laplacian and rotation in the Fourier space (x)
+   @. ϕ̃hat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕ̃hat_x
+   # backward FFT
+   ϕ̃x = plan_x \ ϕ̃hat_x
+   # perform FFT
+   mul!(ϕ̃hat_y, plan_y, ϕ̃)
+   # compute the laplacian and rotation in the Fourier space (y)
+   @. ϕ̃hat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕ̃hat_y
+   # backward FFT
+   ϕ̃y = plan_y \ ϕ̃hat_y
+   # perform FFT
+   mul!(ϕ̃hat_z, plan_z, ϕ̃)
+   # compute the laplacian and rotation in the Fourier space (y)
+   @. ϕ̃hat_z = coeffΔ*ξz^2 * ϕ̃hat_z
+   # backward FFT
+   ϕ̃z = plan_z \ ϕ̃hat_z
+   # return
+   # ( I - M A ) ϕ̃
+   #
+   @. ϕ̃x = ϕ̃ - M * (ϕ̃x+ϕ̃y+ϕ̃z)
+end
+
 function timeStep!(n::NumModelBackwardEuler)
-   println("do something")
+   # compute matrices and vectors
+   # M⁻¹ = Δt⁻¹ + V + β × ∥ϕ∥²
+   @. n.M = 1. / ( 1. / n.Δt + n.potential.V + n.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
+   # b = M × ϕ × Δt⁻¹
+   @. n.b = n.M * n.f.ϕ / n.Δt
+   # solving
+   krylov!(n, n.f.ϕ)
 end
 
 Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
-         "Backward Euler",
+         "Backward Euler\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
+         "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 

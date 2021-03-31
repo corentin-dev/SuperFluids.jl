@@ -1,22 +1,8 @@
-"""
-    AbstractGrid{FT<:Real}
-
-Abstract supertype for grids.
-"""
+"Abstract supertype for grids."
 abstract type AbstractGrid{FT<:Real} end
-
-"""
-    AbstractGrid2D{FT<:Real} <: AbstractGrid{FT}
-
-Abstract supertype for 2D grids.
-"""
+"Abstract supertype for 2D grids."
 abstract type AbstractGrid2D{FT<:Real} <: AbstractGrid{FT} end
-
-"""
-    AbstractGrid3D{FT<:Real} <: AbstractGrid{FT}
-
-Abstract supertype for 3D grids.
-"""
+"Abstract supertype for 3D grids."
 abstract type AbstractGrid3D{FT<:Real} <: AbstractGrid{FT} end
 
 """

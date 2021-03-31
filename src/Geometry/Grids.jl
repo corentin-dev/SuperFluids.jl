@@ -1,49 +1,65 @@
-using AbstractFFTs: fftfreq
-
 """
-    AbstractGrid
+    AbstractGrid{FT<:Real}
 
 Abstract supertype for grids.
 """
-abstract type AbstractGrid{FT} end
+abstract type AbstractGrid{FT<:Real} end
 
 """
-    AbstractGrid2D
+    AbstractGrid2D{FT<:Real} <: AbstractGrid{FT}
 
 Abstract supertype for 2D grids.
 """
-abstract type AbstractGrid2D{FT} <: AbstractGrid{FT} end
+abstract type AbstractGrid2D{FT<:Real} <: AbstractGrid{FT} end
 
 """
-    AbstractGrid3D
+    AbstractGrid3D{FT<:Real} <: AbstractGrid{FT}
 
 Abstract supertype for 3D grids.
 """
-abstract type AbstractGrid3D{FT} <: AbstractGrid{FT} end
+abstract type AbstractGrid3D{FT<:Real} <: AbstractGrid{FT} end
 
-struct Grid2D{FT} <: AbstractGrid2D{FT}
-   # range
+"""
+    Grid2D{FT<:Real} <: AbstractGrid2D{FT}
+
+Type representing a 2D grid.
+"""
+struct Grid2D{FT<:Real} <: AbstractGrid2D{FT}
+   "x range"
    x :: Array{FT}
+   "y range"
    y :: Array{FT}
-   # Size
+   "nx size in x direction"
    nx :: Integer
+   "ny size in y direction"
    ny :: Integer
-   # Bounds
+   "xmin minimum x boundary"
    xmin :: FT
+   "xmax maximum x boundary"
    xmax :: FT
+   "ymin minimum y boundary"
    ymin :: FT
+   "ymax maximum y boundary"
    ymax :: FT
-   # Length.
+   "Lx x length"
    Lx :: FT
+   "Ly y length"
    Ly :: FT
-   # Discretization.
+   "Δx x discretization"
    Δx :: FT
+   "Δy y discretization"
    Δy :: FT
-   # Frequencies
+   "ξx x frequencies"
    ξx :: Array{FT}
+   "ξy y frequencies"
    ξy :: Array{FT}
 end
 
+"""
+    Grid3D{FT<:Real} <: AbstractGrid3D{FT}
+
+Type representing a grid.
+"""
 struct Grid3D{FT} <: AbstractGrid3D{FT}
    # range
    x :: Array{FT}
@@ -81,8 +97,11 @@ Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `xbounds` × `ybo
 
 Example
 =======
-
+```
+julia> conf = ConfParse("GPS_input.init")
+julia> parse_conf!(conf)
 julia> grid = Grid(conf)
+```
 """
 function Grid(conf::ConfParse,FT=Float64)
    nx = parse(Int64,retrieve(conf, "discretization", "nx"))

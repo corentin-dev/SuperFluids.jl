@@ -1,5 +1,3 @@
-using AbstractFFTs: fftfreq
-
 abstract type AbstractField{FT,G} end
 abstract type AbstractField2D{FT,G} <: AbstractField{FT,G} end
 abstract type AbstractField3D{FT,G} <: AbstractField{FT,G} end

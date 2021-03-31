@@ -1,7 +1,3 @@
-using AbstractFFTs
-using FFTW
-using LinearAlgebra: mul!, ldiv!
-
 struct Plan2D{F} <: AbstractPlan{F}
    plan :: AbstractFFTs.Plan
    plan_x :: AbstractFFTs.Plan

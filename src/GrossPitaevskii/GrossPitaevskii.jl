@@ -1,7 +1,3 @@
-using ConfParser
-
-include("Grids.jl")
-include("Fields.jl")
 include("Inits.jl")
 include("NumModels.jl")
 include("Potentials.jl")

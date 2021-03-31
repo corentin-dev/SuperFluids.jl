@@ -1,5 +1,10 @@
 module SuperFluids
 
+using ConfParser
+using AbstractFFTs
+using FFTW
+using LinearAlgebra: mul!, ldiv!
+
 "Abstract supertype for device."
 abstract type Device end
 
@@ -18,7 +23,10 @@ abstract type AbstractPlan{F} end
 "Abstract supertype for solvers."
 abstract type AbstractSolver{G,F,I,N,P} end
 
+include("Geometry/Geometry.jl")
+
 include("GrossPitaevskii/GrossPitaevskii.jl")
 export SolverGrossPitaevskii, solve!, initField!, energy
+export Grid2D
 
 end # module

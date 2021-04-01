@@ -2,7 +2,7 @@ include("Inits.jl")
 include("NumModels.jl")
 include("Potentials.jl")
 
-struct SolverGrossPitaevskii{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
+mutable struct SolverGrossPitaevskii{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
    conf :: ConfParse
    grid :: G
    field :: F

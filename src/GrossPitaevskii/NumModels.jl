@@ -42,7 +42,7 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
    return nummodel
 end
 
-struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -126,7 +126,7 @@ Base.show(io::IO, n::NumModelADI2) = print(io,
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
-struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer

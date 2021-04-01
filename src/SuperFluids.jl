@@ -4,6 +4,7 @@ using ConfParser
 using AbstractFFTs
 using FFTW
 using LinearAlgebra: mul!, ldiv!
+using GLMakie
 
 "Abstract supertype for device."
 abstract type Device end
@@ -13,6 +14,7 @@ struct CPU <: Device end
 struct GPU <: Device end
 
 include("Discretization/Discretization.jl")
+include("IO/IO.jl")
 
 "Abstract supertype for numerical models."
 abstract type AbstractNumModel{F,P} end
@@ -21,7 +23,8 @@ abstract type AbstractNumModel{F,P} end
 abstract type AbstractSolver{G,F,I,N,P} end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
-export SolverGrossPitaevskii, solve!, initField!, energy
+export SolverGrossPitaevskii, solve!, initField!, energy,
+   Plot, createPlot!, updatePlot!
 export Grid2D
 
 end # module

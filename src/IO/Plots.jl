@@ -1,3 +1,10 @@
+module Plots
+
+using GLMakie
+using SuperFluids
+
+export updatePlot!, createPlot!
+
 "Abstract supertype for numerical models."
 abstract type AbstractPlot{F} end
 "Abstract supertype for numerical models."
@@ -47,4 +54,7 @@ function createPlot!(p::AbstractPlot2D)
 end
 
 function updatePlot!(p::AbstractPlot2D)
+   p.f[] = p.f.val
+end
+
 end

@@ -1,3 +1,5 @@
+export AbstractField, AbstractField2D, AbstractField3D
+
 "Abstract supertype for field type."
 abstract type FieldType end
 "Complex field"

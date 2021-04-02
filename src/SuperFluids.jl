@@ -4,7 +4,6 @@ using ConfParser
 using AbstractFFTs
 using FFTW
 using LinearAlgebra: mul!, ldiv!
-using GLMakie
 
 "Abstract supertype for device."
 abstract type Device end
@@ -20,7 +19,7 @@ include("IO/IO.jl")
 abstract type AbstractNumModel{F,P} end
 
 "Abstract supertype for solvers."
-abstract type AbstractSolver{G,F,I,N,P} end
+abstract type AbstractSolver{G,F,I,N,P,W} end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
 export SolverGrossPitaevskii, solve!, initField!, energy,

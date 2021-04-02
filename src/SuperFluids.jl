@@ -16,10 +16,10 @@ include("Discretization/Discretization.jl")
 include("IO/IO.jl")
 
 "Abstract supertype for numerical models."
-abstract type AbstractNumModel{F,P} end
+abstract type AbstractNumModel{F,P,W} end
 
 "Abstract supertype for solvers."
-abstract type AbstractSolver{G,F,I,N,P,W} end
+abstract type AbstractSolver{G,F,I,N,P} end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
 export SolverGrossPitaevskii, solve!, initField!, energy,

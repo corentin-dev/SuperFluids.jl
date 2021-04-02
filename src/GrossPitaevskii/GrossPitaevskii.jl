@@ -2,14 +2,13 @@ include("Inits.jl")
 include("NumModels.jl")
 include("Potentials.jl")
 
-mutable struct SolverGrossPitaevskii{G,F,P,I,N,W} <: AbstractSolver{G,F,P,I,N,W}
+mutable struct SolverGrossPitaevskii{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
    conf :: ConfParse
    grid :: G
    field :: F
    potential :: P
    init :: I
    nummodel :: N
-   writer :: W
 end
 
 function SolverGrossPitaevskii(FT=Float64,conf="GPS_input.init")
@@ -21,7 +20,6 @@ function SolverGrossPitaevskii(FT=Float64,conf="GPS_input.init")
    init = Init(field,ninit,conf)
    potential = Potential(field, conf)
    nummodel = NumModel(field, potential, conf)
-   writer = Writer(field, name="GPS_2D.pvd")
    return SolverGrossPitaevskii{
                   typeof(grid),
                   typeof(field),

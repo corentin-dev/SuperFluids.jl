@@ -2,6 +2,7 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
    nummodel = nothing
    nmodel = parse(Int64,retrieve(conf, "solver", "model"))
    plan = Plan(f)
+   writer = Writer(f)
    ϕ_hat = similar(f.ϕ)
    Δt =  parse(Float64,retrieve(conf, "time", "deltat"))
    niter = parse(Float64,retrieve(conf, "time", "itermax"))
@@ -15,9 +16,10 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
       tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
       M = similar(f.ϕ)
       b = similar(f.ϕ)
-      nummodel = NumModelBackwardEuler{typeof(f),typeof(p)}(f,
+      nummodel = NumModelBackwardEuler{typeof(f),typeof(p),typeof(writer)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov,
-                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
+                       writer
                       )
    elseif nmodel == 3
       # should be Crank-Nicolson
@@ -25,24 +27,29 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
       tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
       M = similar(f.ϕ)
       b = similar(f.ϕ)
-      nummodel = NumModelBackwardEuler{typeof(f),typeof(p)}(f,
+      nummodel = NumModelBackwardEuler{typeof(f),typeof(p),typeof(writer)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov,
-                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
+                       writer
                       )
    elseif nmodel == 41
       # should be ADI1
-      nummodel = NumModelADI2{typeof(f),typeof(p)}(f,
-                       Δt, niter, freqbckp, coeffΔ, β, Ω, plan, ϕ_hat, p
+      nummodel = NumModelADI2{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp,
+                       coeffΔ, β, Ω, plan, ϕ_hat, p,
+                       writer
                       )
    elseif nmodel == 42
-      nummodel = NumModelADI2{typeof(f),typeof(p)}(f,
-                       Δt, niter, freqbckp, coeffΔ, β, Ω, plan, ϕ_hat, p
+      nummodel = NumModelADI2{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp,
+                       coeffΔ, β, Ω, plan, ϕ_hat, p,
+                       writer
                       )
    end
    return nummodel
 end
 
-mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelADI2{F,P,W} <: AbstractNumModel{F,P,W}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -53,6 +60,7 @@ mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
    plan :: AbstractPlan{F}
    ϕ_hat :: Array
    potential :: P
+   writer :: W
 end
 
 function solveLapRot!(n::NumModelADI2{F}, Δtl) where {F<:AbstractField2D}
@@ -126,7 +134,7 @@ Base.show(io::IO, n::NumModelADI2) = print(io,
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
-mutable struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelBackwardEuler{F,P,W} <: AbstractNumModel{F,P,W}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -141,6 +149,7 @@ mutable struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
    M :: Array
    b :: Array
    potential :: P
+   writer :: W
 end
 
 function krylov!(n::AbstractNumModel, ϕ)
@@ -232,6 +241,8 @@ function timeStep!(n::NumModelBackwardEuler)
    @. n.b = n.M * n.f.ϕ / n.Δt
    # solving
    krylov!(n, n.f.ϕ)
+   # normalize
+   normalize!(n.f)
 end
 
 Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
@@ -244,8 +255,15 @@ Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
 function solve!(n::AbstractNumModel)
    for it = 1:n.niter
       println("iteration $(it)")
+      if it % n.freqbckp == 0
+         addFile!(n.writer,0,it)
+      end
+      energy(n,true)
       timeStep!(n)
    end
+   energy(n,true)
+   finishWriter!(n.writer)
+   return nothing
 end
 
 function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractField2D}

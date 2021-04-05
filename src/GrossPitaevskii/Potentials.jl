@@ -51,7 +51,7 @@ function PotentialQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
    γx = parse(Float64,retrieve(conf, "potential", "gamma_x"))
    γy = parse(Float64,retrieve(conf, "potential", "gamma_y"))
    @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2)
-   return PotentialQuadratic3D{FT}(V, α, γx, γy)
+   return PotentialQuadratic2D{FT}(V, α, γx, γy)
 end
 
 Base.show(io::IO, p::PotentialQuadratic2D) =

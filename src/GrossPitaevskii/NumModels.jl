@@ -261,33 +261,10 @@ Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
          "Crank-Nicolson Newton-Raphson scheme\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
+         "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
-#println("Crank Nicolson, not yet implemented")
-# model_NR(-2, deltat_t, true)
-#   psi1 = phi0
-#   solver_newton(-2, deltat_t)
-#     do it < itmax_newton
-#       solver_krylov_init(-2, 1, 1, coeff_deltas, delta_tt)
-#         phi_2 = (psi_1+phi_0)*0.5
-#         tmpr = phi_2*conj(phi_2)
-#         A_nls = V_xm + 2*beta*tmpr
-#         A_nls2 = beta*phi_2
-#         M = 1 / (1/delta_t + (V_xm + beta*3*tmpr) + 0.5)
-#         phi_tilde = 0
-#       solver_krylov(-2, 1, 1, coeff_deltas, 1, delta_tt, false, true)
-#         solver_matprecond : vec <- M*vec
-#           vec2 <- A_nls*vec1-rmb
-#         solver_matvecprod(1, -2, 1, 1, coeff_deltas, phi_tilde, residu, 1/delta_t)
-#           comput_lap_rot(vec1)
-#             rmb <- invfft( (-coeff_Omega*rotx+coeff_Delta*Lapx)*fft(vec1) )
-#           vec2 <- 1/delta_t * vec1 + A_nls*0.5*vec1 + A_nls2*0.5*conj(vec1) - rmb*0.5
-#         pscalaire(1, 1, residu, residu2, rho, true)
-#           rho <- sum(residu.*residu2)
-#       if ||phi_tilde|| < tol_newton
-#         stop
-#   phi0 = psi1
 function timeStep!(n::NumModelCrankNicolson)
    # create working vectors
    ψ = similar(n.f.ϕ)

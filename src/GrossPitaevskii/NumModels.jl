@@ -24,16 +24,18 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
                        writer
                       )
-   elseif nmodel == 3
-      # should be Crank-Nicolson
+   elseif nmodel == 21
       nkrylov = parse(Int64,retrieve(conf, "solver", "iterkrylov"))
       tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
+      nnewton = parse(Int64,retrieve(conf, "solver", "iternewton"))
+      tolnewton = parse(Float64,retrieve(conf, "solver", "tolnewton"))
       M = similar(f.ϕ)
+      b = similar(f.ϕ)
       Anl = similar(f.ϕ)
       Anl2 = similar(f.ϕ)
       nummodel = NumModelCrankNicolson{typeof(f),typeof(p),typeof(writer)}(f,
-                       Δt, niter, freqbckp, nkrylov, tolkrylov,
-                       coeffΔ, β, Ω, plan, ϕ_hat, M, Anl, Anl2, p,
+                       Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
                        writer
                       )
    elseif nmodel == 41
@@ -197,6 +199,7 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField2D}
    ϕty = plan_y \ ϕthat_y
    # return
    @. ϕtx = ϕtx+ϕty
+   return ϕtx
 end
 
 function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField3D}
@@ -239,12 +242,15 @@ mutable struct NumModelCrankNicolson{F,P,W} <: AbstractNumModel{F,P,W}
    freqbckp :: Integer
    nkrylov :: Integer
    tolkrylov :: Real
+   nnewton :: Integer
+   tolnewton :: Real
    coeffΔ :: Real
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat :: Array
    M :: Array
+   b :: Array
    Anl :: Array
    Anl2 :: Array
    potential :: P
@@ -290,82 +296,37 @@ function timeStep!(n::NumModelCrankNicolson)
    ϕw = similar(n.f.ϕ)
    ϕw .= 0
    # newton iterations
-   for itnewton = 1:10
+   for itnewton = 1:n.nnewton
       # compute matrices and vectors
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 2 × β × ∥ψ∥²
-      @. n.Anl = n.potential.V + 2*n.β*ψ*conj(ψ)
-      # Anls2 = β × ψ
-      @. n.Anl2 = n.β * ψ
+      @. n.Anl = n.potential.V + 2 * n.β * ψ * conj(ψ)
+      # Anls2 = β × ψ²
+      @. n.Anl2 = n.β * ψ * ψ
       # M⁻¹ = Δt⁻¹ + V + 3 × β × ∥ψ∥² + 0.5
-      @. n.M = 1. / ( 1. / n.Δt + n.potential.V +3 *  n.β * real( ψ * conj(ψ) ) + 0.5 )
-         # bb(i,j,k,n)=(delta_t1*(psi_1(i,j,k,n)-phi_0(i,j,k,n))+(V_xm(i,j,k,n)+&
-      # &              beta*(conjg(phi_2(i,j,k,n))*phi_2(i,j,k,n)))*&
-      # &              phi_2(i,j,k,n))-rMb(i,j,k) 
-      ψhat = plan * ψ
-      @. n.b = 1/n.Δt * (ϕ₁ - n.f.ϕ) + (n.potential.V + β * (conj(ψ)+ψ) ) * ψ - rmb 
+      @. n.M = 1. / ( 1. / n.Δt + ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ - coeffΩ × Ω) × ψ
+      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
-      krylov!(n, ϕw)
+      krylovPreCond!(n, ϕw)
+      # update solution
+      ϕ₁ .= ϕ₁ - ϕw
+      # newton residual
+      resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
+      # println("norm ψw $(resNewton)")
+      if resNewton < n.nnewton
+         break
+      end
    end
+   # update field
+   n.f.ϕ .= ϕ₁
    # normalize
    normalize!(n.f)
 end
 
-function prodA(n::NumModelCrankNicolson{F}, ϕt) where {F<:AbstractField2D}
-   # references
-   M, Anl, Anl2, b = n.M, n.Anl, n.Anl2, n.b
-   ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
-   x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
-   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
-   # perform FFT
-   mul!(ϕthat_x, plan_x, ϕt)
-   # compute the laplacian and rotation in the Fourier space (x)
-   @. ϕthat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕthat_x
-   # backward FFT
-   ϕtx = plan_x \ ϕthat_x
-   # perform FFT
-   mul!(ϕthat_y, plan_y, ϕt)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕthat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕthat_y
-   # backward FFT
-   ϕty = plan_y \ ϕthat_y
-   # vec2 <- 1/delta_t * vec1 + A_nls*0.5*vec1 + A_nls2*0.5*conj(vec1) - rmb*0.5
-   @. ϕtx = 1 / n.Δt * ϕt + 0.5 * n.Anl * ϕt + 0.5 * n.Anl2 * conj(ϕt) - 0.5 * (ϕtx+ϕty)
-end
-
-function prodA(n::NumModelCrankNicolson{F}, ϕ̃) where {F<:AbstractField3D}
-   # references
-   M, b = n.M, n.b
-   ϕ̃hat_x, ϕ̃hat_y, ϕ̃hat_z = n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
-   x, y = n.f.g.x, n.f.g.y
-   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
-   plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
-   # perform FFT
-   mul!(ϕ̃hat_x, plan_x, ϕ̃)
-   # compute the laplacian and rotation in the Fourier space (x)
-   @. ϕ̃hat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕ̃hat_x
-   # backward FFT
-   ϕ̃x = plan_x \ ϕ̃hat_x
-   # perform FFT
-   mul!(ϕ̃hat_y, plan_y, ϕ̃)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕ̃hat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕ̃hat_y
-   # backward FFT
-   ϕ̃y = plan_y \ ϕ̃hat_y
-   # perform FFT
-   mul!(ϕ̃hat_z, plan_z, ϕ̃)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕ̃hat_z = coeffΔ*ξz^2 * ϕ̃hat_z
-   # backward FFT
-   ϕ̃z = plan_z \ ϕ̃hat_z
-   # return
-   # ( I - M A ) ϕ̃
-   #
-   @. ϕ̃x = ϕ̃ - M * (ϕ̃x+ϕ̃y+ϕ̃z)
+function prodA(n::NumModelCrankNicolson, ϕt)
+   (1/n.Δt .+ n.Anl) .* ϕt .+ 0.5 .* n.Anl2 .* conj.(ϕt) .- 0.5 .* lapRot(n,ϕt)
 end
 
 function solve!(n::AbstractNumModel)
@@ -406,15 +367,16 @@ function krylov!(n::AbstractNumModel, ϕ)
 end
 
 function krylovPreCond!(n::AbstractNumModel, ϕ)
-   normb=sqrt(real(sum(n.b.*conj.(n.b))))
-   r = n.b - prodA(n,ϕ)
+   normb=sqrt(real(sum( n.M .* n.b .* conj.(n.M .* n.b) )))
+   # println("normb $(normb)")
+   r = n.M .* (n.b .- prodA(n,ϕ))
    r₂ = copy(r)
    p = copy(r)
    for i = 1:n.nkrylov
-      Ap = prodA(n,p)
+      Ap = n.M .* prodA(n,p)
       α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
       s = r - α * Ap
-      As = prodA(n,s)
+      As = n.M .* prodA(n,s)
       ω = sum(As.*conj.(s))/sum(As.*conj.(As))
       @. ϕ = ϕ + α*p + ω*s
       rr₂ = sum(r.*conj.(r₂))

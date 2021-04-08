@@ -53,8 +53,6 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        writer
                       )
    elseif nmodel == 25
-   # case (25)
-   #    call model_imaginary_time(5) ! full-implicit Crank-Nicolson : quasi-Netwon
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       nnewton = retrieve(conf, "solver", "iternewton", Int64)
@@ -99,6 +97,45 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
    # case (43)
    #    call model_REL
       println("Warning : should be ReSP (?)")
+   elseif nmodel == 45
+      println("")
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      M = similar(f.ϕ)
+      b = similar(f.ϕ)
+      Anl = similar(f.ϕ)
+      nummodel = NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
+                       writer
+                      )
+   elseif nmodel == 46
+   # case (46)
+   #    call model_NR(2,delta_t,flag_cutoff) ! Full implicit C-N
+      println("")
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      M = similar(f.ϕ)
+      b = similar(f.ϕ)
+      Anl = similar(f.ϕ)
+      Anl2 = similar(f.ϕ)
+      nummodel = NumModelCrankNicolsonT{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+                       writer
+                      )
    end
    return nummodel
 end
@@ -121,10 +158,6 @@ end
    # case (32)
    #    call model_imaginary_time_two(2) ! With G-S (for weak interaction only)
 # ! unstationary
-   # case (46)
-   #    call model_NR(2,delta_t,flag_cutoff) ! Full implicit C-N
-   # case (45) ! quasi-Newton
-   #    call model_NR(3,delta_t,flag_cutoff) ! Full implicit C-N
    # case (44) ! Newton with real value
    #    call model_NR(4,delta_t,flag_cutoff) ! Full implicit C-N
    # ! unstationary multi component

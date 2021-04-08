@@ -90,14 +90,14 @@ julia> grid = Grid(conf)
 ```
 """
 function Grid(conf::ConfParse,FT=Float64)
-   nx = parse(Int64,retrieve(conf, "discretization", "nx"))
-   ny = parse(Int64,retrieve(conf, "discretization", "ny"))
-   nz = parse(Int64,retrieve(conf, "discretization", "nz"))
+   nx = retrieve(conf, "discretization", "nx", Int64)
+   ny = retrieve(conf, "discretization", "ny", Int64)
+   nz = retrieve(conf, "discretization", "nz", Int64)
    # bounds
-   xmin = parse(FT,retrieve(conf, "geometry", "xmin"))
-   xmax = parse(FT,retrieve(conf, "geometry", "xmax"))
-   ymin = parse(FT,retrieve(conf, "geometry", "ymin"))
-   ymax = parse(FT,retrieve(conf, "geometry", "ymax"))
+   xmin = retrieve(conf, "geometry", "xmin", FT)
+   xmax = retrieve(conf, "geometry", "xmax", FT)
+   ymin = retrieve(conf, "geometry", "ymin", FT)
+   ymax = retrieve(conf, "geometry", "ymax", FT)
    # length
    Lx = xmax - xmin
    Ly = ymax - ymin
@@ -112,8 +112,8 @@ function Grid(conf::ConfParse,FT=Float64)
    ξy = fftfreq(ny,2π/Δy)
    if nz > 1
       # bounds
-      zmin = parse(FT,retrieve(conf, "geometry", "zmin"))
-      zmax = parse(FT,retrieve(conf, "geometry", "zmax"))
+      zmin = retrieve(conf, "geometry", "zmin", FT)
+      zmax = retrieve(conf, "geometry", "zmax", FT)
       # length
       Lz = zmax - zmin
       # discretization

@@ -1,22 +1,22 @@
 function NumModel(f::F, p::P, conf::ConfParse) where F where P
    nummodel = nothing
-   nmodel = parse(Int64,retrieve(conf, "solver", "model"))
+   nmodel = retrieve(conf, "solver", "model", Int64)
    plan = Plan(f)
    writer = Writer(f)
    ϕ_hat = similar(f.ϕ)
-   Δt =  parse(Float64,retrieve(conf, "time", "deltat"))
-   niter = parse(Float64,retrieve(conf, "time", "itermax"))
-   restart = ( parse(Int64,retrieve(conf, "time", "restart")) == 1 )
-   freqbckp = parse(Int64,retrieve(conf, "io", "freqbckp"))
-   coeffΔ = parse(Float64,retrieve(conf, "model", "delta"))
-   β = parse(Float64,retrieve(conf, "model", "beta"))
-   Ω = parse(Float64,retrieve(conf, "model", "omega"))
+   Δt =  retrieve(conf, "time", "deltat", Float64)
+   niter = retrieve(conf, "time", "itermax", Float64)
+   restart = ( retrieve(conf, "time", "restart", Int64) == 1 )
+   freqbckp = retrieve(conf, "io", "freqbckp", Int64)
+   coeffΔ = retrieve(conf, "model", "delta", Float64)
+   β = retrieve(conf, "model", "beta", Float64)
+   Ω = retrieve(conf, "model", "omega", Float64)
    if nmodel == 1
       println("Sobolev, not yet implemented")
       return nothing
-   elseif nmodel == 2
-      nkrylov = parse(Int64,retrieve(conf, "solver", "iterkrylov"))
-      tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
+   elseif nmodel == 2 || nmodel == 20
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       nummodel = NumModelBackwardEuler{typeof(f),typeof(p),typeof(writer)}(f,
@@ -25,10 +25,14 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        writer
                       )
    elseif nmodel == 21
-      nkrylov = parse(Int64,retrieve(conf, "solver", "iterkrylov"))
-      tolkrylov = parse(Float64,retrieve(conf, "solver", "tolkrylov"))
-      nnewton = parse(Int64,retrieve(conf, "solver", "iternewton"))
-      tolnewton = parse(Float64,retrieve(conf, "solver", "tolnewton"))
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
@@ -38,9 +42,51 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
                        writer
                       )
+   elseif nmodel == 22
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      Anl = similar(f.ϕ)
+      b = similar(f.ϕ)
+      nummodel = NumModelBackwardEulerNoPrecond{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp, nkrylov, tolkrylov,
+                       coeffΔ, β, Ω, plan, ϕ_hat, Anl, b, p,
+                       writer
+                      )
+   elseif nmodel == 25
+   # case (25)
+   #    call model_imaginary_time(5) ! full-implicit Crank-Nicolson : quasi-Netwon
+      println("Warning : should be without Crank-Nicolson Quasi-Newton")
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      nnewton = retrieve(conf, "solver", "iternewton", Int64)
+      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
+      M = similar(f.ϕ)
+      b = similar(f.ϕ)
+      Anl = similar(f.ϕ)
+      Anl2 = similar(f.ϕ)
+      nummodel = NumModelCrankNicolson{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+                       writer
+                      )
+   elseif nmodel == 27
+   # case (27)
+   #    call model_imaginary_time(7) ! semi-implicit backward Euler with external velocity, no renormalization
+      println("Warning : should be Backward Euler with external velocity")
+   elseif nmodel == 28
+   # case (28)
+   #    call model_imaginary_time(8) ! full-implicit Crank-Nicolson with external velocity, no renormalization
+      println("Warning : should be without Crank-Nicolson with external velocity")
+   elseif nmodel == 29
+   # case (29)
+   #    call model_imaginary_time(9) ! implicit/explicit scheme with external velocity, no renormalization
+      println("Warning : should be implicit/explicit scheme with external velocity")
    elseif nmodel == 41
-      # should be ADI1
-      nummodel = NumModelADI2{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelADI1{typeof(f),typeof(p),typeof(writer)}(f,
                        Δt, niter, freqbckp,
                        coeffΔ, β, Ω, plan, ϕ_hat, p,
                        writer
@@ -51,135 +97,63 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        coeffΔ, β, Ω, plan, ϕ_hat, p,
                        writer
                       )
+   elseif nmodel == 43
+   # case (43)
+   #    call model_REL
+      println("Warning : should be ReSP (?)")
    end
    return nummodel
 end
+   # select case(model)
+   # case (0)
+   #    call model_approximate
+   # case (1)
+   #    call model_one_component_sobolev
+   # case (26)
+   #    call model_imaginary_time(6) ! full-implicit C-N : Newton by "real vector"
+   # case(299)
+   #    call model_imaginary_time(99) ! toy model FL
 
-mutable struct NumModelADI2{F,P,W} <: AbstractNumModel{F,P,W}
-   f :: F
-   Δt :: Real
-   niter :: Integer
-   freqbckp :: Integer
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   potential :: P
-   writer :: W
-end
+# !
+# ! multi component
+   # case (3,30)
+   #    call model_imaginary_time_two(1) ! With B-E T-F approx (for strong interaction only)
+   # case (31)
+   #    call model_multi_component_sobolev ! With G-S (for weak interaction only)
+   # case (32)
+   #    call model_imaginary_time_two(2) ! With G-S (for weak interaction only)
+# ! unstationary
+   # case (46)
+   #    call model_NR(2,delta_t,flag_cutoff) ! Full implicit C-N
+   # case (45) ! quasi-Newton
+   #    call model_NR(3,delta_t,flag_cutoff) ! Full implicit C-N
+   # case (44) ! Newton with real value
+   #    call model_NR(4,delta_t,flag_cutoff) ! Full implicit C-N
+   # ! unstationary multi component
+   # case (51)
+   #    call model_TS1_ADI_two
+   # case (52)
+   #    call model_TS2_ADI_two
+   # case (53)
+   #    call model_REL_two
+   # case (56) ! Crank-Nicolson Newton with complex nonlinear GCR
+   #    call model_NR_two(2,delta_t,flag_cutoff)
+   # case (55) ! Crank-Nicolson quasi-Newton
+   #    call model_NR_two(3,delta_t,flag_cutoff)
+   # case (54) ! Crank-Nicolson Newton with real value
+   #    call model_NR_two(4,delta_t,flag_cutoff)
+   # case (57) ! backward-Euler Newton with real value
+   #    call model_NR_two(1,delta_t,flag_cutoff)
 
-function solveLapRot!(n::NumModelADI2{F}, Δtl) where {F<:AbstractField2D}
-   # references
-   ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
-   x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
-   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
-   # perform FFT
-   mul!(ϕhat_x, plan_x, ϕ)
-   # compute the laplacian and rotation in the Fourier space (x)
-   @. ϕhat_x = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕhat_x
-   # backward FFT
-   ldiv!(ϕ, plan_x, ϕhat_x)
-   # perform FFT
-   mul!(ϕhat_y, plan_y, ϕ)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕhat_y = exp(im*(coeffΔ*ξy^2+Ω*x*ξy)*Δtl) * ϕhat_y
-   # backward FFT
-   ldiv!(ϕ, plan_y, ϕhat_y)
-   return nothing
-end
+include("Models/adi.jl")
+include("Models/backward-euler.jl")
+include("Models/crank-nicolson.jl")
 
-function solveLapRot!(n::NumModelADI2{F}, Δtl) where {F<:AbstractField3D}
-   # references
-   ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
-   x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
-   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
-   plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
-   # perform FFT
-   mul!(ϕhat_x, plan_x, ϕ)
-   # compute the laplacian and rotation in the Fourier space (x)
-   @. ϕhat_x = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕhat_x
-   # backward FFT
-   ldiv!(ϕ, plan_x, ϕhat_x)
-   # perform FFT
-   mul!(ϕhat_y, plan_y, ϕ)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕhat_y = exp(im*(coeffΔ*ξy^2+Ω*x*ξy)*Δtl) * ϕhat_y
-   # backward FFT
-   ldiv!(ϕ, plan_y, ϕhat_y)
-   # perform FFT
-   mul!(ϕhat_z, plan_z, ϕ)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕhat_z = exp(im*(coeffΔ*ξz^2)*Δtl) * ϕhat_z
-   # backward FFT
-   ldiv!(ϕ, plan_z, ϕhat_z)
-   return nothing
-end
-
-function solveNL!(n::NumModelADI2, Δtl)
-   # references
-   ϕ = n.f.ϕ
-   β = n.β
-   V = n.potential.V
-   # computation
-   @. ϕ = exp(-1im * ( V + β*ϕ*conj(ϕ) ) * Δtl) * ϕ
-end
-
-function timeStep!(n::NumModelADI2)
-   solveLapRot!(n,n.Δt*0.5)
-   solveNL!(n,n.Δt)
-   solveLapRot!(n,n.Δt*0.5)
-end
-
-Base.show(io::IO, n::NumModelADI2) = print(io,
-         "Splitting Order 2\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
-         "  ├───────  time step: $(n.Δt)\n",
-         "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-
-mutable struct NumModelBackwardEuler{F,P,W} <: AbstractNumModel{F,P,W}
-   f :: F
-   Δt :: Real
-   niter :: Integer
-   freqbckp :: Integer
-   nkrylov :: Integer
-   tolkrylov :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   M :: Array
-   b :: Array
-   potential :: P
-   writer :: W
-end
-
-Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
-         "Backward Euler\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
-         "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-         "  ├───────  time step: $(n.Δt)\n",
-         "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-
-function timeStep!(n::NumModelBackwardEuler)
-   # compute matrices and vectors
-   # M⁻¹ = Δt⁻¹ + V + β × ∥ϕ∥²
-   @. n.M = 1. / ( 1. / n.Δt + n.potential.V + n.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
-   # b = M × ϕ × Δt⁻¹
-   @. n.b = n.M * n.f.ϕ / n.Δt
-   # solving
-   krylov!(n, n.f.ϕ)
-   # normalize
-   normalize!(n.f)
-end
+include("Models/krylov.jl")
 
 function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField2D}
    # references
-   M, b = n.M, n.b
+   b = n.b
    ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
    x, y = n.f.g.x, n.f.g.y
@@ -231,81 +205,6 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField3D}
    @. ϕtx = (ϕtx+ϕty+ϕtz)
 end
 
-function prodA(n::NumModelBackwardEuler, ϕt)
-   ϕt .- n.M .* lapRot(n,ϕt)
-end
-
-mutable struct NumModelCrankNicolson{F,P,W} <: AbstractNumModel{F,P,W}
-   f :: F
-   Δt :: Real
-   niter :: Integer
-   freqbckp :: Integer
-   nkrylov :: Integer
-   tolkrylov :: Real
-   nnewton :: Integer
-   tolnewton :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   M :: Array
-   b :: Array
-   Anl :: Array
-   Anl2 :: Array
-   potential :: P
-   writer :: W
-end
-
-Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
-         "Crank-Nicolson Newton-Raphson scheme\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
-         "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-         "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
-         "  ├───────  time step: $(n.Δt)\n",
-         "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-
-function timeStep!(n::NumModelCrankNicolson)
-   # create working vectors
-   ψ = similar(n.f.ϕ)
-   ϕ₁ = copy(n.f.ϕ)
-   # for krylov
-   ϕw = similar(n.f.ϕ)
-   ϕw .= 0
-   # newton iterations
-   for itnewton = 1:n.nnewton
-      # compute matrices and vectors
-      # ψ = 1/2 (ϕ₁+ϕ₀)
-      @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
-      # Anls = V + 2 × β × ∥ψ∥²
-      @. n.Anl = n.potential.V + 2 * n.β * ψ * conj(ψ)
-      # Anls2 = β × ψ²
-      @. n.Anl2 = n.β * ψ * ψ
-      # M⁻¹ = Δt⁻¹ + V + 3 × β × ∥ψ∥² + 0.5
-      @. n.M = 1. / ( 1. / n.Δt + ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
-      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ - coeffΩ × Ω) × ψ
-      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
-      # solving
-      krylovPreCond!(n, ϕw)
-      # update solution
-      ϕ₁ .= ϕ₁ - ϕw
-      # newton residual
-      resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
-      # println("norm ψw $(resNewton)")
-      if resNewton < n.nnewton
-         break
-      end
-   end
-   # update field
-   n.f.ϕ .= ϕ₁
-   # normalize
-   normalize!(n.f)
-end
-
-function prodA(n::NumModelCrankNicolson, ϕt)
-   (1/n.Δt .+ n.Anl) .* ϕt .+ 0.5 .* n.Anl2 .* conj.(ϕt) .- 0.5 .* lapRot(n,ϕt)
-end
-
 function solve!(n::AbstractNumModel)
    for it = 1:n.niter
       energy(n,true)
@@ -317,53 +216,6 @@ function solve!(n::AbstractNumModel)
    end
    energy(n,true)
    finishWriter!(n.writer)
-   return nothing
-end
-
-function krylov!(n::AbstractNumModel, ϕ)
-   normb=sqrt(real(sum(n.b.*conj.(n.b))))
-   r = n.b - prodA(n,ϕ)
-   r₂ = copy(r)
-   p = copy(r)
-   for i = 1:n.nkrylov
-      Ap = prodA(n,p)
-      α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
-      s = r - α * Ap
-      As = prodA(n,s)
-      ω = sum(As.*conj.(s))/sum(As.*conj.(As))
-      @. ϕ = ϕ + α*p + ω*s
-      rr₂ = sum(r.*conj.(r₂))
-      r = s - ω*As
-      if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
-         break
-      end
-      β = sum(r.*conj.(r₂)) / rr₂ * α / ω
-      p = r + β * (p - ω*Ap)
-   end
-   return nothing
-end
-
-function krylovPreCond!(n::AbstractNumModel, ϕ)
-   normb=sqrt(real(sum( n.M .* n.b .* conj.(n.M .* n.b) )))
-   # println("normb $(normb)")
-   r = n.M .* (n.b .- prodA(n,ϕ))
-   r₂ = copy(r)
-   p = copy(r)
-   for i = 1:n.nkrylov
-      Ap = n.M .* prodA(n,p)
-      α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
-      s = r - α * Ap
-      As = n.M .* prodA(n,s)
-      ω = sum(As.*conj.(s))/sum(As.*conj.(As))
-      @. ϕ = ϕ + α*p + ω*s
-      rr₂ = sum(r.*conj.(r₂))
-      r = s - ω*As
-      if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
-         break
-      end
-      β = sum(r.*conj.(r₂)) / rr₂ * α / ω
-      p = r + β * (p - ω*Ap)
-   end
    return nothing
 end
 

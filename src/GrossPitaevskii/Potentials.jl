@@ -16,7 +16,7 @@ struct PotentialZero{FT} <: AbstractPotential{FT} end
 @inline Base.setindex!(p::P, v, i::Any) where P<:AbstractPotential = (p.V[i] = v)
 
 function Potential(f::AbstractField, conf::ConfParse)
-   npot = parse(Int64,retrieve(conf, "model", "potential"))
+   npot = retrieve(conf, "model", "potential", Int64)
    FT = eltype(real(f.ϕ[1]))
    if npot == 0
       return PotentialZero{FT}()
@@ -47,9 +47,9 @@ end
 
 function PotentialQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny)
-   α  = parse(Float64,retrieve(conf, "potential", "alpha"))
-   γx = parse(Float64,retrieve(conf, "potential", "gamma_x"))
-   γy = parse(Float64,retrieve(conf, "potential", "gamma_y"))
+   α  = retrieve(conf, "potential", "alpha", Float64)
+   γx = retrieve(conf, "potential", "gamma_x", Float64)
+   γy = retrieve(conf, "potential", "gamma_y", Float64)
    @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2)
    return PotentialQuadratic2D{FT}(V, α, γx, γy)
 end
@@ -61,10 +61,10 @@ Base.show(io::IO, p::PotentialQuadratic2D) =
 
 function PotentialQuadratic(FT::DataType, f::AbstractField3D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny, f.g.nz)
-   α  = parse(Float64,retrieve(conf, "potential", "alpha"))
-   γx = parse(Float64,retrieve(conf, "potential", "gamma_x"))
-   γy = parse(Float64,retrieve(conf, "potential", "gamma_y"))
-   γz = parse(Float64,retrieve(conf, "potential", "gamma_z"))
+   α  = retrieve(conf, "potential", "alpha", Float64)
+   γx = retrieve(conf, "potential", "gamma_x", Float64)
+   γy = retrieve(conf, "potential", "gamma_y", Float64)
+   γz = retrieve(conf, "potential", "gamma_z", Float64)
    @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2+γz*f.g.z^2)
    return PotentialQuadratic3D{FT}(V, α, γx, γy, γz)
 end
@@ -93,10 +93,10 @@ end
 
 function PotentialQuarticQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny)
-   α  = parse(Float64,retrieve(conf, "potential", "alpha"))
-   γx = parse(Float64,retrieve(conf, "potential", "gamma_x"))
-   γy = parse(Float64,retrieve(conf, "potential", "gamma_y"))
-   κ4 = parse(Float64,retrieve(conf, "potential", "kappa4"))
+   α  = retrieve(conf, "potential", "alpha", Float64)
+   γx = retrieve(conf, "potential", "gamma_x", Float64)
+   γy = retrieve(conf, "potential", "gamma_y", Float64)
+   κ4 = retrieve(conf, "potential", "kappa4", Float64)
    @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2)+0.5*κ4*(f.g.x^2+f.g.y^2)^2
    return PotentialQuarticQuadratic2D{FT}(V, α, γx, γy, κ4)
 end
@@ -108,11 +108,11 @@ Base.show(io::IO, p::PotentialQuarticQuadratic2D) =
 
 function PotentialQuarticQuadratic(FT::DataType, f::AbstractField3D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny, f.g.nz)
-   α  = parse(Float64,retrieve(conf, "potential", "alpha"))
-   γx = parse(Float64,retrieve(conf, "potential", "gamma_x"))
-   γy = parse(Float64,retrieve(conf, "potential", "gamma_y"))
-   γz = parse(Float64,retrieve(conf, "potential", "gamma_z"))
-   κ4 = parse(Float64,retrieve(conf, "potential", "kappa4"))
+   α  = retrieve(conf, "potential", "alpha", Float64)
+   γx = retrieve(conf, "potential", "gamma_x", Float64)
+   γy = retrieve(conf, "potential", "gamma_y", Float64)
+   γz = retrieve(conf, "potential", "gamma_z", Float64)
+   κ4 = retrieve(conf, "potential", "kappa4", Float64)
    @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2+γz*f.g.z^2)+0.5*κ4*(f.g.x^2+f.g.y^2)^2
    return PotentialQuarticQuadratic3D{FT}(V, α, γx, γy, γz, κ4)
 end

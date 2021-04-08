@@ -20,9 +20,9 @@ function Init(f::F, ninit::Integer,conf) where {F <: AbstractField2D}
    init = nothing
    if ninit == 2
       init = InitGauss2D{typeof(f)}(f,
-                       parse(Float64,retrieve(conf, "potential", "gamma_x")),
-                       parse(Float64,retrieve(conf, "potential", "gamma_y")),
-                       parse(Float64,retrieve(conf, "model", "omega")))
+                       retrieve(conf, "potential", "gamma_x", Float64),
+                       retrieve(conf, "potential", "gamma_y", Float64),
+                       retrieve(conf, "model", "omega", Float64))
    end
    return init
 end
@@ -39,10 +39,10 @@ function Init(f::F, ninit::Integer,conf) where {F <: AbstractField3D}
    init = nothing
    if ninit == 2
       init = InitGauss3D{typeof(f)}(f,
-                       parse(Float64,retrieve(conf, "potential", "gamma_x")),
-                       parse(Float64,retrieve(conf, "potential", "gamma_y")),
-                       parse(Float64,retrieve(conf, "potential", "gamma_z")),
-                       parse(Float64,retrieve(conf, "model", "omega")))
+                       retrieve(conf, "potential", "gamma_x", Float64),
+                       retrieve(conf, "potential", "gamma_y", Float64),
+                       retrieve(conf, "potential", "gamma_z", Float64),
+                       retrieve(conf, "model", "omega"), Float64)
    end
    return init
 end

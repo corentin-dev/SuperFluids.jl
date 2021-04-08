@@ -55,7 +55,6 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
    elseif nmodel == 25
    # case (25)
    #    call model_imaginary_time(5) ! full-implicit Crank-Nicolson : quasi-Netwon
-      println("Warning : should be without Crank-Nicolson Quasi-Newton")
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       nnewton = retrieve(conf, "solver", "iternewton", Int64)
@@ -67,10 +66,9 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
-      Anl2 = similar(f.ϕ)
-      nummodel = NumModelCrankNicolson{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(p),typeof(writer)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
                        writer
                       )
    elseif nmodel == 27

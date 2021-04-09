@@ -116,8 +116,6 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        writer
                       )
    elseif nmodel == 46
-   # case (46)
-   #    call model_NR(2,delta_t,flag_cutoff) ! Full implicit C-N
       println("")
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)

@@ -54,8 +54,7 @@ function timeStep!(n::NumModelCrankNicolson)
       ϕ₁ .= ϕ₁ .- ϕw
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
-      # println("norm ψw $(resNewton)")
-      if resNewton < n.nnewton
+      if resNewton < n.tolnewton
          break
       end
    end
@@ -122,8 +121,7 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton)
       ϕ₁ .= ϕ₁ .- ϕw
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
-      # println("norm ψw $(resNewton)")
-      if resNewton < n.nnewton
+      if resNewton < n.tolnewton
          break
       end
    end
@@ -193,8 +191,7 @@ function timeStep!(n::NumModelCrankNicolsonT)
       ϕ₁ .= ϕ₁ .- ϕw
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
-      # println("norm ψw $(resNewton)")
-      if resNewton < n.nnewton
+      if resNewton < n.tolnewton
          break
       end
    end
@@ -259,15 +256,12 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT)
       ϕ₁ .= ϕ₁ .- ϕw
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
-      # println("norm ψw $(resNewton)")
-      if resNewton < n.nnewton
+      if resNewton < n.tolnewton
          break
       end
    end
    # update field
    n.f.ϕ .= ϕ₁
-   # normalize
-   normalize!(n.f)
 end
 
 function prodA(n::NumModelCrankNicolsonQuasiNewtonT, ϕt)

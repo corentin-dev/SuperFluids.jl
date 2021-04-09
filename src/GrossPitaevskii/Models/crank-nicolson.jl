@@ -28,6 +28,25 @@ Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
+"""
+    timeStep!(n::NumModelCrankNicolson)
+
+Performs a single time step for the stationnary Crank-Nicolson scheme.
+
+# Detail
+
+A Newton-Raphson loop using `n.nnewton` iterations until the tolerance `n.tolnewton` is reached, followed by a renormalization step. During the non-linear loop, the linear problem MAϕ=Mb is solved using a krylov solver. The system is built using :
+
+Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ + 1/2 Aₙₗ₂ conj(ϕ) - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+
+M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
+
+Aₙₗ = V + 2 × β × ∥ψ∥²
+
+Aₙₗ₂ = β × ψ²
+
+b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
+"""
 function timeStep!(n::NumModelCrankNicolson)
    # create working vectors
    ψ = similar(n.f.ϕ)
@@ -46,7 +65,7 @@ function timeStep!(n::NumModelCrankNicolson)
       @. n.Anl2 = n.β * ψ * ψ
       # M⁻¹ = Δt⁻¹ + V + 3 × β × ∥ψ∥² + 0.5
       @. n.M = 1. / ( 1. / n.Δt + ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
-      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ - coeffΩ × Ω) × ψ
+      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
       n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
@@ -64,6 +83,13 @@ function timeStep!(n::NumModelCrankNicolson)
    normalize!(n.f)
 end
 
+"""
+    prodA(n::NumModelCrankNicolson, ϕt)
+
+Matrix-vector product for the stationnary Crank-Nicolson Newton-Raphson method :
+
+Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ + 1/2 Aₙₗ₂ conj(ϕ) - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+"""
 function prodA(n::NumModelCrankNicolson, ϕt)
    (1/n.Δt .+ n.Anl) .* ϕt .+ 0.5 .* n.Anl2 .* conj.(ϕt) .- 0.5 .* lapRot(n,ϕt)
 end
@@ -97,6 +123,23 @@ Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton) = print(io,
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
+"""
+    timeStep!(n::NumModelCrankNicolsonQuasiNewton)
+
+Performs a single time step for the stationnary Crank-Nicolson scheme.
+
+# Detail
+
+A quasi-Newton loop using `n.nnewton` iterations until the tolerance `n.tolnewton` is reached, followed by a renormalization step. During the non-linear loop, the linear problem MAϕ=Mb is solved using a krylov solver. The system is built using :
+
+Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+
+M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
+
+Aₙₗ = V + 3 × β × ∥ψ∥²
+
+b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
+"""
 function timeStep!(n::NumModelCrankNicolsonQuasiNewton)
    # create working vectors
    ψ = similar(n.f.ϕ)
@@ -113,7 +156,7 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton)
       @. n.Anl = n.potential.V + 3 * n.β * ψ * conj(ψ)
       # M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
       @. n.M = 1. / ( 1. / n.Δt + ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
-      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ - coeffΩ × Ω) × ψ
+      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
       n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
@@ -131,6 +174,13 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton)
    normalize!(n.f)
 end
 
+"""
+    prodA(n::NumModelCrankNicolsonQuasiNewton, ϕt)
+
+Matrix-vector product for the stationnary Crank-Nicolson Quasi-Newton method :
+
+Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+"""
 function prodA(n::NumModelCrankNicolsonQuasiNewton, ϕt)
    (1/n.Δt .+ n.Anl .* 0.5) .* ϕt .- 0.5 .* lapRot(n,ϕt)
 end
@@ -165,6 +215,25 @@ Base.show(io::IO, n::NumModelCrankNicolsonT) = print(io,
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
+"""
+    timeStep!(n::NumModelCrankNicolsonT)
+
+Performs a single time step for the unstationnary Crank-Nicolson scheme.
+
+# Detail
+
+A Newton-Raphson loop using `n.nnewton` iterations until the tolerance `n.tolnewton` is reached. During the non-linear loop, the linear problem MAϕ=Mb is solved using a krylov solver. The system is built using :
+
+Aϕ = ( i Δt⁻¹ - 1/2 Aₙₗ) ϕ - 1/2 Aₙₗ₂ conj(ϕ) + 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+
+M⁻¹ = Δt⁻¹ - 1/2 × ( V + 3 × β × ∥ψ∥² )
+
+Aₙₗ = V + 2 × β × ∥ψ∥²
+
+Aₙₗ₂ = β × ψ²
+
+b = i Δt⁻¹ × (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
+"""
 function timeStep!(n::NumModelCrankNicolsonT)
    # create working vectors
    ψ = similar(n.f.ϕ)
@@ -181,9 +250,9 @@ function timeStep!(n::NumModelCrankNicolsonT)
       @. n.Anl = n.potential.V + 2 * n.β * ψ * conj(ψ)
       # Anls2 = β × ψ²
       @. n.Anl2 = n.β * ψ * ψ
-      # M⁻¹ = Δt⁻¹ + V + 3 × β × ∥ψ∥² + 0.5
+      # M⁻¹ = i Δt⁻¹ - 1/2 ( V + 3 × β × ∥ψ∥²)
       @. n.M = 1. / ( 1. * im / n.Δt - ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
-      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ - coeffΩ × Ω) × ψ
+      # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
       n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
@@ -199,6 +268,13 @@ function timeStep!(n::NumModelCrankNicolsonT)
    n.f.ϕ .= ϕ₁
 end
 
+"""
+    prodA(n::NumModelCrankNicolsonT, ϕt)
+
+Matrix-vector product for the unstationnary Crank-Nicolson Newton-Raphson method :
+
+Aϕ = ( i Δt⁻¹ - 1/2 Aₙₗ) ϕ - 1/2 Aₙₗ₂ conj(ϕ) + 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+"""
 function prodA(n::NumModelCrankNicolsonT, ϕt)
    ( (1. * im /n.Δt ) .- 0.5 .* n.Anl) .* ϕt .- 0.5 .* n.Anl2 .* conj.(ϕt) .+ 0.5 .* lapRot(n,ϕt)
 end
@@ -232,6 +308,23 @@ Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewtonT) = print(io,
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
+"""
+    timeStep!(n::NumModelCrankNicolsonQuasiNewton)
+
+Performs a single time step for the stationnary Crank-Nicolson scheme.
+
+# Detail
+
+A Newton-Raphson loop using `n.nnewton` iterations until the tolerance `n.tolnewton` is reached, followed by a renormalization step. During the non-linear loop, the linear problem MAϕ=Mb is solved using a krylov solver. The system is built using :
+
+Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+
+M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
+
+Aₙₗ = V + 3 × β × ∥ψ∥²
+
+b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
+"""
 function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT)
    # create working vectors
    ψ = similar(n.f.ϕ)
@@ -248,7 +341,7 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT)
       @. n.Anl = n.potential.V + 3 * n.β * ψ * conj(ψ)
       # M⁻¹ = i Δt⁻¹ - 1/2 × ( V + 3 × β × ∥ψ∥² )
       @. n.M = 1. / ( 1. * im / n.Δt - ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
-      # b = i Δt⁻¹ * (ϕ₁ - ϕ₀) - (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ - coeffΩ × Ω) × ψ + coeffΔ Δϕ - Ω Lz Φ
+      # b = i Δt⁻¹ * (ϕ₁ - ϕ₀) - (V + β × ∥ψ∥²) × ψ + (coeffΔ Δ + Ω Lz) × ψ + coeffΔ Δϕ - Ω Lz Φ
       n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
@@ -264,6 +357,13 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT)
    n.f.ϕ .= ϕ₁
 end
 
+"""
+    prodA(n::NumModelCrankNicolsonQuasiNewtonT, ϕt)
+
+Matrix-vector product for the unstationnary Crank-Nicolson Quasi-Newton method :
+
+Aϕ = ( i Δt⁻¹ - 1/2 Aₙₗ) ϕ + 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+"""
 function prodA(n::NumModelCrankNicolsonQuasiNewtonT, ϕt)
    ( (1. * im / n.Δt) .- n.Anl .* 0.5) .* ϕt .+ 0.5 .* lapRot(n,ϕt)
 end

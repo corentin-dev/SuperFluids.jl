@@ -31,7 +31,8 @@ function Init(f::F, ninit::Integer,conf) where {F <: AbstractField3D}
                        retrieve(conf, "potential", "gamma_z", Float64),
                        retrieve(conf, "model", "omega"), Float64)
    elseif ninit == 6
-      init = InitExternalVelocity{typeof(f)}(f,"taylorgreen")
+      ξ = √( - retrieve(conf, "model", "delta", Float64) / retrieve(conf, "model", "beta", Float64) )
+      init = InitExternalVelocity{typeof(f)}(f, ξ, "taylorgreen")
    end
    return init
 end
@@ -99,13 +100,13 @@ Base.show(io::IO, init::InitGauss3D{F}) where {F<:AbstractField3D} =
 
 struct InitExternalVelocity{F} <: AbstractInit{F}
    f :: F
+   ξ :: Real
    type :: String
 end
 
-function initField!(init::InitExternalVelocity)
+function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField2D}
    # references
-   # xsiabr=sqrt( abs(Coeff_Delta) / beta ) 
-   ξ = 0.1/20
+   ξ = init.ξ
    ϕ = init.f.ϕ
    x, y = init.f.g.x, init.f.g.y
    for I in CartesianIndices(init.f.ϕ)
@@ -116,7 +117,26 @@ function initField!(init::InitExternalVelocity)
       vortex2=(λ + im*(μ+0.7))*tanh(√(λ^2 + (μ+0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ+0.7)^2)
       vortex3=(λ-0.7 + im*μ)*tanh(√((λ-0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ-0.7)^2 + μ^2)
       vortex4=(λ+0.7 + im*μ)*tanh(√((λ+0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ+0.7)^2 + μ^2)
-      ϕ[ix,iy] =(vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (2*π*0.1)))
+      ϕ[ix,iy] = (vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (2*π*0.1)))
+   end
+   return nothing
+end
+
+function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField3D}
+   # references
+   # xsiabr=sqrt( abs(Coeff_Delta) / beta ) 
+   ξ = 0.1/20
+   ϕ = init.f.ϕ
+   x, y, z = init.f.g.x, init.f.g.y, init.f.g.z
+   for I in CartesianIndices(init.f.ϕ)
+      ix, iy, iz = Tuple(I)
+      λ=cos(x[ix])*√(2*abs(cos(z[iz])))
+      μ =cos(y[iy])*√(2*abs(cos(z[iz])))*sign(z[iz])
+      vortex1=(λ + im*(μ-0.7))*tanh(√(λ^2 + (μ-0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ-0.7)^2)
+      vortex2=(λ + im*(μ+0.7))*tanh(√(λ^2 + (μ+0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ+0.7)^2)
+      vortex3=(λ-0.7 + im*μ)*tanh(√((λ-0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ-0.7)^2 + μ^2)
+      vortex4=(λ+0.7 + im*μ)*tanh(√((λ+0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ+0.7)^2 + μ^2)
+      ϕ[ix,iy, iz] =(vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (2*π*0.1)))
    end
    return nothing
 end

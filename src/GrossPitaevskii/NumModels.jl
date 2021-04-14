@@ -29,10 +29,6 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       nnewton = retrieve(conf, "solver", "iternewton", Int64)
       tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
-      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
-      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
-      nnewton = retrieve(conf, "solver", "iternewton", Int64)
-      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
@@ -57,10 +53,6 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       nnewton = retrieve(conf, "solver", "iternewton", Int64)
       tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
-      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
-      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
-      nnewton = retrieve(conf, "solver", "iternewton", Int64)
-      tolnewton = retrieve(conf, "solver", "tolnewton", Float64)
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
@@ -78,6 +70,11 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
    #    call model_imaginary_time(8) ! full-implicit Crank-Nicolson with external velocity, no renormalization
       println("Warning : should be without Crank-Nicolson with external velocity")
    elseif nmodel == 29
+      nummodel = NumModelExternalVelocity{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp,
+                       coeffΔ, β, Ω, plan, ϕ_hat, p,
+                       writer
+                      )
    # case (29)
    #    call model_imaginary_time(9) ! implicit/explicit scheme with external velocity, no renormalization
       println("Warning : should be implicit/explicit scheme with external velocity")
@@ -177,6 +174,7 @@ end
 include("Models/adi.jl")
 include("Models/backward-euler.jl")
 include("Models/crank-nicolson.jl")
+include("Models/external-velocity.jl")
 
 include("Models/krylov.jl")
 
@@ -235,6 +233,7 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField3D}
 end
 
 function solve!(n::AbstractNumModel)
+   addFile!(n.writer,"res",0,0,n.Δt)
    for it = 1:n.niter
       energy(n,true)
       println("iteration $(it)")

@@ -7,7 +7,11 @@ abstract type AbstractPotential{FT} end
 abstract type AbstractPotential2D{FT} <: AbstractPotential{FT} end
 abstract type AbstractPotential3D{FT} <: AbstractPotential{FT} end
 
-struct PotentialZero{FT} <: AbstractPotential{FT} end
+struct PotentialZero{FT} <: AbstractPotential{FT}
+   V :: Array{FT}
+end
+
+Base.show(io::IO, p::PotentialZero) = print(io, "Zero Potential")
 
 @inline Base.getindex(p::PotentialZero{FT}, i::Any) where FT = FT(0)
 @inline Base.setindex!(p::PotentialZero{FT}, v, i::Any) where FT = nothing
@@ -19,13 +23,14 @@ function Potential(f::AbstractField, conf::ConfParse)
    npot = retrieve(conf, "model", "potential", Int64)
    FT = eltype(real(f.ϕ[1]))
    if npot == 0
-      return PotentialZero{FT}()
-   end
-   if npot == 1
+      V = zeros(FT, size(f.ϕ))
+      return PotentialZero{FT}(V)
+   elseif npot == 1
       return PotentialQuadratic(FT, f, conf)
-   end
-   if npot == 2
+   elseif npot == 2
       return PotentialQuarticQuadratic(FT, f, conf)
+   elseif npot == 8
+      return PotentialTaylorGreen(FT, f, conf)
    end
    return nothing
 end
@@ -35,14 +40,6 @@ struct PotentialQuadratic2D{FT} <: AbstractPotential2D{FT}
    α :: FT
    γx :: FT
    γy :: FT
-end
-
-struct PotentialQuadratic3D{FT} <: AbstractPotential3D{FT}
-   V :: Array{FT,3}
-   α :: FT
-   γx :: FT
-   γy :: FT
-   γz :: FT
 end
 
 function PotentialQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
@@ -58,6 +55,14 @@ Base.show(io::IO, p::PotentialQuadratic2D) =
      print(io, "Quadratic Potential\n",
          "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)\n",
          "  └──────────────  V = (1-α)/2 × (γx x² + γy y²)")
+
+struct PotentialQuadratic3D{FT} <: AbstractPotential3D{FT}
+   V :: Array{FT,3}
+   α :: FT
+   γx :: FT
+   γy :: FT
+   γz :: FT
+end
 
 function PotentialQuadratic(FT::DataType, f::AbstractField3D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny, f.g.nz)
@@ -82,15 +87,6 @@ struct PotentialQuarticQuadratic2D{FT} <: AbstractPotential2D{FT}
    κ4 :: FT
 end
 
-struct PotentialQuarticQuadratic3D{FT} <: AbstractPotential3D{FT}
-   V :: Array{FT,3}
-   α :: FT
-   γx :: FT
-   γy :: FT
-   γz :: FT
-   κ4 :: FT
-end
-
 function PotentialQuarticQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny)
    α  = retrieve(conf, "potential", "alpha", Float64)
@@ -105,6 +101,15 @@ Base.show(io::IO, p::PotentialQuarticQuadratic2D) =
      print(io, "Quartic-Quadratic Potential\n",
          "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
          "  └──────────────  V = (1-α)/2 × (γx x² + γy y²) + κ₄/2 r⁴")
+
+struct PotentialQuarticQuadratic3D{FT} <: AbstractPotential3D{FT}
+   V :: Array{FT,3}
+   α :: FT
+   γx :: FT
+   γy :: FT
+   γz :: FT
+   κ4 :: FT
+end
 
 function PotentialQuarticQuadratic(FT::DataType, f::AbstractField3D, conf::ConfParse)
    V = zeros(FT, f.g.nx, f.g.ny, f.g.nz)
@@ -121,3 +126,45 @@ Base.show(io::IO, p::PotentialQuarticQuadratic3D) =
      print(io, "Quartic-Quadratic Potential\n",
          "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  γz $(p.γz) κ₄ $(p.κ4)\n",
          "  └──────────────  V = (1-α)/2 × (γx x² + γy y² + γz z²) + κ₄/2 r⁴")
+
+struct PotentialTaylorGreen2D{FT} <: AbstractPotential2D{FT}
+   V :: Array{FT,2}
+   uadvx :: Array{FT}
+   uadvy :: Array{FT}
+end
+
+function PotentialTaylorGreen(FT::DataType, f::AbstractField2D, conf::ConfParse)
+   # velocity field
+   uadvx =  sin.(f.g.x).*cos.(f.g.y)
+   uadvy = -cos.(f.g.x).*sin.(f.g.y)
+   # potential
+   coeffΔ = retrieve(conf, "model", "delta", Float64)
+   β = retrieve(conf, "model", "beta", Float64)
+   V = zeros(FT, size(uadvx))
+   V = ( uadvx.^2 .+ uadvy.^2 ) ./ (-4*coeffΔ .- β)
+   return PotentialTaylorGreen2D{FT}(V, uadvx, uadvy)
+end
+
+Base.show(io::IO, p::PotentialTaylorGreen2D) = print(io, "TaylorGreen Potential")
+
+struct PotentialTaylorGreen3D{FT} <: AbstractPotential3D{FT}
+   V :: Array{FT,3}
+   uadvx :: Array{FT}
+   uadvy :: Array{FT}
+   uadvz :: Array{FT}
+end
+
+function PotentialTaylorGreen(FT::DataType, f::AbstractField3D, conf::ConfParse)
+   # velocity field
+   uadvx =  sin.(f.g.x).*cos.(f.g.y).*cos.(f.g.z)
+   uadvy = -cos.(f.g.x).*sin.(f.g.y).*cos.(f.g.z)
+   uadvz =  zeros(FT, size(uadvx))
+   # potential
+   coeffΔ = retrieve(conf, "model", "delta", Float64)
+   β = retrieve(conf, "model", "beta", Float64)
+   V = zeros(FT, size(uadvx))
+   V = ( uadvx.^2 .+ uadvy.^2 .+ uadvz.^2) ./ (-4*coeffΔ .- β)
+   return PotentialTaylorGreen3D{FT}(V, uadvx, uadvy, uadvz)
+end
+
+Base.show(io::IO, p::PotentialTaylorGreen3D) = print(io, "TaylorGreen Potential")

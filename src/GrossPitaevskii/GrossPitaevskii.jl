@@ -2,7 +2,7 @@ include("Inits.jl")
 include("NumModels.jl")
 include("Potentials.jl")
 
-mutable struct SolverGrossPitaevskii{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
+mutable struct GrossPitaevskiiSolver{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
    conf :: ConfParse
    grid :: G
    field :: F
@@ -11,8 +11,8 @@ mutable struct SolverGrossPitaevskii{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
    nummodel :: N
 end
 
-function SolverGrossPitaevskii(FT=Float64,conf="GPS_input.init")
-   conf = ConfParse("GPS_input.init")
+function GrossPitaevskiiSolver(FT=Float64::Type,fileName="GPS_input.init"::String)
+   conf = ConfParse(fileName)
    parse_conf!(conf)
    grid = Grid(conf)
    field = Field(grid,ComplexField())
@@ -20,7 +20,7 @@ function SolverGrossPitaevskii(FT=Float64,conf="GPS_input.init")
    init = Init(field,ninit,conf)
    potential = Potential(field, conf)
    nummodel = NumModel(field, potential, conf)
-   return SolverGrossPitaevskii{
+   return GrossPitaevskiiSolver{
                   typeof(grid),
                   typeof(field),
                   typeof(potential),
@@ -36,12 +36,12 @@ function SolverGrossPitaevskii(FT=Float64,conf="GPS_input.init")
                  )
 end
 
-function initField!(s::SolverGrossPitaevskii)
+function initField!(s::GrossPitaevskiiSolver)
    initField!(s.init)
 end
 
-function solve!(s::SolverGrossPitaevskii)
+function solve!(s::GrossPitaevskiiSolver)
    solve!(s.nummodel)
 end
 
-Base.show(io::IO, s::SolverGrossPitaevskii) = print(s.grid,'\n',s.field,'\n',s.init,'\n',s.potential,'\n',s.nummodel)
+Base.show(io::IO, s::GrossPitaevskiiSolver) = print(s.grid,'\n',s.field,'\n',s.init,'\n',s.potential,'\n',s.nummodel)

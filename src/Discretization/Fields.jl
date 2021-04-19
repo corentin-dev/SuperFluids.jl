@@ -19,7 +19,7 @@ abstract type AbstractField3D{FT,G} <: AbstractField{FT,G} end
 
 Type representing a 2D field on a 2D grid.
 """
-struct Field2D{FT<:Number,G} <: AbstractField2D{FT,G}
+mutable struct Field2D{FT<:Number,G} <: AbstractField2D{FT,G}
    "g Grid"
    g :: G
    "ϕ array containing data"
@@ -31,7 +31,7 @@ end
 
 Type representing a 3D field on a 3D grid.
 """
-struct Field3D{FT,G} <: AbstractField3D{FT,G}
+mutable struct Field3D{FT,G} <: AbstractField3D{FT,G}
    "g Grid"
    g :: G
    "ϕ array containing data"

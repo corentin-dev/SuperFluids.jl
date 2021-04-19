@@ -11,31 +11,44 @@ abstract type AbstractInit{F} end
 
 function Init(f::F, ninit::Integer,conf) where {F <: AbstractField2D}
    init = nothing
-   if ninit == 2
+   if ninit == 0
+      init = InitNone{typeof(f)}
+   elseif ninit == 2
       init = InitGauss2D{typeof(f)}(f,
                        retrieve(conf, "potential", "gamma_x", Float64),
                        retrieve(conf, "potential", "gamma_y", Float64),
                        retrieve(conf, "model", "omega", Float64))
    elseif ninit == 6
-      init = InitExternalVelocity{typeof(f)}(f,"taylorgreen")
+      coeffΔ = retrieve(conf, "model", "delta", Float64)
+      β = retrieve(conf, "model", "beta", Float64)
+      ξ = √( -coeffΔ / β)
+      init = InitExternalVelocity{typeof(f)}(f,ξ,coeffΔ,"taylorgreen")
    end
    return init
 end
 
 function Init(f::F, ninit::Integer,conf) where {F <: AbstractField3D}
    init = nothing
-   if ninit == 2
+   if ninit == 0
+      init = InitNone{typeof(f)}
+   elseif ninit == 2
       init = InitGauss3D{typeof(f)}(f,
                        retrieve(conf, "potential", "gamma_x", Float64),
                        retrieve(conf, "potential", "gamma_y", Float64),
                        retrieve(conf, "potential", "gamma_z", Float64),
                        retrieve(conf, "model", "omega"), Float64)
    elseif ninit == 6
-      ξ = √( - retrieve(conf, "model", "delta", Float64) / retrieve(conf, "model", "beta", Float64) )
-      init = InitExternalVelocity{typeof(f)}(f, ξ, "taylorgreen")
+      coeffΔ = retrieve(conf, "model", "delta", Float64)
+      β = retrieve(conf, "model", "beta", Float64)
+      ξ = √( -coeffΔ / β)
+      init = InitExternalVelocity{typeof(f)}(f,ξ,coeffΔ,"taylorgreen")
    end
    return init
 end
+
+struct InitNone{F} <: AbstractInit{F} end
+
+Base.show(io::IO, init::InitNone) = print(io, "No Init")
 
 struct InitGauss2D{F} <: AbstractInit{F}
    f :: F
@@ -101,12 +114,14 @@ Base.show(io::IO, init::InitGauss3D{F}) where {F<:AbstractField3D} =
 struct InitExternalVelocity{F} <: AbstractInit{F}
    f :: F
    ξ :: Real
+   coeffΔ :: Real
    type :: String
 end
 
 function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField2D}
    # references
    ξ = init.ξ
+   coeffΔ = init.coeffΔ
    ϕ = init.f.ϕ
    x, y = init.f.g.x, init.f.g.y
    for I in CartesianIndices(init.f.ϕ)
@@ -117,26 +132,26 @@ function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField2D}
       vortex2=(λ + im*(μ+0.7))*tanh(√(λ^2 + (μ+0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ+0.7)^2)
       vortex3=(λ-0.7 + im*μ)*tanh(√((λ-0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ-0.7)^2 + μ^2)
       vortex4=(λ+0.7 + im*μ)*tanh(√((λ+0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ+0.7)^2 + μ^2)
-      ϕ[ix,iy] = (vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (2*π*0.1)))
+      ϕ[ix,iy] = (vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (-2*π*coeffΔ)))
    end
    return nothing
 end
 
 function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField3D}
    # references
-   # xsiabr=sqrt( abs(Coeff_Delta) / beta ) 
-   ξ = 0.1/20
+   ξ = init.ξ
+   coeffΔ = init.coeffΔ
    ϕ = init.f.ϕ
    x, y, z = init.f.g.x, init.f.g.y, init.f.g.z
    for I in CartesianIndices(init.f.ϕ)
       ix, iy, iz = Tuple(I)
       λ=cos(x[ix])*√(2*abs(cos(z[iz])))
-      μ =cos(y[iy])*√(2*abs(cos(z[iz])))*sign(z[iz])
+      μ =cos(y[iy])*√(2*abs(cos(z[iz])))*sign(cos(z[iz]))
       vortex1=(λ + im*(μ-0.7))*tanh(√(λ^2 + (μ-0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ-0.7)^2)
       vortex2=(λ + im*(μ+0.7))*tanh(√(λ^2 + (μ+0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ+0.7)^2)
       vortex3=(λ-0.7 + im*μ)*tanh(√((λ-0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ-0.7)^2 + μ^2)
       vortex4=(λ+0.7 + im*μ)*tanh(√((λ+0.7)^2 + μ^2)/ (√(2)*ξ))/√((λ+0.7)^2 + μ^2)
-      ϕ[ix,iy, iz] =(vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (2*π*0.1)))
+      ϕ[ix,iy, iz] =(vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (-2*π*coeffΔ)))
    end
    return nothing
 end

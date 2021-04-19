@@ -84,7 +84,7 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField3D}
    mul!(ϕhat_y, plan_y, ϕ)
    ∇ϕ_y = plan_y \ (im .* ξy .* ϕhat_y) # we get grad y
    mul!(ϕhat_z, plan_z, ϕ)
-   ∇ϕ_z = plan_z \ (im .* ξy .* ϕhat_z) # we get grad z
+   ∇ϕ_z = plan_z \ (im .* ξz .* ϕhat_z) # we get grad z
    # compute ψ₁
    @. ψ₁ = ϕ + γ * Δt * (
                 - β * real(ϕ * conj(ϕ)) * ϕ

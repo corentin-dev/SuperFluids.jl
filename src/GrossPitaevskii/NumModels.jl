@@ -75,9 +75,6 @@ function NumModel(f::F, p::P, conf::ConfParse) where F where P
                        coeffΔ, β, Ω, plan, ϕ_hat, p,
                        writer
                       )
-   # case (29)
-   #    call model_imaginary_time(9) ! implicit/explicit scheme with external velocity, no renormalization
-      println("Warning : should be implicit/explicit scheme with external velocity")
    elseif nmodel == 41
       nummodel = NumModelADI1{typeof(f),typeof(p),typeof(writer)}(f,
                        Δt, niter, freqbckp,

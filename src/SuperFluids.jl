@@ -22,8 +22,7 @@ abstract type AbstractNumModel{F,P,W} end
 abstract type AbstractSolver{G,F,I,N,P} end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
-export SolverGrossPitaevskii, solve!, initField!, energy,
+export GrossPitaevskiiSolver, solve!, initField!, energy,
    Plot, createPlot!, updatePlot!
-export Grid2D
 
 end # module

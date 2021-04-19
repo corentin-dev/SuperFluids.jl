@@ -23,7 +23,6 @@ end
 
 function krylovPreCond!(n::AbstractNumModel, ϕ)
    normb=sqrt(real(sum( n.M .* n.b .* conj.(n.M .* n.b) )))
-   # println("normb $(normb)")
    r = n.M .* (n.b .- prodA(n,ϕ))
    r₂ = copy(r)
    p = copy(r)

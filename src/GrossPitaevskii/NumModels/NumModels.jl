@@ -168,12 +168,12 @@ end
    # case (57) ! backward-Euler Newton with real value
    #    call model_NR_two(1,delta_t,flag_cutoff)
 
-include("Models/adi.jl")
-include("Models/backward-euler.jl")
-include("Models/crank-nicolson.jl")
-include("Models/external-velocity.jl")
+include("adi.jl")
+include("backward-euler.jl")
+include("crank-nicolson.jl")
+include("external-velocity.jl")
 
-include("Models/krylov.jl")
+include("krylov.jl")
 
 function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField2D}
    # references

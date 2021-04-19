@@ -1,6 +1,6 @@
-include("Inits.jl")
-include("NumModels.jl")
-include("Potentials.jl")
+include("Inits/Inits.jl")
+include("NumModels/NumModels.jl")
+include("Potentials/Potentials.jl")
 
 mutable struct GrossPitaevskiiSolver{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
    conf :: ConfParse

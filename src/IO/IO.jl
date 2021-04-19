@@ -1,2 +1,2 @@
-#include("Plots.jl")
+include("Plots.jl")
 include("Writers.jl")

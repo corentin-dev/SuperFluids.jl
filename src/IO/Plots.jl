@@ -64,7 +64,7 @@ struct Plot3D{F<:AbstractField3D} <: AbstractPlot3D{F}
    idx :: Observable
    idy :: Observable
    idz :: Observable
-   isoϕ :: Observable
+   isoϕ :: Real
    modϕx :: Observable
    modϕy :: Observable
    modϕz :: Observable
@@ -79,7 +79,7 @@ function Plot(f::AbstractField3D)
    idx = Node(floor(Int,length(x)/2+1))
    idy = Node(floor(Int,length(y)/2+1))
    idz = Node(floor(Int,length(z)/2+1))
-   isoϕ = Node(0.4)
+   isoϕ = 0.4
    modϕx = @lift(real($nf.ϕ[$idx,1:end,1:end].*conj.($nf.ϕ[$idx,1:end,1:end])))
    modϕy = @lift(real($nf.ϕ[1:end,$idy,1:end].*conj.($nf.ϕ[1:end,$idy,1:end])))
    modϕz = @lift(real($nf.ϕ[1:end,1:end,$idz].*conj.($nf.ϕ[1:end,1:end,$idz])))
@@ -100,9 +100,10 @@ function createPlot!(p::AbstractPlot3D)
    ax2 = fig[1, 2] = LScene(fig, scenekw = (camera = cam3d!, raw = false), title = "iso value ϕ")
    ax3 = fig[2, 1] = Axis(fig, title = "slice ϕ y")
    ax4 = fig[2, 2] = Axis(fig, title = "slice ϕ z")
+   sl_isoϕ = Slider(fig[3, 1:2], range = 0:0.01:1, startvalue = p.isoϕ[])
    # create plots
    heatmap!(ax1,p.modϕx)
-   volume!(ax2,p.modϕ, algorithm = :iso, isorange = 0.4, isovalue = 0.4)
+   volume!(ax2,p.modϕ, algorithm = :iso, isorange = sl_isoϕ.value, isovalue = sl_isoϕ.value)
    update_cam!(ax2.scene)
    heatmap!(ax3,p.modϕy)
    heatmap!(ax4,p.modϕz)

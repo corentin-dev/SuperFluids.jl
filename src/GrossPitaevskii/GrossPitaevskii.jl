@@ -40,8 +40,8 @@ function initField!(s::GrossPitaevskiiSolver)
    initField!(s.init)
 end
 
-function solve!(s::GrossPitaevskiiSolver)
-   solve!(s.nummodel)
+function solve!(s::GrossPitaevskiiSolver, plot=false)
+   solve!(s.nummodel, plot)
 end
 
 Base.show(io::IO, s::GrossPitaevskiiSolver) = print(s.grid,'\n',s.field,'\n',s.init,'\n',s.potential,'\n',s.nummodel)

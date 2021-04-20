@@ -156,6 +156,6 @@ function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField3D}
    return nothing
 end
 
-Base.show(io::IO, init::InitExternalVelocity{F}) where {F<:AbstractField3D} =
+Base.show(io::IO, init::InitExternalVelocity) =
      print(io, "InitExternalVelocity\n",
          "  └───────────── type: $(init.type)")

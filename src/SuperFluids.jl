@@ -12,6 +12,7 @@ struct CPU <: Device end
 "GPU device."
 struct GPU <: Device end
 
+include("Config/Config.jl")
 include("Discretization/Discretization.jl")
 include("IO/IO.jl")
 
@@ -19,10 +20,18 @@ include("IO/IO.jl")
 abstract type AbstractNumModel{F,P,W} end
 
 "Abstract supertype for solvers."
-abstract type AbstractSolver{G,F,I,N,P} end
+abstract type AbstractSolver{C,G,F,I,N,P} end
+
+function initField!(s::AbstractSolver)
+   initField!(s.init)
+end
+
+function solve!(s::AbstractSolver, plot=false)
+   solve!(s.nummodel, plot)
+end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
 export GrossPitaevskiiSolver, solve!, initField!, energy,
-   Plot, createPlot!, updatePlot!
+   Plot, createPlot!, updatePlot!, finishWriter!
 
 end # module

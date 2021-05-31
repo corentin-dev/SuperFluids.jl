@@ -1,4 +1,4 @@
-function NumModel(f::F, p::P, conf::ConfParse) where F where P
+function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
    nummodel = nothing
    nmodel = retrieve(conf, "solver", "model", Int64)
    plan = Plan(f)

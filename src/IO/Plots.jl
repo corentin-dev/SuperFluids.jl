@@ -5,6 +5,10 @@ using SuperFluids
 
 export updatePlot!, createPlot!, Plot
 
+struct PlotGL end
+struct PlotPNG end
+struct PlotWGL end
+
 "Abstract supertype for numerical models."
 abstract type AbstractPlot{F} end
 "Abstract supertype for numerical models."

@@ -5,14 +5,15 @@ Abstract supertype for field initialization classes.
 """
 abstract type AbstractInit{F} end
 
-# TF
-# local μ=0.5 * (15. * β * γx * γy * γz / 4. / π)^(2. / 5.)
-# @. ϕ = real(sqrt((μ-V)/β))
-
-function Init(f::F, ninit::Integer,conf) where {F <: AbstractField2D}
+function Init(f::F, ninit::Integer,conf::AbstractConfig) where {F <: AbstractField2D}
    init = nothing
    if ninit == 0
       init = InitNone{typeof(f)}
+   elseif ninit == 1
+      init = InitThomasFermi2D{typeof(f)}(f,
+                       retrieve(conf, "model", "beta", Float64),
+                       retrieve(conf, "potential", "gamma_x", Float64),
+                       retrieve(conf, "potential", "gamma_y", Float64))
    elseif ninit == 2
       init = InitGauss2D{typeof(f)}(f,
                        retrieve(conf, "potential", "gamma_x", Float64),
@@ -27,16 +28,22 @@ function Init(f::F, ninit::Integer,conf) where {F <: AbstractField2D}
    return init
 end
 
-function Init(f::F, ninit::Integer,conf) where {F <: AbstractField3D}
+function Init(f::F, ninit::Integer,conf::AbstractConfig) where {F <: AbstractField3D}
    init = nothing
    if ninit == 0
       init = InitNone{typeof(f)}
+   elseif ninit == 1
+      init = InitThomasFermi3D{typeof(f)}(f,
+                       retrieve(conf, "model", "beta", Float64),
+                       retrieve(conf, "potential", "gamma_x", Float64),
+                       retrieve(conf, "potential", "gamma_y", Float64),
+                       retrieve(conf, "potential", "gamma_z", Float64))
    elseif ninit == 2
       init = InitGauss3D{typeof(f)}(f,
                        retrieve(conf, "potential", "gamma_x", Float64),
                        retrieve(conf, "potential", "gamma_y", Float64),
                        retrieve(conf, "potential", "gamma_z", Float64),
-                       retrieve(conf, "model", "omega"), Float64)
+                       retrieve(conf, "model", "omega", Float64))
    elseif ninit == 6
       coeffΔ = retrieve(conf, "model", "delta", Float64)
       β = retrieve(conf, "model", "beta", Float64)
@@ -109,6 +116,69 @@ Base.show(io::IO, init::InitGauss3D{F}) where {F<:AbstractField3D} =
          "  ├──────  parameters: γx $(init.γx) γy $(init.γy) γz $(init.γz) Ω $(init.Ω)\n",
          "  ├─────────────  s1 = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+z²))\n",
          "  ├─────────────  s2 = γz^1/4 (x+iy) / π^3/4 × exp(-1/2 × (x²+y²+z²))\n",
+         "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+
+struct InitThomasFermi2D{F} <: AbstractInit{F}
+   f :: F
+   β :: Real
+   γx :: Real
+   γy :: Real
+end
+
+function initField!(init::InitThomasFermi2D{F}) where {F<:AbstractField2D}
+   ϕ = init.f.ϕ
+   x = init.f.g.x
+   y = init.f.g.y
+   β = init.β
+   γx = init.γx
+   γy = init.γy
+   @. ϕ = √(
+            (
+             √(β*γx*γy/π) - # μ
+             0.5*((γx*x)^2+(γy*y)^2) # V
+            )/β
+           )
+   normalize!(init.f)
+   return nothing
+end
+
+Base.show(io::IO, init::InitThomasFermi2D{F}) where {F<:AbstractField2D} =
+     print(io, "InitThomasFermi\n",
+         "  ├──────  parameters: γx $(init.γx) γy $(init.γy) β $(init.β)\n",
+         "  ├──────────────  μ = √(β γx γy)\n",
+         "  └──────────────  ϕ = √( √μ - V )")
+
+struct InitThomasFermi3D{F} <: AbstractInit{F}
+   f :: F
+   β :: Real
+   γx :: Real
+   γy :: Real
+   γz :: Real
+end
+
+function initField!(init::InitThomasFermi3D{F}) where {F<:AbstractField3D}
+   ϕ = init.f.ϕ
+   x = init.f.g.x
+   y = init.f.g.y
+   z = init.f.g.z
+   β = init.β
+   γx = init.γx
+   γy = init.γy
+   γz = init.γz
+   @. ϕ = √(
+            (
+             0.5 * (15. * β * γx * γy * γz / 4. / π)^(2. / 5.) - # μ
+             0.5 * ( (γx*x)^2 + (γy*y)^2 + (γz*z)^2 )  # V
+            )/β
+           )
+   normalize!(init.f)
+   return nothing
+end
+
+Base.show(io::IO, init::InitThomasFermi3D{F}) where {F<:AbstractField3D} =
+     print(io, "InitThomasFermi\n",
+         "  ├──────  parameters: γx $(init.γx) γy $(init.γy) γz $(init.γz) β $(init.β)\n",
+         "  ├──────────────  μ = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+z²))\n",
          "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
 
 struct InitExternalVelocity{F} <: AbstractInit{F}

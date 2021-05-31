@@ -89,7 +89,7 @@ julia> parse_conf!(conf)
 julia> grid = Grid(conf)
 ```
 """
-function Grid(conf::ConfParse,FT=Float64)
+function Grid(conf::AbstractConfig,FT=Float64)
    nx = retrieve(conf, "discretization", "nx", Int64)
    ny = retrieve(conf, "discretization", "ny", Int64)
    nz = retrieve(conf, "discretization", "nz", Int64)

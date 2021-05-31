@@ -2,8 +2,8 @@ include("Inits/Inits.jl")
 include("NumModels/NumModels.jl")
 include("Potentials/Potentials.jl")
 
-mutable struct GrossPitaevskiiSolver{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
-   conf :: ConfParse
+mutable struct GrossPitaevskiiSolver{C,G,F,P,I,N} <: AbstractSolver{C,G,F,P,I,N}
+   conf :: C
    grid :: G
    field :: F
    potential :: P
@@ -11,9 +11,8 @@ mutable struct GrossPitaevskiiSolver{G,F,P,I,N} <: AbstractSolver{G,F,P,I,N}
    nummodel :: N
 end
 
-function GrossPitaevskiiSolver(FT=Float64::Type,fileName="GPS_input.init"::String)
-   conf = ConfParse(fileName)
-   parse_conf!(conf)
+function GrossPitaevskiiSolver(fileName="GPS_input.init"::String)
+   conf = Config(fileName)
    grid = Grid(conf)
    field = Field(grid,ComplexField())
    ninit = retrieve(conf, "model", "initcondition", Int64)
@@ -21,6 +20,7 @@ function GrossPitaevskiiSolver(FT=Float64::Type,fileName="GPS_input.init"::Strin
    potential = Potential(field, conf)
    nummodel = NumModel(field, potential, conf)
    return GrossPitaevskiiSolver{
+                  typeof(conf),
                   typeof(grid),
                   typeof(field),
                   typeof(potential),

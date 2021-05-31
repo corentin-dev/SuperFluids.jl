@@ -25,9 +25,9 @@ To save time, you can precompile Makie :
 # precompilation de Makie
 ] add PackageCompiler
 using PackageCompiler
-activate .
-add GLMakie
-create_sysimage(:Example; sysimage_path="GLMakie.so")
+] activate .
+] add GLMakie
+create_sysimage(:GLMakie; sysimage_path="GLMakie.so")
 exit()
 ```
 

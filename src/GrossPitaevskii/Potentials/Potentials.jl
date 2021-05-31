@@ -19,7 +19,7 @@ Base.show(io::IO, p::PotentialZero) = print(io, "Zero Potential")
 @inline Base.getindex(p::P, i::Any) where P<:AbstractPotential = p.V[i]
 @inline Base.setindex!(p::P, v, i::Any) where P<:AbstractPotential = (p.V[i] = v)
 
-function Potential(f::AbstractField, conf::ConfParse)
+function Potential(f::AbstractField, conf::AbstractConfig)
    npot = retrieve(conf, "model", "potential", Int64)
    FT = eltype(real(f.ϕ[1]))
    if npot == 0
@@ -42,7 +42,7 @@ struct PotentialQuadratic2D{FT} <: AbstractPotential2D{FT}
    γy :: FT
 end
 
-function PotentialQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
+function PotentialQuadratic(FT::DataType, f::AbstractField2D, conf::AbstractConfig)
    V = zeros(FT, f.g.nx, f.g.ny)
    α  = retrieve(conf, "potential", "alpha", Float64)
    γx = retrieve(conf, "potential", "gamma_x", Float64)
@@ -64,7 +64,7 @@ struct PotentialQuadratic3D{FT} <: AbstractPotential3D{FT}
    γz :: FT
 end
 
-function PotentialQuadratic(FT::DataType, f::AbstractField3D, conf::ConfParse)
+function PotentialQuadratic(FT::DataType, f::AbstractField3D, conf::AbstractConfig)
    V = zeros(FT, f.g.nx, f.g.ny, f.g.nz)
    α  = retrieve(conf, "potential", "alpha", Float64)
    γx = retrieve(conf, "potential", "gamma_x", Float64)
@@ -87,7 +87,7 @@ struct PotentialQuarticQuadratic2D{FT} <: AbstractPotential2D{FT}
    κ4 :: FT
 end
 
-function PotentialQuarticQuadratic(FT::DataType, f::AbstractField2D, conf::ConfParse)
+function PotentialQuarticQuadratic(FT::DataType, f::AbstractField2D, conf::AbstractConfig)
    V = zeros(FT, f.g.nx, f.g.ny)
    α  = retrieve(conf, "potential", "alpha", Float64)
    γx = retrieve(conf, "potential", "gamma_x", Float64)
@@ -111,7 +111,7 @@ struct PotentialQuarticQuadratic3D{FT} <: AbstractPotential3D{FT}
    κ4 :: FT
 end
 
-function PotentialQuarticQuadratic(FT::DataType, f::AbstractField3D, conf::ConfParse)
+function PotentialQuarticQuadratic(FT::DataType, f::AbstractField3D, conf::AbstractConfig)
    V = zeros(FT, f.g.nx, f.g.ny, f.g.nz)
    α  = retrieve(conf, "potential", "alpha", Float64)
    γx = retrieve(conf, "potential", "gamma_x", Float64)
@@ -133,7 +133,7 @@ struct PotentialTaylorGreen2D{FT} <: AbstractPotential2D{FT}
    uadvy :: Array{FT}
 end
 
-function PotentialTaylorGreen(FT::DataType, f::AbstractField2D, conf::ConfParse)
+function PotentialTaylorGreen(FT::DataType, f::AbstractField2D, conf::AbstractConfig)
    # velocity field
    uadvx =  sin.(f.g.x).*cos.(f.g.y)
    uadvy = -cos.(f.g.x).*sin.(f.g.y)
@@ -154,7 +154,7 @@ struct PotentialTaylorGreen3D{FT} <: AbstractPotential3D{FT}
    uadvz :: Array{FT}
 end
 
-function PotentialTaylorGreen(FT::DataType, f::AbstractField3D, conf::ConfParse)
+function PotentialTaylorGreen(FT::DataType, f::AbstractField3D, conf::AbstractConfig)
    # velocity field
    uadvx =  sin.(f.g.x).*cos.(f.g.y).*cos.(f.g.z)
    uadvy = -cos.(f.g.x).*sin.(f.g.y).*cos.(f.g.z)

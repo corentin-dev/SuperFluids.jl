@@ -133,7 +133,7 @@ function initField!(init::InitThomasFermi2D{F}) where {F<:AbstractField2D}
    γx = init.γx
    γy = init.γy
    @. ϕ = √(
-            (
+            (im*
              √(β*γx*γy/π) - # μ
              0.5*((γx*x)^2+(γy*y)^2) # V
             )/β
@@ -165,10 +165,10 @@ function initField!(init::InitThomasFermi3D{F}) where {F<:AbstractField3D}
    γx = init.γx
    γy = init.γy
    γz = init.γz
-   @. ϕ = √(
+   @. ϕ = √(im*
             (
              0.5 * (15. * β * γx * γy * γz / 4. / π)^(2. / 5.) - # μ
-             0.5 * ( (γx*x)^2 + (γy*y)^2 + (γz*z)^2 )  # V
+             0.5 * ( γx*x^2 + γy*y^2 + γz*z^2 )  # V
             )/β
            )
    normalize!(init.f)

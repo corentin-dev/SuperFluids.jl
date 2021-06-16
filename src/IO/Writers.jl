@@ -22,7 +22,7 @@ function addFile!(w::AbstractWriter{F},
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1.::Real) where {F <: AbstractField2D}
+      Δt=1::Real) where {F <: AbstractField2D}
    f = w.f
    plan = Plan(f)
    plan_x, plan_y = plan.plan_x, plan.plan_y
@@ -35,7 +35,7 @@ function addFile!(w::AbstractWriter{F},
    ϕhat = plan_y * f.ϕ
    ϕhat .= im .* ξy .* ϕhat
    ∇ϕ_y = plan_y \ ϕhat
-   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep*Δt).vtr", x, y)
+   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", x, y)
    vtkfile["Re_Phi", VTKPointData()] = real(ϕ)
    vtkfile["Im_Phi", VTKPointData()] = imag(ϕ)
    vtkfile["Module", VTKPointData()] = real(ϕ.*conj(ϕ))
@@ -51,7 +51,7 @@ function addFile!(w::AbstractWriter{F},
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1.::Real) where {F <: AbstractField3D}
+      Δt=1::Real) where {F <: AbstractField3D}
    f = w.f
    plan = Plan(f)
    plan_x, plan_y, plan_z = plan.plan_x, plan.plan_y, plan.plan_z
@@ -67,7 +67,7 @@ function addFile!(w::AbstractWriter{F},
    ϕhat = plan_z * f.ϕ
    ϕhat .= im .* ξz .* ϕhat
    ∇ϕ_z = plan_z \ ϕhat
-   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep*Δt).vtr", x, y, z)
+   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", x, y, z)
    vtkfile["Re_Phi", VTKPointData()] = real(ϕ)
    vtkfile["Im_Phi", VTKPointData()] = imag(ϕ)
    vtkfile["Module", VTKPointData()] = real(ϕ.*conj(ϕ))

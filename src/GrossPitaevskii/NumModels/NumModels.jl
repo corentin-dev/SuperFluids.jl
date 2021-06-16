@@ -229,26 +229,30 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField3D}
    @. ϕtx = (ϕtx+ϕty+ϕtz)
 end
 
-function solve!(n::AbstractNumModel,plot=false)
+function solve!(n::AbstractNumModel;istart=1,plot=false)
    if plot
       @eval using SuperFluids.Plots
       p = Plot(n.f)
       createPlot!(p)
    end
-   addFile!(n.writer,"res",0,0,n.Δt)
-   for it = 1:n.niter
+   addFile!(n.writer,"res",0,istart,n.Δt)
+   for it = istart:istart+n.niter
       println("iteration $(it)")
       energy(n,true)
       timeStep!(n)
       if it % n.freqbckp == 0
          addFile!(n.writer,"res",0,it,n.Δt)
-         if plot
-            updatePlot!(p)
-         end
+      end
+      if plot
+         updatePlot!(p)
       end
    end
    energy(n,true)
-   return nothing
+   if plot
+      return p
+   else
+      return nothing
+   end
 end
 
 function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractField2D}

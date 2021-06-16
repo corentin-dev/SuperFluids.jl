@@ -4,11 +4,14 @@ using ConfParser
 using AbstractFFTs
 using FFTW
 using LinearAlgebra: mul!, ldiv!
+using CUDA
 
 "Abstract supertype for device."
 abstract type Device end
 "CPU device."
 struct CPU <: Device end
+"MPI device."
+struct MPI <: Device end
 "GPU device."
 struct GPU <: Device end
 

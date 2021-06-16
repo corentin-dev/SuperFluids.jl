@@ -42,6 +42,42 @@ struct Grid2D{FT<:Real} <: AbstractGrid2D{FT}
 end
 
 """
+    Grid2D{FT<:Real} <: AbstractGrid2D{FT}
+
+Type representing a 2D grid.
+"""
+struct Grid2DGPU{FT<:Real} <: AbstractGrid2D{FT}
+   "x range"
+   x :: CuArray{FT}
+   "y range"
+   y :: CuArray{FT}
+   "nx size in x direction"
+   nx :: Integer
+   "ny size in y direction"
+   ny :: Integer
+   "xmin minimum x boundary"
+   xmin :: FT
+   "xmax maximum x boundary"
+   xmax :: FT
+   "ymin minimum y boundary"
+   ymin :: FT
+   "ymax maximum y boundary"
+   ymax :: FT
+   "Lx x length"
+   Lx :: FT
+   "Ly y length"
+   Ly :: FT
+   "Δx x discretization"
+   Δx :: FT
+   "Δy y discretization"
+   Δy :: FT
+   "ξx x frequencies"
+   ξx :: CuArray{FT}
+   "ξy y frequencies"
+   ξy :: CuArray{FT}
+end
+
+"""
     Grid3D{FT<:Real} <: AbstractGrid3D{FT}
 
 Type representing a grid.
@@ -76,6 +112,36 @@ struct Grid3D{FT} <: AbstractGrid3D{FT}
    ξz :: Array{FT}
 end
 
+struct Grid3DGPU{FT} <: AbstractGrid3D{FT}
+   # range
+   x :: CuArray{FT}
+   y :: CuArray{FT}
+   z :: CuArray{FT}
+   # Size
+   nx :: Integer
+   ny :: Integer
+   nz :: Integer
+   # Bounds
+   xmin :: FT
+   xmax :: FT
+   ymin :: FT
+   ymax :: FT
+   zmin :: FT
+   zmax :: FT
+   # Length.
+   Lx :: FT
+   Ly :: FT
+   Lz :: FT
+   # Discretization.
+   Δx :: FT
+   Δy :: FT
+   Δz :: FT
+   # Frequencies
+   ξx :: CuArray{FT}
+   ξy :: CuArray{FT}
+   ξz :: CuArray{FT}
+end
+
 """
     Grid3D(size::Tuple{Real,Real,Real},xbounds::Tuple{Real,Real},ybounds::Tuple{Real,Real},zbounds::Tuple{Real,Real},FT=Float64)
 
@@ -89,7 +155,7 @@ julia> parse_conf!(conf)
 julia> grid = Grid(conf)
 ```
 """
-function Grid(conf::AbstractConfig,FT=Float64)
+function Grid(conf::AbstractConfig;FT=Float64,D=CPU())
    nx = retrieve(conf, "discretization", "nx", Int64)
    ny = retrieve(conf, "discretization", "ny", Int64)
    nz = retrieve(conf, "discretization", "nz", Int64)
@@ -129,29 +195,46 @@ function Grid(conf::AbstractConfig,FT=Float64)
       Ξx = reshape(ξx,nx,1,1)
       Ξy = reshape(ξy,1,ny,1)
       Ξz = reshape(ξz,1,1,nz)
-      return Grid3D{FT}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+      if typeof(D) == CPU
+         return Grid3D{FT}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+      elseif typeof(D) == GPU
+         X = CuArray(X)
+         Y = CuArray(Y)
+         Z = CuArray(Z)
+         Ξx = CuArray(Ξx)
+         Ξy = CuArray(Ξy)
+         Ξz = CuArray(Ξz)
+         return Grid3DGPU{FT}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+      end
    else
       X = reshape(x[1:end-1],nx,1)
       Y = reshape(y[1:end-1],1,ny)
       Ξx = reshape(ξx,nx,1)
       Ξy = reshape(ξy,1,ny)
-      return Grid2D{FT}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+      if typeof(D) == CPU
+         return Grid2D{FT}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+      elseif typeof(D) == GPU
+         X = CuArray(X)
+         Y = CuArray(Y)
+         Ξx = CuArray(Ξx)
+         Ξy = CuArray(Ξy)
+         return Grid2DGPU{FT}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+      end
    end
 end
 
 Base.eltype(::AbstractGrid{FT}) where FT = FT
-Base.size(grid::AbstractGrid{FT}) where FT = (grid.nx, grid.ny, grid.nz)
-Base.length(grid::AbstractGrid{FT}) where FT = (grid.Lx, grid.Ly, grid.Lz)
+Base.size(grid::AbstractGrid) = (grid.nx, grid.ny, grid.nz)
+Base.length(grid::AbstractGrid) = (grid.Lx, grid.Ly, grid.Lz)
 
-Base.show(io::IO, g::Grid2D{FT}) where FT =
+Base.show(io::IO, g::Grid2D) =
      print(io, "Grid2D\n",
-         "  ├───────  FloatType: $(FT)", '\n', 
          "  ├──────  resolution: $(g.nx)×$(g.ny)\n",
          "  ├───────  mesh size: $(g.nx*g.ny)\n",
          "  ├────  grid spacing: $(g.Δx)×$(g.Δy)\n",
          "  └──────────  domain: [$(g.xmin),$(g.xmax)]×[$(g.ymin),$(g.ymax)]")
 
-Base.show(io::IO, g::Grid3D{FT}) where FT =
+Base.show(io::IO, g::Grid3D) =
      print(io, "Grid3D\n",
          "  ├──────  resolution: $(g.nx)×$(g.ny)×$(g.nz)\n",
          "  ├───────  mesh size: $(g.nx*g.ny*g.nz)\n",

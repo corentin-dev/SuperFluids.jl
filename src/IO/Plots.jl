@@ -32,7 +32,7 @@ end
 function Plot(f::AbstractField2D)
    nf = Node(f)
    modϕ = @lift(real($nf.ϕ.*conj.($nf.ϕ)))
-   modϕsurf = @lift(0.25*$nf.ϕ.*conj.($nf.ϕ)*max($nf.g.Lx,$nf.g.Ly)/maximum(real($nf.ϕ)))
+   modϕsurf = @lift(0.25*$modϕ*max($nf.g.Lx,$nf.g.Ly)/maximum($modϕ))
    realϕ = @lift(real($nf.ϕ))
    imagϕ = @lift(imag($nf.ϕ))
    return Plot2D{typeof(f)}(nf,modϕ,modϕsurf,realϕ,imagϕ)
@@ -41,8 +41,8 @@ end
 function createPlot!(p::AbstractPlot2D)
    # references
    f = p.f.val
-   x = f.g.x
-   y = f.g.y
+   x = vec(f.g.x)
+   y = vec(f.g.y)
    # layout
    fig = Figure(resolution = (600, 600))
    display(fig)

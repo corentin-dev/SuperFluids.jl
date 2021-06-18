@@ -35,12 +35,13 @@ function addFile!(w::AbstractWriter{F},
    ϕhat = plan_y * f.ϕ
    ϕhat .= im .* ξy .* ϕhat
    ∇ϕ_y = plan_y \ ϕhat
-   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", x, y)
-   vtkfile["Re_Phi", VTKPointData()] = real(ϕ)
-   vtkfile["Im_Phi", VTKPointData()] = imag(ϕ)
-   vtkfile["Module", VTKPointData()] = real(ϕ.*conj(ϕ))
-   vtkfile["VelocityX", VTKPointData()] = imag.(conj.(ϕ).*∇ϕ_x)
-   vtkfile["VelocityY", VTKPointData()] = imag.(conj.(ϕ).*∇ϕ_y)
+
+   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
+   vtkfile["Re_Phi", VTKPointData()] = Array(real(ϕ))
+   vtkfile["Im_Phi", VTKPointData()] = Array(imag(ϕ))
+   vtkfile["Module", VTKPointData()] = Array(real(ϕ.*conj(ϕ)))
+   vtkfile["VelocityX", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_x))
+   vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
    vtkfile["Time"] = Δt * istep
    outfiles = vtk_save(vtkfile)
    w.pvd[ Δt * istep] = vtkfile

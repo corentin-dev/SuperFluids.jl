@@ -12,9 +12,9 @@ mutable struct GrossPitaevskiiSolver{C,G,F,P,I,N} <: AbstractSolver{C,G,F,P,I,N}
 end
 
 function GrossPitaevskiiSolver(;fileName="GPS_input.init"::String)
+   device = CPU()
    # device = GPU()
-   device = GPU()
-   # allowscalar(false)
+   # CUDA.allowscalar(false)
    conf = Config(fileName)
    # grid = Grid(conf,D=device)
    grid = Grid(conf,FT=Float64,D=device)

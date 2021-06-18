@@ -24,6 +24,16 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
                        writer
                       )
+   elseif nmodel == 3
+      nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
+      tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
+      M = similar(f.ϕ)
+      b = similar(f.ϕ)
+      nummodel = NumModelBackwardEulerNL{typeof(f),typeof(p),typeof(writer)}(f,
+                       Δt, niter, freqbckp, nkrylov, tolkrylov,
+                       coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
+                       writer
+                      )
    elseif nmodel == 21
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
@@ -283,7 +293,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ldiv!(∇ϕ_y, plan_y, ∇ϕ_hat) # we get rot y
    # computing energies (locally)
    EΩ = sum(real.(im.*conj.(ϕ).*(∇ϕ_x.+∇ϕ_y))) * Δx * Δy
-   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y) + sum(V.*real.(ϕ.*conj.(ϕ)))) * Δx * Δy
+   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y) + sum(real.(V).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy
    Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy
    # compute sum
    E = -EΩ + EΔ + Eβ

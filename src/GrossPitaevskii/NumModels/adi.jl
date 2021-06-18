@@ -7,7 +7,7 @@ mutable struct NumModelADI1{F,P,W} <: AbstractNumModel{F,P,W}
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
+   ϕ_hat
    potential :: P
    writer :: W
 end
@@ -32,7 +32,7 @@ mutable struct NumModelADI2{F,P,W} <: AbstractNumModel{F,P,W}
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
+   ϕ_hat
    potential :: P
    writer :: W
 end

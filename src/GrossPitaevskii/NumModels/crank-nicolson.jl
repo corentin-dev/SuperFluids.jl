@@ -11,11 +11,11 @@ mutable struct NumModelCrankNicolson{F,P,W} <: AbstractNumModel{F,P,W}
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   M :: Array
-   b :: Array
-   Anl :: Array
-   Anl2 :: Array
+   ϕ_hat
+   M
+   b
+   Anl
+   Anl2
    potential :: P
    writer :: W
 end
@@ -107,10 +107,10 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P,W} <: AbstractNumModel{F,P,W
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   M :: Array
-   b :: Array
-   Anl :: Array
+   ϕ_hat
+   M
+   b
+   Anl
    potential :: P
    writer :: W
 end
@@ -198,11 +198,11 @@ mutable struct NumModelCrankNicolsonT{F,P,W} <: AbstractNumModel{F,P,W}
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   M :: Array
-   b :: Array
-   Anl :: Array
-   Anl2 :: Array
+   ϕ_hat
+   M
+   b
+   Anl
+   Anl2
    potential :: P
    writer :: W
 end
@@ -292,10 +292,10 @@ mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,W} <: AbstractNumModel{F,P,
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
-   M :: Array
-   b :: Array
-   Anl :: Array
+   ϕ_hat
+   M
+   b
+   Anl
    potential :: P
    writer :: W
 end

@@ -7,7 +7,7 @@ mutable struct NumModelExternalVelocity{F,P,W} <: AbstractNumModel{F,P,W}
    β :: Real
    Ω :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: Array
+   ϕ_hat
    potential :: P
    writer :: W
 end

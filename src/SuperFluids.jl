@@ -34,7 +34,7 @@ function solve!(s::AbstractSolver, plot=false)
 end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
-export GrossPitaevskiiSolver, solve!, initField!, energy,
-   Plot, createPlot!, updatePlot!, finishWriter!
+export GrossPitaevskiiSolver, solve!, initField!, energy, finishWriter!
+export CPU, MPI, GPU, ComplexField, RealField, Grid, Field
 
 end # module

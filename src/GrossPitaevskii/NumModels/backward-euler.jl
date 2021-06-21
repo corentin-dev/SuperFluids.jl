@@ -16,6 +16,8 @@ mutable struct NumModelBackwardEuler{F,P,W} <: AbstractNumModel{F,P,W}
    writer :: W
 end
 
+nmodel(n::NumModelBackwardEuler) = 20
+
 Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
          "Backward Euler\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -57,6 +59,8 @@ mutable struct NumModelBackwardEulerNoPrecond{F,P,W} <: AbstractNumModel{F,P,W}
    writer :: W
 end
 
+nmodel(n::NumModelBackwardEulerNoPrecond) = 22
+
 Base.show(io::IO, n::NumModelBackwardEulerNoPrecond) = print(io,
          "Backward Euler without preconditionning\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -97,6 +101,8 @@ mutable struct NumModelBackwardEulerNL{F,P,W} <: AbstractNumModel{F,P,W}
    potential :: P
    writer :: W
 end
+
+nmodel(n::NumModelBackwardEulerNL) = 3
 
 Base.show(io::IO, n::NumModelBackwardEulerNL) = print(io,
          "Backward Euler\n",

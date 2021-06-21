@@ -1,34 +1,70 @@
 using WriteVTK
+using HDF5
 
 "Abstract supertype for writer."
-abstract type AbstractWriter{F} end
+abstract type AbstractWriter{T} end
 
 """
-    Writer{F<:AbstractField} <: AbstractWriter{F}
+    WriterSave{T<:AbstractField} <: AbstractWriter{T}
 
-Type representing a writer on a grid.
+Type representing a saving writer for a given field.
 """
-struct Writer{F<:AbstractField} <: AbstractWriter{F}
-   f :: F
+struct WriterSave{T<:AbstractField} <: AbstractWriter{T}
+   f :: T
+end
+
+function writeSave!(w::WriterSave,
+      prefix="res"::AbstractString,
+      icpu=0::Integer,
+      istep=0::Integer)
+
+   h5open("$(prefix)-$(icpu)-$(istep).hdf5", "w") do h5file
+      h5file["field"] = w.f.ϕ
+   end
+
+   return nothing
+end
+
+function readSave!(w::WriterSave,
+      prefix="res"::AbstractString,
+      icpu=0::Integer,
+      istep=0::Integer)
+
+   h5open("$(prefix)-$(icpu)-$(istep).hdf5", "r") do h5file
+      w.f.ϕ .= read(h5file,"field")
+   end
+
+   return nothing
+end
+
+"""
+    WriterVTK{T<:AbstractField} <: AbstractWriter{T}
+
+Type representing a VTK writer for a given field.
+"""
+struct WriterVTK{T<:AbstractField} <: AbstractWriter{T}
+   f :: T
    pvd :: WriteVTK.CollectionFile
 end
 
-function Writer(f::AbstractField, filename="GPS.pvd"::AbstractString)
+function WriterVTK(f::AbstractField, filename="GPS.pvd"::AbstractString)
    pvd = paraview_collection(filename)
-   return Writer{typeof(f)}(f,pvd)
+   return WriterVTK{typeof(f)}(f,pvd)
 end
 
-function addFile!(w::AbstractWriter{F},
+function addFile!(w::WriterVTK{T},
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F <: AbstractField2D}
+      Δt=1::Real) where {T <: AbstractField2D}
+   # references
    f = w.f
    plan = Plan(f)
    plan_x, plan_y = plan.plan_x, plan.plan_y
    ϕ = parent(f.ϕ)
    ξx, ξy = f.g.ξx, f.g.ξy
    x, y = vec(f.g.x), vec(f.g.y)
+
    ϕhat = plan_x * f.ϕ
    ϕhat .= im .* ξx .* ϕhat
    ∇ϕ_x = plan_x \ ϕhat
@@ -37,28 +73,34 @@ function addFile!(w::AbstractWriter{F},
    ∇ϕ_y = plan_y \ ϕhat
 
    vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
-   vtkfile["Re_Phi", VTKPointData()] = Array(real(ϕ))
-   vtkfile["Im_Phi", VTKPointData()] = Array(imag(ϕ))
-   vtkfile["Module", VTKPointData()] = Array(real(ϕ.*conj(ϕ)))
+   vtkfile["Re_Phi", VTKPointData()] = Array(real.(ϕ))
+   vtkfile["Im_Phi", VTKPointData()] = Array(imag.(ϕ))
+   vtkfile["Module", VTKPointData()] = Array(real.(ϕ.*conj.(ϕ)))
+   vtkfile["Phase", VTKPointData()] = Array(angle.(ϕ.*conj.(ϕ)))
    vtkfile["VelocityX", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_x))
    vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
    vtkfile["Time"] = Δt * istep
+
    outfiles = vtk_save(vtkfile)
+
    w.pvd[ Δt * istep] = vtkfile
+
    return nothing
 end
 
-function addFile!(w::AbstractWriter{F},
+function addFile!(w::WriterVTK{T},
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F <: AbstractField3D}
+      Δt=1::Real) where {T <: AbstractField3D}
+   # references
    f = w.f
    plan = Plan(f)
    plan_x, plan_y, plan_z = plan.plan_x, plan.plan_y, plan.plan_z
    ϕ = parent(f.ϕ)
    ξx, ξy, ξz = f.g.ξx, f.g.ξy, f.g.ξz
    x, y, z = vec(f.g.x), vec(f.g.y), vec(f.g.z)
+
    ϕhat = plan_x * f.ϕ
    ϕhat .= im .* ξx .* ϕhat
    ∇ϕ_x = plan_x \ ϕhat
@@ -68,20 +110,25 @@ function addFile!(w::AbstractWriter{F},
    ϕhat = plan_z * f.ϕ
    ϕhat .= im .* ξz .* ϕhat
    ∇ϕ_z = plan_z \ ϕhat
+
    vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", x, y, z)
-   vtkfile["Re_Phi", VTKPointData()] = real(ϕ)
-   vtkfile["Im_Phi", VTKPointData()] = imag(ϕ)
-   vtkfile["Module", VTKPointData()] = real(ϕ.*conj(ϕ))
-   vtkfile["VelocityX", VTKPointData()] = imag.(conj.(ϕ).*∇ϕ_x)./real.(ϕ.*conj.(ϕ))
-   vtkfile["VelocityY", VTKPointData()] = imag.(conj.(ϕ).*∇ϕ_y)./real.(ϕ.*conj.(ϕ))
-   vtkfile["VelocityZ", VTKPointData()] = imag.(conj.(ϕ).*∇ϕ_z)./real.(ϕ.*conj.(ϕ))
+   vtkfile["Re_Phi", VTKPointData()] = Array(real.(ϕ))
+   vtkfile["Im_Phi", VTKPointData()] = Array(imag.(ϕ))
+   vtkfile["Module", VTKPointData()] = Array(real.(ϕ.*conj.(ϕ)))
+   vtkfile["Phase", VTKPointData()] = Array(angle.(ϕ.*conj.(ϕ)))
+   vtkfile["VelocityX", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_x))
+   vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
+   vtkfile["VelocityZ", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_z))
    vtkfile["Time"] = Δt * istep
+
    outfiles = vtk_save(vtkfile)
+
    w.pvd[ Δt * istep] = vtkfile
+
    return nothing
 end
 
-function finishWriter!(w::AbstractWriter)
+function finishWriter!(w::WriterVTK)
    vtk_save(w.pvd)
    return nothing
 end

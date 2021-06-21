@@ -77,19 +77,18 @@ struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
 end
 
 """
-    Grid3D(size::Tuple{Real,Real,Real},xbounds::Tuple{Real,Real},ybounds::Tuple{Real,Real},zbounds::Tuple{Real,Real},FT=Float64)
+    Grid(conf::AbstractConfig;FT=Float64,device=CPU())
 
 Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `xbounds` × `ybounds` × `zbounds`, or Grid2D if `nz = 1`.
 
 Example
 =======
 ```
-julia> conf = ConfParse("GPS_input.init")
-julia> parse_conf!(conf)
+julia> conf = Config("GPS_input.init")
 julia> grid = Grid(conf)
 ```
 """
-function Grid(conf::AbstractConfig;FT=Float64,D=CPU())
+function Grid(conf::AbstractConfig;FT=Float64,device=CPU())
    nx = retrieve(conf, "discretization", "nx", Int64)
    ny = retrieve(conf, "discretization", "ny", Int64)
    nz = retrieve(conf, "discretization", "nz", Int64)
@@ -129,9 +128,9 @@ function Grid(conf::AbstractConfig;FT=Float64,D=CPU())
       Ξx = reshape(ξx,nx,1,1)
       Ξy = reshape(ξy,1,ny,1)
       Ξz = reshape(ξz,1,1,nz)
-      if typeof(D) == CPU
+      if typeof(device) == CPU
          return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
-      elseif typeof(D) == GPU
+      elseif typeof(device) == GPU
          X = CuArray(X)
          Y = CuArray(Y)
          Z = CuArray(Z)
@@ -145,9 +144,9 @@ function Grid(conf::AbstractConfig;FT=Float64,D=CPU())
       Y = reshape(y[1:end-1],1,ny)
       Ξx = reshape(ξx,nx,1)
       Ξy = reshape(ξy,1,ny)
-      if typeof(D) == CPU
+      if typeof(device) == CPU
          return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
-      elseif typeof(D) == GPU
+      elseif typeof(device) == GPU
          X = CuArray(X)
          Y = CuArray(Y)
          Ξx = CuArray(Ξx)
@@ -157,9 +156,112 @@ function Grid(conf::AbstractConfig;FT=Float64,D=CPU())
    end
 end
 
+"""
+    Grid(size::Tuple{Integer,Integer},
+      bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};
+      FT=Float64,device=CPU())
+
+Returns a Grid2D with of size `size = (nx,ny)` ranging from `bounds = ((xmin,xmax),(ymin,ymax))` .
+
+Example
+=======
+```
+julia> grid = Grid((128,128), ((-12,12),(-12,12)))
+```
+"""
+function Grid(size::Tuple{Real,Real},
+      bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};
+      FT=Float64,device=CPU())
+   # size
+   nx, ny = size
+   @assert nx > 0
+   @assert ny > 0
+   # bounds
+   (xmin,xmax),(ymin,ymax) = bounds
+   # length
+   Lx, Ly = xmax - xmin, ymax - ymin
+   @assert Lx > 0
+   @assert Ly > 0
+   # discretization
+   x, y = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1)
+   # spacing
+   Δx, Δy = Lx / nx, Ly / ny
+   # frequencies
+   ξx, ξy = fftfreq(nx,2π/Δx), fftfreq(ny,2π/Δy)
+   # reshaping arrays for broadcast
+   X = reshape(x[1:end-1],nx,1)
+   Y = reshape(y[1:end-1],1,ny)
+   Ξx = reshape(ξx,nx,1)
+   Ξy = reshape(ξy,1,ny)
+   if typeof(device) == CPU
+      return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+   elseif typeof(device) == GPU
+      X = CuArray(X)
+      Y = CuArray(Y)
+      Ξx = CuArray(Ξx)
+      Ξy = CuArray(Ξy)
+      return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+   end
+end
+
+"""
+    Grid(size::Tuple{Integer,Integer,Integer},
+      bounds::Tuple{Tuple{Real,Real,Real},Tuple{Real,Real,Real},Tuple(Real,Real,Real)};
+      FT=Float64,device=CPU())
+
+Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `bounds = ((xmin,xmax),(ymin,ymax),(zmin,zmax))` .
+
+Example
+=======
+```
+julia> grid = Grid((128,128,128), ((-12,12),(-12,12),(-12,12)))
+```
+"""
+function Grid(size::Tuple{Integer,Integer,Integer},
+      bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real},Tuple{Real,Real}};
+      FT=Float64,device=CPU())
+   # size
+   nx, ny, nz = size
+   @assert nx > 0
+   @assert ny > 0
+   @assert nz > 0
+   # bounds
+   (xmin,xmax),(ymin,ymax), (zmin,zmax) = bounds
+   # length
+   Lx, Ly, Lz = xmax - xmin, ymax - ymin, zmax - zmin
+   @assert Lx > 0
+   @assert Ly > 0
+   @assert Lz > 0
+   # discretization
+   x, y, z = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1), LinRange(zmin,zmax,nz+1)
+   # spacing
+   Δx, Δy, Δz = Lx / nx, Ly / ny, Lz / nz
+   # frequencies
+   ξx, ξy, ξz = fftfreq(nx,2π/Δx), fftfreq(ny,2π/Δy), fftfreq(nz,2π/Δz)
+   # reshaping arrays for broadcast
+   X = reshape(x[1:end-1],nx,1,1)
+   Y = reshape(y[1:end-1],1,ny,1)
+   Z = reshape(z[1:end-1],1,1,nz)
+   Ξx = reshape(ξx,nx,1,1)
+   Ξy = reshape(ξy,1,ny,1)
+   Ξz = reshape(ξz,1,1,nz)
+   if typeof(device) == CPU
+      return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+   elseif typeof(device) == GPU
+      X = CuArray(X)
+      Y = CuArray(Y)
+      Z = CuArray(Z)
+      Ξx = CuArray(Ξx)
+      Ξy = CuArray(Ξy)
+      Ξz = CuArray(Ξz)
+      return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+   end
+end
+
 Base.eltype(::AbstractGrid{FT}) where FT = FT
-Base.size(grid::AbstractGrid) = (grid.nx, grid.ny, grid.nz)
-Base.length(grid::AbstractGrid) = (grid.Lx, grid.Ly, grid.Lz)
+
+Base.size(grid::AbstractGrid2D) = (grid.nx, grid.ny)
+Base.length(grid::AbstractGrid2D) = (grid.Lx, grid.Ly)
 
 Base.show(io::IO, g::Grid2D) =
      print(io, "Grid2D\n",
@@ -167,6 +269,9 @@ Base.show(io::IO, g::Grid2D) =
          "  ├───────  mesh size: $(g.nx*g.ny)\n",
          "  ├────  grid spacing: $(g.Δx)×$(g.Δy)\n",
          "  └──────────  domain: [$(g.xmin),$(g.xmax)]×[$(g.ymin),$(g.ymax)]")
+
+Base.size(grid::AbstractGrid3D) = (grid.nx, grid.ny, grid.nz)
+Base.length(grid::AbstractGrid3D) = (grid.Lx, grid.Ly, grid.Lz)
 
 Base.show(io::IO, g::Grid3D) =
      print(io, "Grid3D\n",

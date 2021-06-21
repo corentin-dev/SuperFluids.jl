@@ -20,6 +20,8 @@ mutable struct NumModelCrankNicolson{F,P,W} <: AbstractNumModel{F,P,W}
    writer :: W
 end
 
+nmodel(n::NumModelCrankNicolson) = 21
+
 Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
          "Crank-Nicolson Newton-Raphson scheme\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -115,6 +117,8 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P,W} <: AbstractNumModel{F,P,W
    writer :: W
 end
 
+nmodel(n::NumModelCrankNicolsonQuasiNewton) = 25
+
 Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton) = print(io,
          "Crank-Nicolson Quasi-Newton scheme\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -206,6 +210,8 @@ mutable struct NumModelCrankNicolsonT{F,P,W} <: AbstractNumModel{F,P,W}
    potential :: P
    writer :: W
 end
+
+nmodel(n::NumModelCrankNicolsonT) = 45
 
 Base.show(io::IO, n::NumModelCrankNicolsonT) = print(io,
          "Time dependant Crank-Nicolson Newton-Raphson scheme\n",
@@ -299,6 +305,8 @@ mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,W} <: AbstractNumModel{F,P,
    potential :: P
    writer :: W
 end
+
+nmodel(n::NumModelCrankNicolsonQuasiNewtonT) = 46
 
 Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewtonT) = print(io,
          "Time dependant Crank-Nicolson Quasi-Newton scheme\n",

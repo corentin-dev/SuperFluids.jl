@@ -2,7 +2,7 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
    nummodel = nothing
    nmodel = retrieve(conf, "solver", "model", Int64)
    plan = Plan(f)
-   writer = Writer(f)
+   writer = WriterVTK(f)
    ϕ_hat = similar(f.ϕ)
    Δt =  retrieve(conf, "time", "deltat", Float64)
    niter = retrieve(conf, "time", "itermax", Float64)

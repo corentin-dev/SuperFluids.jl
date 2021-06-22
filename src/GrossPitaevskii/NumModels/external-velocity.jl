@@ -1,4 +1,4 @@
-mutable struct NumModelExternalVelocity{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelExternalVelocity{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -9,7 +9,8 @@ mutable struct NumModelExternalVelocity{F,P,W} <: AbstractNumModel{F,P,W}
    plan :: AbstractPlan{F}
    ϕ_hat
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 Base.show(io::IO, n::NumModelExternalVelocity) = print(io,

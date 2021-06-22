@@ -1,9 +1,11 @@
 module Plots
 
-using GLMakie
-using SuperFluids
+using ..SuperFluids
+import ..SuperFluids: AbstractField, AbstractField2D, AbstractField3D
 
 export updatePlot!, createPlot!, Plot
+
+using GLMakie
 
 struct PlotGL end
 struct PlotPNG end

@@ -1,4 +1,4 @@
-mutable struct NumModelBackwardEuler{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -13,7 +13,8 @@ mutable struct NumModelBackwardEuler{F,P,W} <: AbstractNumModel{F,P,W}
    M
    b
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelBackwardEuler) = 20
@@ -41,7 +42,7 @@ function prodA(n::NumModelBackwardEuler, ϕt)
    ϕt .- n.M .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelBackwardEulerNoPrecond{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelBackwardEulerNoPrecond{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -56,7 +57,8 @@ mutable struct NumModelBackwardEulerNoPrecond{F,P,W} <: AbstractNumModel{F,P,W}
    Anl
    b
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelBackwardEulerNoPrecond) = 22
@@ -84,7 +86,7 @@ function prodA(n::NumModelBackwardEulerNoPrecond, ϕt)
    ( (1. / n.Δt) .+ n.Anl ) .* ϕt .- lapRot(n,ϕt)
 end
 
-mutable struct NumModelBackwardEulerNL{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelBackwardEulerNL{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -99,7 +101,8 @@ mutable struct NumModelBackwardEulerNL{F,P,W} <: AbstractNumModel{F,P,W}
    M
    b
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelBackwardEulerNL) = 3

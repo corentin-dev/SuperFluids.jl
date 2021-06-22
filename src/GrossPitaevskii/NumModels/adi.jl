@@ -1,4 +1,4 @@
-mutable struct NumModelADI1{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelADI1{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -9,7 +9,8 @@ mutable struct NumModelADI1{F,P,W} <: AbstractNumModel{F,P,W}
    plan :: AbstractPlan{F}
    ϕ_hat
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelADI1) = 41
@@ -25,7 +26,7 @@ function timeStep!(n::NumModelADI1)
    solveNL!(n,n.Δt)
 end
 
-mutable struct NumModelADI2{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -36,7 +37,8 @@ mutable struct NumModelADI2{F,P,W} <: AbstractNumModel{F,P,W}
    plan :: AbstractPlan{F}
    ϕ_hat
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelADI2) = 42

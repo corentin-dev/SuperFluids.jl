@@ -3,6 +3,7 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
    nmodel = retrieve(conf, "solver", "model", Int64)
    plan = Plan(f)
    writer = WriterVTK(f)
+   saver = WriterSave(f)
    ϕ_hat = similar(f.ϕ)
    Δt =  retrieve(conf, "time", "deltat", Float64)
    niter = retrieve(conf, "time", "itermax", Float64)
@@ -19,20 +20,20 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       M = similar(f.ϕ)
       b = similar(f.ϕ)
-      nummodel = NumModelBackwardEuler{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelBackwardEuler{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov,
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 3
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       M = similar(f.ϕ)
       b = similar(f.ϕ)
-      nummodel = NumModelBackwardEulerNL{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelBackwardEulerNL{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov,
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 21
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
@@ -43,20 +44,20 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
       Anl2 = similar(f.ϕ)
-      nummodel = NumModelCrankNicolson{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelCrankNicolson{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 22
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
       tolkrylov = retrieve(conf, "solver", "tolkrylov", Float64)
       Anl = similar(f.ϕ)
       b = similar(f.ϕ)
-      nummodel = NumModelBackwardEulerNoPrecond{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelBackwardEulerNoPrecond{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov,
                        coeffΔ, β, Ω, plan, ϕ_hat, Anl, b, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 25
       nkrylov = retrieve(conf, "solver", "iterkrylov", Int64)
@@ -66,10 +67,10 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
-      nummodel = NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 27
    # case (27)
@@ -80,22 +81,22 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
    #    call model_imaginary_time(8) ! full-implicit Crank-Nicolson with external velocity, no renormalization
       println("Warning : should be without Crank-Nicolson with external velocity")
    elseif nmodel == 29
-      nummodel = NumModelExternalVelocity{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelExternalVelocity{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp,
                        coeffΔ, β, Ω, plan, ϕ_hat, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 41
-      nummodel = NumModelADI1{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelADI1{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp,
                        coeffΔ, β, Ω, plan, ϕ_hat, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 42
-      nummodel = NumModelADI2{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelADI2{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp,
                        coeffΔ, β, Ω, plan, ϕ_hat, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 43
    # case (43)
@@ -114,10 +115,10 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
       M = similar(f.ϕ)
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
-      nummodel = NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
-                       writer
+                       writer, saver
                       )
    elseif nmodel == 46
       println("")
@@ -133,10 +134,10 @@ function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
       b = similar(f.ϕ)
       Anl = similar(f.ϕ)
       Anl2 = similar(f.ϕ)
-      nummodel = NumModelCrankNicolsonT{typeof(f),typeof(p),typeof(writer)}(f,
+      nummodel = NumModelCrankNicolsonT{typeof(f),typeof(p)}(f,
                        Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
                        coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
-                       writer
+                       writer, saver
                       )
    end
    return nummodel

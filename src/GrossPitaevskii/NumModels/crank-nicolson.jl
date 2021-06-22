@@ -1,4 +1,4 @@
-mutable struct NumModelCrankNicolson{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelCrankNicolson{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -17,7 +17,8 @@ mutable struct NumModelCrankNicolson{F,P,W} <: AbstractNumModel{F,P,W}
    Anl
    Anl2
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelCrankNicolson) = 21
@@ -96,7 +97,7 @@ function prodA(n::NumModelCrankNicolson, ϕt)
    (1/n.Δt .+ n.Anl) .* ϕt .+ 0.5 .* n.Anl2 .* conj.(ϕt) .- 0.5 .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelCrankNicolsonQuasiNewton{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelCrankNicolsonQuasiNewton{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -114,7 +115,8 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P,W} <: AbstractNumModel{F,P,W
    b
    Anl
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelCrankNicolsonQuasiNewton) = 25
@@ -189,7 +191,7 @@ function prodA(n::NumModelCrankNicolsonQuasiNewton, ϕt)
    (1/n.Δt .+ n.Anl .* 0.5) .* ϕt .- 0.5 .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelCrankNicolsonT{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelCrankNicolsonT{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -208,7 +210,8 @@ mutable struct NumModelCrankNicolsonT{F,P,W} <: AbstractNumModel{F,P,W}
    Anl
    Anl2
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelCrankNicolsonT) = 45
@@ -285,7 +288,7 @@ function prodA(n::NumModelCrankNicolsonT, ϕt)
    ( (1. * im /n.Δt ) .- 0.5 .* n.Anl) .* ϕt .- 0.5 .* n.Anl2 .* conj.(ϕt) .+ 0.5 .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,W} <: AbstractNumModel{F,P,W}
+mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P} <: AbstractNumModel{F,P}
    f :: F
    Δt :: Real
    niter :: Integer
@@ -303,7 +306,8 @@ mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,W} <: AbstractNumModel{F,P,
    b
    Anl
    potential :: P
-   writer :: W
+   writer :: AbstractWriter{F}
+   saver :: AbstractWriter{F}
 end
 
 nmodel(n::NumModelCrankNicolsonQuasiNewtonT) = 46

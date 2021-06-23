@@ -11,12 +11,9 @@ mutable struct GrossPitaevskiiSolver{C,G,F,P,I,N} <: AbstractSolver{C,G,F,P,I,N}
    nummodel :: N
 end
 
-function GrossPitaevskiiSolver(;fileName="GPS_input.init"::String)
-   device = CPU()
-   # device = GPU()
-   # CUDA.allowscalar(false)
+function GrossPitaevskiiSolver(;fileName="GPS_input.init"::String,device=CPU())
+   CUDA.allowscalar(false)
    conf = Config(fileName)
-   # grid = Grid(conf,device=device)
    grid = Grid(conf,FT=Float64,device=device)
    field = Field(grid,ComplexField())
    ninit = retrieve(conf, "model", "initcondition", Int64)

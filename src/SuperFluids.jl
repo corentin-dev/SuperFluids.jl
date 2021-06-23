@@ -20,7 +20,7 @@ include("Discretization/Discretization.jl")
 include("IO/IO.jl")
 
 "Abstract supertype for numerical models."
-abstract type AbstractNumModel{F,P,W} end
+abstract type AbstractNumModel{F,P} end
 
 "Abstract supertype for solvers."
 abstract type AbstractSolver{C,G,F,I,N,P} end

@@ -9,8 +9,7 @@ mutable struct NumModelADI1{F,P} <: AbstractNumModel{F,P}
    plan :: AbstractPlan{F}
    ϕ_hat
    potential :: P
-   writer :: AbstractWriter{F}
-   saver :: AbstractWriter{F}
+   writers :: AbstractWriterCollection{F}
 end
 
 nmodel(n::NumModelADI1) = 41
@@ -37,8 +36,7 @@ mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
    plan :: AbstractPlan{F}
    ϕ_hat
    potential :: P
-   writer :: AbstractWriter{F}
-   saver :: AbstractWriter{F}
+   writers :: AbstractWriterCollection{F}
 end
 
 nmodel(n::NumModelADI2) = 42

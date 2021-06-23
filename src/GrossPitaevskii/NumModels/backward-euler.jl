@@ -13,8 +13,7 @@ mutable struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
    M
    b
    potential :: P
-   writer :: AbstractWriter{F}
-   saver :: AbstractWriter{F}
+   writers :: AbstractWriterCollection{F}
 end
 
 nmodel(n::NumModelBackwardEuler) = 20
@@ -57,8 +56,7 @@ mutable struct NumModelBackwardEulerNoPrecond{F,P} <: AbstractNumModel{F,P}
    Anl
    b
    potential :: P
-   writer :: AbstractWriter{F}
-   saver :: AbstractWriter{F}
+   writers :: AbstractWriterCollection{F}
 end
 
 nmodel(n::NumModelBackwardEulerNoPrecond) = 22
@@ -101,8 +99,7 @@ mutable struct NumModelBackwardEulerNL{F,P} <: AbstractNumModel{F,P}
    M
    b
    potential :: P
-   writer :: AbstractWriter{F}
-   saver :: AbstractWriter{F}
+   writers :: AbstractWriterCollection{F}
 end
 
 nmodel(n::NumModelBackwardEulerNL) = 3

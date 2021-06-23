@@ -13,25 +13,28 @@ struct WriterSave{T<:AbstractField} <: AbstractWriter{T}
    f :: T
 end
 
-function writeSave!(w::WriterSave,
+function write!(w::WriterSave{T};
       prefix="res"::AbstractString,
       icpu=0::Integer,
-      istep=0::Integer)
+      istep=0::Integer,
+      Δt=1::Real) where T
 
-   h5open("$(prefix)-$(icpu)-$(istep).hdf5", "w") do h5file
-      h5file["field"] = w.f.ϕ
+   h5open("$(prefix)-$(icpu)-$(istep).h5", "w") do h5file
+      h5file["field"] = Array(w.f.ϕ)
    end
 
    return nothing
 end
 
-function readSave!(w::WriterSave,
+function read!(w::WriterSave{T};
       prefix="res"::AbstractString,
       icpu=0::Integer,
-      istep=0::Integer)
+      istep=0::Integer,
+      Δt=1::Real) where T
 
-   h5open("$(prefix)-$(icpu)-$(istep).hdf5", "r") do h5file
-      w.f.ϕ .= read(h5file,"field")
+   h5open("$(prefix)-$(icpu)-$(istep).h5", "r") do h5file
+      ϕ = read(h5file,"field")
+      copyto!(w.f.ϕ, ϕ)
    end
 
    return nothing
@@ -44,15 +47,14 @@ Type representing a VTK writer for a given field.
 """
 struct WriterVTK{T<:AbstractField} <: AbstractWriter{T}
    f :: T
-   pvd :: WriteVTK.CollectionFile
+   filename :: AbstractString
 end
 
 function WriterVTK(f::AbstractField, filename="GPS.pvd"::AbstractString)
-   pvd = paraview_collection(filename)
-   return WriterVTK{typeof(f)}(f,pvd)
+   return WriterVTK{typeof(f)}(f,filename)
 end
 
-function addFile!(w::WriterVTK{T},
+function write!(w::WriterVTK{T};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
@@ -72,6 +74,7 @@ function addFile!(w::WriterVTK{T},
    ϕhat .= im .* ξy .* ϕhat
    ∇ϕ_y = plan_y \ ϕhat
 
+   # create vtk
    vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
    vtkfile["Re_Phi", VTKPointData()] = Array(real.(ϕ))
    vtkfile["Im_Phi", VTKPointData()] = Array(imag.(ϕ))
@@ -81,14 +84,18 @@ function addFile!(w::WriterVTK{T},
    vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
    vtkfile["Time"] = Δt * istep
 
+   # write to file
    outfiles = vtk_save(vtkfile)
 
-   w.pvd[ Δt * istep] = vtkfile
+   # add to pvd
+   pvd = paraview_collection(w.filename, append=true)
+   pvd[ Δt * istep] = vtkfile
+   vtk_save(pvd)
 
    return nothing
 end
 
-function addFile!(w::WriterVTK{T},
+function write!(w::WriterVTK{T};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
@@ -128,7 +135,38 @@ function addFile!(w::WriterVTK{T},
    return nothing
 end
 
-function finishWriter!(w::WriterVTK)
-   vtk_save(w.pvd)
+function read!(w::WriterVTK{T};
+      prefix="res"::AbstractString,
+      icpu=0::Integer,
+      istep=0::Integer,
+      Δt=1::Real) where T
+
    return nothing
+end
+
+"Abstract supertype for a collection of writers."
+abstract type AbstractWriterCollection{T} end
+
+mutable struct WriterCollection{T} <:AbstractWriterCollection{T}
+   writerList :: Array{AbstractWriter{T},1}
+end
+
+function write!(wc::WriterCollection{T};
+      prefix="res"::AbstractString,
+      icpu=0::Integer,
+      istep=0::Integer,
+      Δt=1::Real) where T
+   for writer in wc.writerList
+      write!(writer,prefix=prefix,icpu=icpu,istep=istep)
+   end
+end
+
+function read!(wc::WriterCollection{T};
+      prefix="res"::AbstractString,
+      icpu=0::Integer,
+      istep=0::Integer,
+      Δt=1::Real) where T
+   for writer in wc.writerList
+      read!(writer,prefix=prefix,icpu=icpu,istep=istep,Δt=Δt)
+   end
 end

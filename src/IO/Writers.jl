@@ -88,7 +88,11 @@ function write!(w::WriterVTK{T};
    outfiles = vtk_save(vtkfile)
 
    # add to pvd
-   pvd = paraview_collection(w.filename, append=true)
+   if istep == 0
+      pvd = paraview_collection(w.filename, append=false)
+   else
+      pvd = paraview_collection(w.filename, append=true)
+   end
    pvd[ Δt * istep] = vtkfile
    vtk_save(pvd)
 
@@ -118,6 +122,7 @@ function write!(w::WriterVTK{T};
    ϕhat .= im .* ξz .* ϕhat
    ∇ϕ_z = plan_z \ ϕhat
 
+   # create vtk
    vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", x, y, z)
    vtkfile["Re_Phi", VTKPointData()] = Array(real.(ϕ))
    vtkfile["Im_Phi", VTKPointData()] = Array(imag.(ϕ))
@@ -128,9 +133,17 @@ function write!(w::WriterVTK{T};
    vtkfile["VelocityZ", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_z))
    vtkfile["Time"] = Δt * istep
 
+   # write to file
    outfiles = vtk_save(vtkfile)
 
-   w.pvd[ Δt * istep] = vtkfile
+   # add to pvd
+   if istep == 0
+      pvd = paraview_collection(w.filename, append=false)
+   else
+      pvd = paraview_collection(w.filename, append=true)
+   end
+   pvd[ Δt * istep] = vtkfile
+   vtk_save(pvd)
 
    return nothing
 end

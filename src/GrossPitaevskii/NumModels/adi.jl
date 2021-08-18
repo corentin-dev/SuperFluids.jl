@@ -58,7 +58,7 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
    ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
    x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
+   ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    # perform FFT
    mul!(ϕhat_x, plan_x, ϕ)
@@ -80,7 +80,7 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField3D}
    ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
-   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
+   ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    # perform FFT
    mul!(ϕhat_x, plan_x, ϕ)

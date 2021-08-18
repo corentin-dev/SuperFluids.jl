@@ -35,10 +35,6 @@ struct Grid2D{FT<:Real,A} <: AbstractGrid2D{FT,A}
    Δx :: FT
    "Δy y discretization"
    Δy :: FT
-   "ξx x frequencies"
-   ξx :: A
-   "ξy y frequencies"
-   ξy :: A
 end
 
 """
@@ -70,90 +66,6 @@ struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
    Δx :: FT
    Δy :: FT
    Δz :: FT
-   # Frequencies
-   ξx :: A
-   ξy :: A
-   ξz :: A
-end
-
-"""
-    Grid(conf::AbstractConfig;FT=Float64,device=CPU())
-
-Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `xbounds` × `ybounds` × `zbounds`, or Grid2D if `nz = 1`.
-
-Example
-=======
-```
-julia> conf = Config("GPS_input.init")
-julia> grid = Grid(conf)
-```
-"""
-function Grid(conf::AbstractConfig;FT=Float64,device=CPU())
-   nx = retrieve(conf, "discretization", "nx", Int64)
-   ny = retrieve(conf, "discretization", "ny", Int64)
-   nz = retrieve(conf, "discretization", "nz", Int64)
-   # bounds
-   xmin = retrieve(conf, "geometry", "xmin", FT)
-   xmax = retrieve(conf, "geometry", "xmax", FT)
-   ymin = retrieve(conf, "geometry", "ymin", FT)
-   ymax = retrieve(conf, "geometry", "ymax", FT)
-   # length
-   Lx = xmax - xmin
-   Ly = ymax - ymin
-   # discretization
-   x = LinRange(xmin,xmax,nx+1)
-   y = LinRange(xmin,xmax,ny+1)
-   # spacing
-   Δx = Lx / nx
-   Δy = Ly / ny
-   # frequencies
-   ξx = fftfreq(nx,2π/Δx)
-   ξy = fftfreq(ny,2π/Δy)
-   if nz > 1
-      # bounds
-      zmin = retrieve(conf, "geometry", "zmin", FT)
-      zmax = retrieve(conf, "geometry", "zmax", FT)
-      # length
-      Lz = zmax - zmin
-      # discretization
-      z = LinRange(zmin,zmax,nz+1)
-      # spacing
-      Δz = Lz / nz
-      # frequencies
-      ξz = fftfreq(nz,2π/Δz)
-      # reshape for broadcast
-      X = reshape(x[1:end-1],nx,1,1)
-      Y = reshape(y[1:end-1],1,ny,1)
-      Z = reshape(z[1:end-1],1,1,nz)
-      Ξx = reshape(ξx,nx,1,1)
-      Ξy = reshape(ξy,1,ny,1)
-      Ξz = reshape(ξz,1,1,nz)
-      if typeof(device) == CPU
-         return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
-      elseif typeof(device) == GPU
-         X = CuArray(X)
-         Y = CuArray(Y)
-         Z = CuArray(Z)
-         Ξx = CuArray(Ξx)
-         Ξy = CuArray(Ξy)
-         Ξz = CuArray(Ξz)
-         return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
-      end
-   else
-      X = reshape(x[1:end-1],nx,1)
-      Y = reshape(y[1:end-1],1,ny)
-      Ξx = reshape(ξx,nx,1)
-      Ξy = reshape(ξy,1,ny)
-      if typeof(device) == CPU
-         return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
-      elseif typeof(device) == GPU
-         X = CuArray(X)
-         Y = CuArray(Y)
-         Ξx = CuArray(Ξx)
-         Ξy = CuArray(Ξy)
-         return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
-      end
-   end
 end
 
 """
@@ -186,21 +98,15 @@ function Grid(size::Tuple{Real,Real},
    x, y = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1)
    # spacing
    Δx, Δy = Lx / nx, Ly / ny
-   # frequencies
-   ξx, ξy = fftfreq(nx,2π/Δx), fftfreq(ny,2π/Δy)
    # reshaping arrays for broadcast
    X = reshape(x[1:end-1],nx,1)
    Y = reshape(y[1:end-1],1,ny)
-   Ξx = reshape(ξx,nx,1)
-   Ξy = reshape(ξy,1,ny)
    if typeof(device) == CPU
-      return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+      return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
    elseif typeof(device) == GPU
       X = CuArray(X)
       Y = CuArray(Y)
-      Ξx = CuArray(Ξx)
-      Ξy = CuArray(Ξy)
-      return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy, Ξx, Ξy)
+      return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
    end
 end
 
@@ -236,25 +142,82 @@ function Grid(size::Tuple{Integer,Integer,Integer},
    x, y, z = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1), LinRange(zmin,zmax,nz+1)
    # spacing
    Δx, Δy, Δz = Lx / nx, Ly / ny, Lz / nz
-   # frequencies
-   ξx, ξy, ξz = fftfreq(nx,2π/Δx), fftfreq(ny,2π/Δy), fftfreq(nz,2π/Δz)
    # reshaping arrays for broadcast
    X = reshape(x[1:end-1],nx,1,1)
    Y = reshape(y[1:end-1],1,ny,1)
    Z = reshape(z[1:end-1],1,1,nz)
-   Ξx = reshape(ξx,nx,1,1)
-   Ξy = reshape(ξy,1,ny,1)
-   Ξz = reshape(ξz,1,1,nz)
    if typeof(device) == CPU
-      return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+      return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    elseif typeof(device) == GPU
       X = CuArray(X)
       Y = CuArray(Y)
       Z = CuArray(Z)
-      Ξx = CuArray(Ξx)
-      Ξy = CuArray(Ξy)
-      Ξz = CuArray(Ξz)
-      return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz, Ξx, Ξy, Ξz)
+      return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+   end
+end
+
+"""
+    Grid(conf::AbstractConfig;FT=Float64,device=CPU())
+
+Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `xbounds` × `ybounds` × `zbounds`, or Grid2D if `nz = 1`.
+
+Example
+=======
+```
+julia> conf = Config("GPS_input.init")
+julia> grid = Grid(conf)
+```
+"""
+function Grid(conf::AbstractConfig;FT=Float64,device=CPU())
+   nx = retrieve(conf, "discretization", "nx", Int64)
+   ny = retrieve(conf, "discretization", "ny", Int64)
+   nz = retrieve(conf, "discretization", "nz", Int64)
+   # bounds
+   xmin = retrieve(conf, "geometry", "xmin", FT)
+   xmax = retrieve(conf, "geometry", "xmax", FT)
+   ymin = retrieve(conf, "geometry", "ymin", FT)
+   ymax = retrieve(conf, "geometry", "ymax", FT)
+   # length
+   Lx = xmax - xmin
+   Ly = ymax - ymin
+   # discretization
+   x = LinRange(xmin,xmax,nx+1)
+   y = LinRange(xmin,xmax,ny+1)
+   # spacing
+   Δx = Lx / nx
+   Δy = Ly / ny
+   if nz > 1
+      # bounds
+      zmin = retrieve(conf, "geometry", "zmin", FT)
+      zmax = retrieve(conf, "geometry", "zmax", FT)
+      # length
+      Lz = zmax - zmin
+      # discretization
+      z = LinRange(zmin,zmax,nz+1)
+      # spacing
+      Δz = Lz / nz
+      # reshape for broadcast
+      X = reshape(x[1:end-1],nx,1,1)
+      Y = reshape(y[1:end-1],1,ny,1)
+      Z = reshape(z[1:end-1],1,1,nz)
+      if typeof(device) == CPU
+         return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+      elseif typeof(device) == GPU
+         X = CuArray(X)
+         Y = CuArray(Y)
+         Z = CuArray(Z)
+         return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+      end
+   else
+      X = reshape(x[1:end-1],nx,1)
+      Y = reshape(y[1:end-1],1,ny)
+      if typeof(device) == CPU
+         return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
+      elseif typeof(device) == GPU
+         X = CuArray(X)
+         Y = CuArray(Y)
+         return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
+      end
    end
 end
 

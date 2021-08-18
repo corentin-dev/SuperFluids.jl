@@ -64,7 +64,7 @@ function write!(w::WriterVTK{T};
    plan = Plan(f)
    plan_x, plan_y = plan.plan_x, plan.plan_y
    ϕ = parent(f.ϕ)
-   ξx, ξy = f.g.ξx, f.g.ξy
+   ξx, ξy = plan.ξx, plan.ξy
    x, y = vec(f.g.x), vec(f.g.y)
 
    ϕhat = plan_x * f.ϕ
@@ -109,7 +109,7 @@ function write!(w::WriterVTK{T};
    plan = Plan(f)
    plan_x, plan_y, plan_z = plan.plan_x, plan.plan_y, plan.plan_z
    ϕ = parent(f.ϕ)
-   ξx, ξy, ξz = f.g.ξx, f.g.ξy, f.g.ξz
+   ξx, ξy, ξz = plan.ξx, plan.ξy, plan.ξz
    x, y, z = vec(f.g.x), vec(f.g.y), vec(f.g.z)
 
    ϕhat = plan_x * f.ϕ

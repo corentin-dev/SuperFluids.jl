@@ -193,7 +193,7 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField2D}
    ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
    x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
+   ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    # perform FFT
    mul!(ϕthat_x, plan_x, ϕt)
@@ -217,7 +217,7 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField3D}
    ϕthat_x, ϕthat_y, ϕthat_z = n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
    x, y = n.f.g.x, n.f.g.y
-   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
+   ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    # perform FFT
    mul!(ϕthat_x, plan_x, ϕt)
@@ -272,7 +272,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω, β = n.coeffΔ, n.Ω, n.β
    x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
+   ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    Δx, Δy = n.f.g.Δx, n.f.g.Δy
    V = n.potential.V
@@ -315,7 +315,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω, β = n.coeffΔ, n.Ω, n.β
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
-   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
+   ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
    V = n.potential.V

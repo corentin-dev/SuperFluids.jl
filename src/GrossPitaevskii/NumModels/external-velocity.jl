@@ -28,7 +28,7 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
    ϕ, ϕhat_x, ϕhat_y, ϕhat = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    Δt, coeffΔ, Ω, β = n.Δt, n.coeffΔ, n.Ω, n.β
    x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
+   ξx, ξy = n.plan.ξx, n.plan.ξy
    plan, plan_x, plan_y = n.plan.plan, n.plan.plan_x, n.plan.plan_y
    Δx, Δy = n.f.g.Δx, n.f.g.Δy
    V, uadvx, uadvy = n.potential.V, n.potential.uadvx, n.potential.uadvy
@@ -68,7 +68,7 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField3D}
    ϕ, ϕhat_x, ϕhat_y, ϕhat_z, ϕhat = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    Δt, coeffΔ, Ω, β = n.Δt, n.coeffΔ, n.Ω, n.β
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
-   ξx, ξy, ξz = n.f.g.ξx, n.f.g.ξy, n.f.g.ξz
+   ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan, plan_x, plan_y, plan_z = n.plan.plan, n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
    V, uadvx, uadvy, uadvz = n.potential.V, n.potential.uadvx, n.potential.uadvy, n.potential.uadvz

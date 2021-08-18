@@ -134,7 +134,7 @@ function lapRot(n::NumModelBackwardEulerNL{F}, ϕt) where {F<:AbstractField2D}
    ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
    x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.f.g.ξx, n.f.g.ξy
+   ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    # NL rotation
    lnl = 2

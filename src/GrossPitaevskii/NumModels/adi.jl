@@ -12,8 +12,6 @@ mutable struct NumModelADI1{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
-nmodel(n::NumModelADI1) = 41
-
 Base.show(io::IO, n::NumModelADI1) = print(io,
          "Splitting Order 1\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -38,8 +36,6 @@ mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
    potential :: P
    writers :: AbstractWriterCollection{F}
 end
-
-nmodel(n::NumModelADI2) = 42
 
 Base.show(io::IO, n::NumModelADI2) = print(io,
          "Splitting Order 2\n",

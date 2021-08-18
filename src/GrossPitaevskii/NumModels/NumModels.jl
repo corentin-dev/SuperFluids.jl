@@ -1,3 +1,12 @@
+export NumModelBackwardEuler
+
+include("adi.jl")
+include("backward-euler.jl")
+include("crank-nicolson.jl")
+include("external-velocity.jl")
+
+include("krylov.jl")
+
 function NumModel(f::F, p::P, conf::AbstractConfig) where F where P
    nummodel = nothing
    nmodel = retrieve(conf, "solver", "model", Int64)
@@ -179,13 +188,6 @@ end
    #    call model_NR_two(4,delta_t,flag_cutoff)
    # case (57) ! backward-Euler Newton with real value
    #    call model_NR_two(1,delta_t,flag_cutoff)
-
-include("adi.jl")
-include("backward-euler.jl")
-include("crank-nicolson.jl")
-include("external-velocity.jl")
-
-include("krylov.jl")
 
 function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField2D}
    # references

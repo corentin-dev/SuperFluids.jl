@@ -74,6 +74,23 @@ mutable struct NumModelBackwardEulerNoPrecond{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
+function NumModelBackwardEulerNoPrecond(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8, restart::Bool = false)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   Anl = similar(f.ϕ)
+   b = similar(f.ϕ)
+   return NumModelBackwardEulerNoPrecond{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         coeffΔ, β, Ω, plan, ϕ_hat, Anl, b, p,
+         writers
+      )
+end
+
 Base.show(io::IO, n::NumModelBackwardEulerNoPrecond) = print(io,
          "Backward Euler without preconditionning\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -113,6 +130,23 @@ mutable struct NumModelBackwardEulerNL{F,P} <: AbstractNumModel{F,P}
    b
    potential :: P
    writers :: AbstractWriterCollection{F}
+end
+
+function NumModelBackwardEulerNL(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8, restart::Bool = false)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   M = similar(f.ϕ)
+   b = similar(f.ϕ)
+   return NumModelBackwardEulerNL{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
+         writers
+      )
 end
 
 Base.show(io::IO, n::NumModelBackwardEulerNL) = print(io,

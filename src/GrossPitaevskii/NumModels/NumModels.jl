@@ -1,4 +1,4 @@
-export NumModelBackwardEuler
+export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
 
 include("adi.jl")
 include("backward-euler.jl")

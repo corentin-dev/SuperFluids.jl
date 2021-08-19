@@ -22,7 +22,8 @@ end
 
 function NumModelCrankNicolson(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
+      nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
@@ -33,7 +34,7 @@ function NumModelCrankNicolson(f, p,
    Anl = similar(f.ϕ)
    Anl2 = similar(f.ϕ)
    return NumModelCrankNicolson{typeof(f),typeof(p)}(f,
-         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
          coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
          writers
       )
@@ -136,7 +137,8 @@ end
 
 function NumModelCrankNicolsonQuasiNewton(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
+      nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
@@ -146,7 +148,7 @@ function NumModelCrankNicolsonQuasiNewton(f, p,
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
    return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(p)}(f,
-         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
          coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
          writers
       )
@@ -246,7 +248,8 @@ end
 
 function NumModelCrankNicolsonT(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
+      nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
@@ -257,7 +260,7 @@ function NumModelCrankNicolsonT(f, p,
    Anl = similar(f.ϕ)
    Anl2 = similar(f.ϕ)
    return NumModelCrankNicolsonT{typeof(f),typeof(p)}(f,
-         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
          coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
          writers
       )
@@ -358,7 +361,8 @@ end
 
 function NumModelCrankNicolsonQuasiNewtonT(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
+      nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
@@ -368,7 +372,7 @@ function NumModelCrankNicolsonQuasiNewtonT(f, p,
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
    return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(p)}(f,
-         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
          coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
          writers
       )

@@ -18,7 +18,7 @@ end
 
 function NumModelBackwardEuler(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8, restart::Bool = false)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
@@ -76,7 +76,7 @@ end
 
 function NumModelBackwardEulerNoPrecond(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8, restart::Bool = false)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
@@ -134,7 +134,7 @@ end
 
 function NumModelBackwardEulerNL(f, p,
       coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8, restart::Bool = false)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)

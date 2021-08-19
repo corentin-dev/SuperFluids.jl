@@ -12,6 +12,20 @@ mutable struct NumModelExternalVelocity{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
+function NumModelExternalVelocity(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   return NumModelExternalVelocity{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp,
+         coeffΔ, β, Ω, plan, ϕ_hat, p,
+         writers
+      )
+end
+
 Base.show(io::IO, n::NumModelExternalVelocity) = print(io,
          "ARGLE scheme\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 

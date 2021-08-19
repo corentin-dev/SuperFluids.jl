@@ -20,7 +20,24 @@ mutable struct NumModelCrankNicolson{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
-nmodel(n::NumModelCrankNicolson) = 21
+function NumModelCrankNicolson(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   M = similar(f.ϕ)
+   b = similar(f.ϕ)
+   Anl = similar(f.ϕ)
+   Anl2 = similar(f.ϕ)
+   return NumModelCrankNicolson{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+         writers
+      )
+end
 
 Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
          "Crank-Nicolson Newton-Raphson scheme\n",
@@ -117,7 +134,23 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
-nmodel(n::NumModelCrankNicolsonQuasiNewton) = 25
+function NumModelCrankNicolsonQuasiNewton(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   M = similar(f.ϕ)
+   b = similar(f.ϕ)
+   Anl = similar(f.ϕ)
+   return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
+         writers
+      )
+end
 
 Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton) = print(io,
          "Crank-Nicolson Quasi-Newton scheme\n",
@@ -211,7 +244,24 @@ mutable struct NumModelCrankNicolsonT{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
-nmodel(n::NumModelCrankNicolsonT) = 45
+function NumModelCrankNicolsonT(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   M = similar(f.ϕ)
+   b = similar(f.ϕ)
+   Anl = similar(f.ϕ)
+   Anl2 = similar(f.ϕ)
+   return NumModelCrankNicolsonT{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+         writers
+      )
+end
 
 Base.show(io::IO, n::NumModelCrankNicolsonT) = print(io,
          "Time dependant Crank-Nicolson Newton-Raphson scheme\n",
@@ -306,7 +356,23 @@ mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
-nmodel(n::NumModelCrankNicolsonQuasiNewtonT) = 46
+function NumModelCrankNicolsonQuasiNewtonT(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   M = similar(f.ϕ)
+   b = similar(f.ϕ)
+   Anl = similar(f.ϕ)
+   return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp, nkrylov, tolkrylov,
+         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
+         writers
+      )
+end
 
 Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewtonT) = print(io,
          "Time dependant Crank-Nicolson Quasi-Newton scheme\n",

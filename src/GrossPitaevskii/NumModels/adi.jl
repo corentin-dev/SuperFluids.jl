@@ -12,6 +12,20 @@ mutable struct NumModelADI1{F,P} <: AbstractNumModel{F,P}
    writers :: AbstractWriterCollection{F}
 end
 
+function NumModelADI1(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   return NumModelADI1{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp,
+         coeffΔ, β, Ω, plan, ϕ_hat, p,
+         writers
+      )
+end
+
 Base.show(io::IO, n::NumModelADI1) = print(io,
          "Splitting Order 1\n",
          "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
@@ -35,6 +49,20 @@ mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
    ϕ_hat
    potential :: P
    writers :: AbstractWriterCollection{F}
+end
+
+function NumModelADI2(f, p,
+      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer)
+   plan = Plan(f)
+   writer = WriterVTK(f)
+   saver = WriterSave(f)
+   writers = WriterCollection([writer,saver])
+   ϕ_hat = similar(f.ϕ)
+   return NumModelADI2{typeof(f),typeof(p)}(f,
+         Δt, niter, freqbckp,
+         coeffΔ, β, Ω, plan, ϕ_hat, p,
+         writers
+      )
 end
 
 Base.show(io::IO, n::NumModelADI2) = print(io,

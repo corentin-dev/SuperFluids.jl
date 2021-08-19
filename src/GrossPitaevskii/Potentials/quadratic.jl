@@ -25,23 +25,6 @@ function PotentialQuadratic(f::AbstractField3D, α::Real, γx::Real, γy::Real, 
    return PotentialQuadratic3D(V, α, γx, γy, γz)
 end
 
-function PotentialQuadratic(V, f::AbstractField2D, conf::AbstractConfig)
-   α  = retrieve(conf, "potential", "alpha", Float64)
-   γx = retrieve(conf, "potential", "gamma_x", Float64)
-   γy = retrieve(conf, "potential", "gamma_y", Float64)
-   @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2)
-   return PotentialQuadratic2D(V, α, γx, γy)
-end
-
-function PotentialQuadratic(V, f::AbstractField3D, conf::AbstractConfig)
-   α  = retrieve(conf, "potential", "alpha", Float64)
-   γx = retrieve(conf, "potential", "gamma_x", Float64)
-   γy = retrieve(conf, "potential", "gamma_y", Float64)
-   γz = retrieve(conf, "potential", "gamma_z", Float64)
-   @. V = 0.5*(1-α)*(γx*f.g.x^2+γy*f.g.y^2+γz*f.g.z^2)
-   return PotentialQuadratic3D(V, α, γx, γy, γz)
-end
-
 Base.show(io::IO, p::PotentialQuadratic2D) =
      print(io, "Quadratic Potential\n",
          "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)\n",

@@ -1,3 +1,7 @@
+# coeffΔ = retrieve(conf, "model", "delta", Float64)
+# β = retrieve(conf, "model", "beta", Float64)
+# ξ = √( -coeffΔ / β)
+# init = InitExternalVelocity{typeof(f)}(f,ξ,coeffΔ,"taylorgreen")
 struct InitExternalVelocity{F} <: AbstractInit{F}
    f :: F
    ξ :: Real

@@ -5,6 +5,8 @@ struct ComplexField <: FieldType end
 "Real field"
 struct RealField <: FieldType end
 
+export Field, RealField, ComplexField, normalize!
+
 "Abstract supertype for numerical models."
 abstract type AbstractField{A,G} end
 "Abstract supertype for numerical models."

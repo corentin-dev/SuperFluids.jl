@@ -34,6 +34,6 @@ end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
 export GrossPitaevskiiSolver, solve!, initField!, energy, finishWriter!
-export CPU, MPI, GPU, ComplexField, RealField, Grid, Field
+export CPU, MPI, GPU, Grid, Field
 
 end # module

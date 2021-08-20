@@ -78,7 +78,7 @@ Returns a Grid2D with of size `size = (nx,ny)` ranging from `bounds = ((xmin,xma
 Example
 =======
 ```
-julia> grid = Grid((128,128), ((-12,12),(-12,12)))
+julia> grid = Grid((128,128), ((-12,12), (-12,12)))
 ```
 """
 function Grid(size::Tuple{Real,Real},

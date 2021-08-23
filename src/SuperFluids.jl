@@ -16,24 +16,12 @@ struct MPI <: Device end
 struct GPU <: Device end
 
 include("Discretization/Discretization.jl")
+include("Inits/Inits.jl")
 include("IO/IO.jl")
+include("NumModels/NumModels.jl")
+include("Potentials/Potentials.jl")
 
-"Abstract supertype for numerical models."
-abstract type AbstractNumModel{F,P} end
-
-"Abstract supertype for solvers."
-abstract type AbstractSolver{C,G,F,I,N,P} end
-
-function initField!(s::AbstractSolver)
-   initField!(s.init)
-end
-
-function solve!(s::AbstractSolver, plot=false)
-   solve!(s.nummodel, plot)
-end
-
-include("GrossPitaevskii/GrossPitaevskii.jl")
-export GrossPitaevskiiSolver, solve!, initField!, energy, finishWriter!
+export solve!, initField!, energy, finishWriter!
 export CPU, MPI, GPU, Grid, Field
 
 end # module

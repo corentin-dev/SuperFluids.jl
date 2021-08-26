@@ -43,7 +43,7 @@ Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
 function timeStep!(n::NumModelBackwardEuler)
    # compute matrices and vectors
    # M⁻¹ = Δt⁻¹ + V + β × ∥ϕ∥²
-   @. n.M = 1. / ( 1. / n.Δt + n.potential.V + n.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
+   @. n.M = 1. / ( 1. / n.Δt + n.potential(n.f.g.x,n.f.g.y) + n.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
    # b = M × ϕ × Δt⁻¹
    @. n.b = n.M * n.f.ϕ / n.Δt
    # solving

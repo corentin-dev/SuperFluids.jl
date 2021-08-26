@@ -15,6 +15,7 @@ struct MPI <: Device end
 "GPU device."
 struct GPU <: Device end
 
+include("Parameters/Parameters.jl")
 include("Discretization/Discretization.jl")
 include("Inits/Inits.jl")
 include("IO/IO.jl")

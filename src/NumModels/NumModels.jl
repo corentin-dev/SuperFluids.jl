@@ -102,7 +102,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    Δx, Δy = n.f.g.Δx, n.f.g.Δy
-   p = n.potential
+   V = n.param.V
    # perform FFT
    mul!(ϕhat_x, plan_x, ϕ)
    # compute grad x
@@ -122,7 +122,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ldiv!(∇ϕ_y, plan_y, ∇ϕ_hat) # we get rot y
    # computing energies (locally)
    EΩ = sum(real.(im.*conj.(ϕ).*(∇ϕ_x.+∇ϕ_y))) * Δx * Δy
-   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y) + sum(real.(p.(x,y)).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy
+   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y) + sum(real.(V.(x,y)).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy
    Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy
    # compute sum
    E = -EΩ + EΔ + Eβ
@@ -145,7 +145,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
-   p = n.potential
+   V = n.param.V
    # perform FFT
    mul!(ϕhat_x, plan_x, ϕ)
    # compute grad x
@@ -170,7 +170,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    abs∇ϕ_z = sum(real.(∇ϕ_z.*conj(∇ϕ_z)))
    # computing energies (locally)
    EΩ = sum(real.(im.*conj.(ϕ).*(∇ϕ_x.+∇ϕ_y+∇ϕ_z))) * Δx * Δy *Δz
-   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y.+abs∇ϕ_z) + sum(p.(x,y,z).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy * Δz
+   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y.+abs∇ϕ_z) + sum(V.(x,y,z).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy * Δz
    Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy * Δz
    # compute sum
    E = -EΩ + EΔ + Eβ

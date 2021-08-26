@@ -1,5 +1,5 @@
 "Abstract supertype for numerical models."
-abstract type AbstractNumModel{F,P} end
+abstract type AbstractNumModel{AbstractField,AbstractParameters,AbstractPlan} end
 
 export NumModelADI1, NumModelADI2
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
@@ -18,7 +18,7 @@ function lapRot(n::AbstractNumModel{F}, ϕt) where {F<:AbstractField2D}
    # references
    b = n.b
    ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
+   coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
    x, y = n.f.g.x, n.f.g.y
    ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
@@ -97,7 +97,7 @@ end
 function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractField2D}
    # references
    ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω, β = n.coeffΔ, n.Ω, n.β
+   coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
    x, y = n.f.g.x, n.f.g.y
    ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y

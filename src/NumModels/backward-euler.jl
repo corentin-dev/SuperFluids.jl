@@ -1,23 +1,40 @@
-mutable struct NumModelBackwardEuler{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelBackwardEuler{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
    nkrylov :: Integer
    tolkrylov :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
-   plan :: AbstractPlan{F}
+   plan :: Plan
    ϕ_hat
    M
    b
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelBackwardEuler(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+"""
+    NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
+          Δt::Real, niter::Integer, freqbckp::Integer;
+          nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+
+Returns a Backward Euler numerical model.
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField());
+julia> param = GrossPitaevskiiParameters();
+julia> nummodel = NumModelBackwardEuler(field, param, 0.01, 1000, 100)
+Backward Euler
+  ├──────────  krylov: n iterations 70, tolerance 1.0e-8
+  ├───────  time step: 0.01
+  └──────────── solve: number of iterations 1000, backup frequency 100
+```
+"""
+function NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
+      Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
    plan = Plan(f)
    writer = WriterVTK(f)
@@ -26,16 +43,16 @@ function NumModelBackwardEuler(f, p,
    ϕ_hat = similar(f.ϕ)
    M = similar(f.ϕ)
    b = similar(f.ϕ)
-   return NumModelBackwardEuler{typeof(f),typeof(p)}(f,
-         Δt, niter, freqbckp, nkrylov, tolkrylov,
-         coeffΔ, β, Ω, plan, ϕ_hat, M, b, p,
+   return NumModelBackwardEuler{typeof(f),typeof(param),typeof(plan)}(f, param,
+         Δt, niter, freqbckp,
+         nkrylov, tolkrylov,
+         plan, ϕ_hat, M, b,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
          "Backward Euler\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
@@ -43,7 +60,7 @@ Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
 function timeStep!(n::NumModelBackwardEuler)
    # compute matrices and vectors
    # M⁻¹ = Δt⁻¹ + V + β × ∥ϕ∥²
-   @. n.M = 1. / ( 1. / n.Δt + n.potential(n.f.g.x,n.f.g.y) + n.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
+   @. n.M = 1. / ( 1. / n.Δt + n.potential(n.f.g.x,n.f.g.y) + n.param.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
    # b = M × ϕ × Δt⁻¹
    @. n.b = n.M * n.f.ϕ / n.Δt
    # solving

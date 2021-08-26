@@ -5,6 +5,8 @@ abstract type AbstractGrid2D{FT<:Real,A} <: AbstractGrid{FT,A} end
 "Abstract supertype for 3D grids."
 abstract type AbstractGrid3D{FT<:Real,A} <: AbstractGrid{FT,A} end
 
+export Grid
+
 """
     Grid2D{FT<:Real} <: AbstractGrid2D{FT}
 
@@ -77,8 +79,13 @@ Returns a Grid2D with of size `size = (nx,ny)` ranging from `bounds = ((xmin,xma
 
 Example
 =======
-```
+```jldoctest
 julia> grid = Grid((128,128), ((-12,12), (-12,12)))
+Grid2D
+  ├──────  resolution: 128×128
+  ├───────  mesh size: 16384
+  ├────  grid spacing: 0.1875×0.1875
+  └──────────  domain: [-12.0,12.0]×[-12.0,12.0]
 ```
 """
 function Grid(size::Tuple{Real,Real},
@@ -112,15 +119,20 @@ end
 
 """
     Grid(size::Tuple{Integer,Integer,Integer},
-      bounds::Tuple{Tuple{Real,Real,Real},Tuple{Real,Real,Real},Tuple(Real,Real,Real)};
+      bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real},Tuple(Real,Real};
       FT=Float64,device=CPU())
 
 Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `bounds = ((xmin,xmax),(ymin,ymax),(zmin,zmax))` .
 
 Example
 =======
-```
+```jldoctest
 julia> grid = Grid((128,128,128), ((-12,12),(-12,12),(-12,12)))
+Grid3D
+  ├──────  resolution: 128×128×128
+  ├───────  mesh size: 2097152
+  ├────  grid spacing: 0.1875×0.1875×0.1875
+  └──────────  domain: [-12.0,12.0]×[-12.0,12.0]×[-12.0,12.0]
 ```
 """
 function Grid(size::Tuple{Integer,Integer,Integer},

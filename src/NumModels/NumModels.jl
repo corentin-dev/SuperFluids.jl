@@ -5,6 +5,7 @@ export NumModelADI1, NumModelADI2
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
 export NumModelCrankNicolson, NumModelCrankNicolsonQuasiNewton, NumModelCrankNicolsonT, NumModelCrankNicolsonQuasiNewtonT
 export NumModelExternalVelocity
+export solve!
 
 include("adi.jl")
 include("backward-euler.jl")

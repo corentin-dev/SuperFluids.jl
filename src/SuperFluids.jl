@@ -21,7 +21,7 @@ include("IO/IO.jl")
 include("NumModels/NumModels.jl")
 include("Potentials/Potentials.jl")
 
-export solve!, initField!, energy, finishWriter!
+export initField!, energy, finishWriter!
 export CPU, MPI, GPU, Grid, Field
 
 end # module

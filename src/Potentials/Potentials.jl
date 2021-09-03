@@ -1,10 +1,12 @@
-export PotentialZero, PotentialQuadratic, PotentialQuarticQuadratic
+export PotentialZero2D, PotentialZero3D
+export PotentialQuarticQuadratic2D, PotentialQuarticQuadratic3D
+export PotentialQuadratic2D, PotentialQuadratic3D
 
-function PotentialZero(f::AbstractField2D)
+function PotentialZero2D()
    return (x,y) -> 0
 end
 
-function PotentialZero(f::AbstractField3D)
+function PotentialZero3D()
    return (x,y,z) -> 0
 end
 

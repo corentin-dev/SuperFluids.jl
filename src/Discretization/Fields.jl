@@ -5,6 +5,10 @@ struct ComplexField <: FieldType end
 "Real field"
 struct RealField <: FieldType end
 
+export ComplexField, RealField
+export Field
+export norm, normalize!
+
 "Abstract supertype for numerical models."
 abstract type AbstractField{A,G} end
 "Abstract supertype for numerical models."
@@ -36,21 +40,81 @@ mutable struct Field3D{A,G} <: AbstractField3D{A,G}
    ϕ :: A
 end
 
+"""
+    Field(g::AbstractGrid2D{FT,A},::RealField) where {FT<:Real,A<:Array}
+
+Returns a 2D field with real values.
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, RealField())
+Field2D
+  ├──────  Array type: Matrix{Float64}
+  └──────────  memory: 0.5 MB
+```
+"""
 function Field(g::AbstractGrid2D{FT,A},::RealField) where {FT<:Real,A<:Array}
    ϕ = Array{FT}(undef,g.nx,g.ny)
    return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
 end
 
+"""
+    Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A<:Array}
+
+Returns a 3D field with real values.
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
+julia> field = Field(grid, RealField())
+Field3D
+  ├───────  FloatType: Array{Float64, 3}
+  └──────────  memory: 64.0 MB
+```
+"""
 function Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A<:Array}
    ϕ = Array{FT}(undef,g.nx,g.ny,g.nz)
    return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
 end
 
+"""
+    Field(g::AbstractGrid2D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
+
+Returns a 2D field with complex values.
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField())
+Field2D
+  ├──────  Array type: Matrix{ComplexF64}
+  └──────────  memory: 0.5 MB
+```
+"""
 function Field(g::AbstractGrid2D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
    ϕ = Array{Complex{FT}}(undef,g.nx,g.ny)
    return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
 end
 
+"""
+    Field(g::AbstractGrid3D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
+
+Returns a 3D field with complex values.
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField())
+Field3D
+  ├───────  FloatType: Array{ComplexF64, 3}
+  └──────────  memory: 64.0 MB
+```
+"""
 function Field(g::AbstractGrid3D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
    ϕ = Array{Complex{FT}}(undef,g.nx,g.ny,g.nz)
    return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
@@ -86,6 +150,24 @@ function norm(f::Field3D)
    normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy*f.g.Δz)
 end
 
+"""
+    normalize!(f::AbstractField)
+
+Normalize a field.
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField());
+julia> field.ϕ .= 2;
+julia> norm(field)
+235.15101530718513
+julia> normalize!(field)
+julia> norm(field)
+1.000000000000001
+```
+"""
 function normalize!(f::AbstractField)
    normϕ = norm(f)
    f.ϕ ./= normϕ

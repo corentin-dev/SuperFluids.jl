@@ -1,34 +1,30 @@
-mutable struct NumModelADI1{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelADI1{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelADI1(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer)
+function NumModelADI1(f::AbstractField, param::AbstractParameters,
+      Δt::Real, niter::Integer, freqbckp::Integer)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
    ϕ_hat = similar(f.ϕ)
-   return NumModelADI1{typeof(f),typeof(p)}(f,
+   return NumModelADI1{typeof(f),typeof(param),typeof(plan)}(f,param,
          Δt, niter, freqbckp,
-         coeffΔ, β, Ω, plan, ϕ_hat, p,
+         plan, ϕ_hat,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelADI1) = print(io,
          "Splitting Order 1\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
@@ -37,37 +33,33 @@ function timeStep!(n::NumModelADI1)
    solveNL!(n,n.Δt)
 end
 
-mutable struct NumModelADI2{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelADI2{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelADI2(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer)
+function NumModelADI2(f::AbstractField, param::AbstractParameters,
+      Δt::Real, niter::Integer, freqbckp::Integer)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
    ϕ_hat = similar(f.ϕ)
-   return NumModelADI2{typeof(f),typeof(p)}(f,
+   return NumModelADI2{typeof(f),typeof(param),typeof(plan)}(f,param,
          Δt, niter, freqbckp,
-         coeffΔ, β, Ω, plan, ϕ_hat, p,
+         plan, ϕ_hat,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelADI2) = print(io,
          "Splitting Order 2\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
@@ -80,7 +72,7 @@ end
 function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
    # references
    ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
+   coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
    x, y = n.f.g.x, n.f.g.y
    ξx, ξy = n.plan.ξx, n.plan.ξy
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
@@ -99,10 +91,10 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
    return nothing
 end
 
-function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField3D}
+function solveLapRot!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters}
    # references
    ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
-   coeffΔ, Ω = n.coeffΔ, n.Ω
+   coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
    ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
@@ -127,11 +119,20 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField3D}
    return nothing
 end
 
-function solveNL!(n::AbstractNumModel, Δtl)
+function solveNL!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
    # references
    ϕ = n.f.ϕ
-   β = n.β
-   V = n.potential.V
+   β = n.param.β
+   V = n.param.V
    # computation
-   @. ϕ = exp(-1im * ( V + β*ϕ*conj(ϕ) ) * Δtl) * ϕ
+   @. ϕ = exp(-1im * ( V(n.f.g.x,n.f.g.y) + β*ϕ*conj(ϕ) ) * Δtl) * ϕ
+end
+
+function solveNL!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters}
+   # references
+   ϕ = n.f.ϕ
+   β = n.param.β
+   V = n.param.V
+   # computation
+   @. ϕ = exp(-1im * ( V(n.f.g.x,n.f.g.y,n.f.g.z) + β*ϕ*conj(ϕ) ) * Δtl) * ϕ
 end

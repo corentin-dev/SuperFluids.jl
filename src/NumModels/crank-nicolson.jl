@@ -1,5 +1,6 @@
-mutable struct NumModelCrankNicolson{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelCrankNicolson{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
@@ -7,21 +8,17 @@ mutable struct NumModelCrankNicolson{F,P} <: AbstractNumModel{F,P}
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat
    M
    b
    Anl
    Anl2
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelCrankNicolson(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+function NumModelCrankNicolson(f, param,
+      Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
@@ -33,16 +30,15 @@ function NumModelCrankNicolson(f, p,
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
    Anl2 = similar(f.ϕ)
-   return NumModelCrankNicolson{typeof(f),typeof(p)}(f,
+   return NumModelCrankNicolson{typeof(f),typeof(param),typeof(plan)}(f,param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+         plan, ϕ_hat, M, b, Anl, Anl2,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
          "Crank-Nicolson Newton-Raphson scheme\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
          "  ├───────  time step: $(n.Δt)\n",
@@ -67,7 +63,7 @@ Aₙₗ₂ = β × ψ²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolson)
+function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -80,13 +76,13 @@ function timeStep!(n::NumModelCrankNicolson)
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 2 × β × ∥ψ∥²
-      @. n.Anl = n.potential.V + 2 * n.β * ψ * conj(ψ)
+      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 2 * n.param.β * ψ * conj(ψ)
       # Anls2 = β × ψ²
-      @. n.Anl2 = n.β * ψ * ψ
+      @. n.Anl2 = n.param.β * ψ * ψ
       # M⁻¹ = Δt⁻¹ + V + 3 × β × ∥ψ∥² + 0.5
-      @. n.M = 1. / ( 1. / n.Δt + ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. / n.Δt + ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
+      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
       # update solution
@@ -114,8 +110,9 @@ function prodA(n::NumModelCrankNicolson, ϕt)
    (1/n.Δt .+ n.Anl) .* ϕt .+ 0.5 .* n.Anl2 .* conj.(ϕt) .- 0.5 .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelCrankNicolsonQuasiNewton{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelCrankNicolsonQuasiNewton{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
@@ -123,20 +120,16 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P} <: AbstractNumModel{F,P}
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat
    M
    b
    Anl
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelCrankNicolsonQuasiNewton(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+function NumModelCrankNicolsonQuasiNewton(f, param,
+      Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
@@ -147,16 +140,15 @@ function NumModelCrankNicolsonQuasiNewton(f, p,
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
-   return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(p)}(f,
+   return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(param),typeof(plan)}(f,param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
+         plan, ϕ_hat, M, b, Anl,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton) = print(io,
          "Crank-Nicolson Quasi-Newton scheme\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
          "  ├───────  time step: $(n.Δt)\n",
@@ -179,7 +171,7 @@ Aₙₗ = V + 3 × β × ∥ψ∥²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolsonQuasiNewton)
+function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -192,11 +184,11 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton)
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 3 × β × ∥ψ∥²
-      @. n.Anl = n.potential.V + 3 * n.β * ψ * conj(ψ)
+      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 3 * n.param.β * ψ * conj(ψ)
       # M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
-      @. n.M = 1. / ( 1. / n.Δt + ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. / n.Δt + ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
+      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
       # update solution
@@ -224,8 +216,9 @@ function prodA(n::NumModelCrankNicolsonQuasiNewton, ϕt)
    (1/n.Δt .+ n.Anl .* 0.5) .* ϕt .- 0.5 .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelCrankNicolsonT{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelCrankNicolsonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
@@ -233,21 +226,17 @@ mutable struct NumModelCrankNicolsonT{F,P} <: AbstractNumModel{F,P}
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat
    M
    b
    Anl
    Anl2
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelCrankNicolsonT(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+function NumModelCrankNicolsonT(f::AbstractField, param::AbstractParameters,
+      Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
@@ -259,16 +248,15 @@ function NumModelCrankNicolsonT(f, p,
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
    Anl2 = similar(f.ϕ)
-   return NumModelCrankNicolsonT{typeof(f),typeof(p)}(f,
+   return NumModelCrankNicolsonT{typeof(f),typeof(param),typeof(plan)}(f, param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, Anl2, p,
+         plan, ϕ_hat, M, b, Anl, Anl2,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelCrankNicolsonT) = print(io,
          "Time dependant Crank-Nicolson Newton-Raphson scheme\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
          "  ├───────  time step: $(n.Δt)\n",
@@ -293,7 +281,7 @@ Aₙₗ₂ = β × ψ²
 
 b = i Δt⁻¹ × (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolsonT)
+function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -306,13 +294,13 @@ function timeStep!(n::NumModelCrankNicolsonT)
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 2 × β × ∥ψ∥²
-      @. n.Anl = n.potential.V + 2 * n.β * ψ * conj(ψ)
+      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 2 * n.param.β * ψ * conj(ψ)
       # Anls2 = β × ψ²
-      @. n.Anl2 = n.β * ψ * ψ
+      @. n.Anl2 = n.param.β * ψ * ψ
       # M⁻¹ = i Δt⁻¹ - 1/2 ( V + 3 × β × ∥ψ∥²)
-      @. n.M = 1. / ( 1. * im / n.Δt - ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. * im / n.Δt - ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
+      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
       # update solution
@@ -338,8 +326,9 @@ function prodA(n::NumModelCrankNicolsonT, ϕt)
    ( (1. * im /n.Δt ) .- 0.5 .* n.Anl) .* ϕt .- 0.5 .* n.Anl2 .* conj.(ϕt) .+ 0.5 .* lapRot(n,ϕt)
 end
 
-mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
@@ -347,20 +336,16 @@ mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P} <: AbstractNumModel{F,P}
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
    plan :: AbstractPlan{F}
    ϕ_hat
    M
    b
    Anl
-   potential :: P
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelCrankNicolsonQuasiNewtonT(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer;
+function NumModelCrankNicolsonQuasiNewtonT(f::AbstractField, param::AbstractParameters,
+      Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
    plan = Plan(f)
@@ -371,16 +356,15 @@ function NumModelCrankNicolsonQuasiNewtonT(f, p,
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
-   return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(p)}(f,
+   return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(param),typeof(plan)}(f,param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         coeffΔ, β, Ω, plan, ϕ_hat, M, b, Anl, p,
+         plan, ϕ_hat, M, b, Anl,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewtonT) = print(io,
          "Time dependant Crank-Nicolson Quasi-Newton scheme\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
          "  ├───────  time step: $(n.Δt)\n",
@@ -403,7 +387,7 @@ Aₙₗ = V + 3 × β × ∥ψ∥²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT)
+function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -416,11 +400,11 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT)
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 3 × β × ∥ψ∥²
-      @. n.Anl = n.potential.V + 3 * n.β * ψ * conj(ψ)
+      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 3 * n.param.β * ψ * conj(ψ)
       # M⁻¹ = i Δt⁻¹ - 1/2 × ( V + 3 × β × ∥ψ∥² )
-      @. n.M = 1. / ( 1. * im / n.Δt - ( n.potential.V + 3 *  n.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. * im / n.Δt - ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = i Δt⁻¹ * (ϕ₁ - ϕ₀) - (V + β × ∥ψ∥²) × ψ + (coeffΔ Δ + Ω Lz) × ψ + coeffΔ Δϕ - Ω Lz Φ
-      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.potential.V .+ n.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
+      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
       # solving
       krylovPreCond!(n, ϕw)
       # update solution

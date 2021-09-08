@@ -120,12 +120,8 @@ function solveLapRot!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField3D,
 end
 
 function solveNL!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
-   # references
-   ϕ = n.f.ϕ
-   β = n.param.β
-   V = n.param.V
-   # computation
-   @. ϕ = exp(-1im * ( V(n.f.g.x,n.f.g.y) + β*ϕ*conj(ϕ) ) * Δtl) * ϕ
+   # ϕ ↦ exp ( -i ( V + ∥ϕ∥² ) Δt ) ϕ
+   ϕ .= exp.(-1im * ( non_linear(n.f, n.param) ) * Δtl) .* n.f.ϕ
 end
 
 function solveNL!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters}

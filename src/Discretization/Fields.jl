@@ -54,9 +54,31 @@ Field2D
   ├──────  Array type: Matrix{Float64}
   └──────────  memory: 0.5 MB
 ```
+
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField())
+Field2D
+  ├──────  Array type: Matrix{ComplexF64}
+  └──────────  memory: 0.5 MB
+```
 """
-function Field(g::AbstractGrid2D{FT,A},::RealField) where {FT<:Real,A<:Array}
-   ϕ = Array{FT}(undef,g.nx,g.ny)
+function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims=1) where {FT<:Real,A}
+   if typeof(t) == RealField
+      myT = FT
+   elseif typeof(t) == ComplexField
+      myT = Complex{FT}
+   end
+   if typeof(A) == Array
+      myArray = Array
+   elseif typeof(A) == CuArray
+      myArray = CuArray
+   end
+   if ndims == 1
+      ϕ = Array{myT}(undef,g.nx,g.ny)
+   else
+      ϕ = Array{myT}(undef,g.nx,g.ny,ndims)
+   end
    return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
 end
 
@@ -74,39 +96,7 @@ Field3D
   ├───────  FloatType: Array{Float64, 3}
   └──────────  memory: 64.0 MB
 ```
-"""
-function Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A<:Array}
-   ϕ = Array{FT}(undef,g.nx,g.ny,g.nz)
-   return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
-end
 
-"""
-    Field(g::AbstractGrid2D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
-
-Returns a 2D field with complex values.
-
-Example
-=======
-```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField())
-Field2D
-  ├──────  Array type: Matrix{ComplexF64}
-  └──────────  memory: 0.5 MB
-```
-"""
-function Field(g::AbstractGrid2D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
-   ϕ = Array{Complex{FT}}(undef,g.nx,g.ny)
-   return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
-end
-
-"""
-    Field(g::AbstractGrid3D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
-
-Returns a 3D field with complex values.
-
-Example
-=======
 ```jldoctest
 julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
 julia> field = Field(grid, ComplexField())
@@ -115,28 +105,22 @@ Field3D
   └──────────  memory: 64.0 MB
 ```
 """
-function Field(g::AbstractGrid3D{FT,A},::ComplexField) where {FT<:Real,A<:Array}
-   ϕ = Array{Complex{FT}}(undef,g.nx,g.ny,g.nz)
-   return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
-end
-
-function Field(g::AbstractGrid2D{FT,A},::RealField) where {FT<:Real,A<:CuArray}
-   ϕ = CuArray{FT}(undef,g.nx,g.ny)
-   return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
-end
-
-function Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A<:CuArray}
-   ϕ = CuArray{FT}(undef,g.nx,g.ny,g.nz)
-   return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
-end
-
-function Field(g::AbstractGrid2D{FT,A},::ComplexField) where {FT<:Real,A<:CuArray}
-   ϕ = CuArray{Complex{FT}}(undef,g.nx,g.ny)
-   return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
-end
-
-function Field(g::AbstractGrid3D{FT,A},::ComplexField) where {FT<:Real,A<:CuArray}
-   ϕ = CuArray{Complex{FT}}(undef,g.nx,g.ny,g.nz)
+function Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A}
+   if typeof(t) == RealField
+      myT = FT
+   elseif typeof(t) == ComplexField
+      myT = Complex{FT}
+   end
+   if typeof(A) == Array
+      myArray = Array
+   elseif typeof(A) == CuArray
+      myArray = CuArray
+   end
+   if ndims == 1
+      ϕ = myArray{myT}(undef,g.nx,g.ny)
+   else
+      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
+   end
    return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
 end
 

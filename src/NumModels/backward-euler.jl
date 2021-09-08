@@ -59,8 +59,9 @@ Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
 
 function timeStep!(n::NumModelBackwardEuler{F,P}) where {F<:AbstractField,P<:GrossPitaevskiiParameters}
    # compute matrices and vectors
-   # M⁻¹ = Δt⁻¹ + V + β × ∥ϕ∥²
-   @. n.M = 1. / ( 1. / n.Δt + n.param.V(n.f.g.x,n.f.g.y) + n.param.β * real( n.f.ϕ * conj(n.f.ϕ) ) )
+   # M⁻¹ = Δt⁻¹ + NL
+   # NL = V + β × ∥ϕ∥² for GP
+   n.M .= 1. ./ ( 1 / n.Δt .+ non_linear(n.f, n.param) )
    # b = M × ϕ × Δt⁻¹
    @. n.b = n.M * n.f.ϕ / n.Δt
    # solving
@@ -126,8 +127,7 @@ end
 
 function timeStep!(n::NumModelBackwardEulerNoPrecond{F,P}) where {F <: AbstractField3D, P <: GrossPitaevskiiParameters}
    # compute matrices and vectors
-   # Anl = V + β × ∥ϕ∥²
-   @. n.Anl = n.param.V(n.f.g.x,n.f.g.y,n.f.g.z) + n.param.β * real( n.f.ϕ * conj(n.f.ϕ) )
+   n.Anl .= non_linear(n.f, n.param)
    # b = ϕ × Δt⁻¹
    @. n.b = n.f.ϕ / n.Δt
    # solving

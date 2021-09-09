@@ -1,6 +1,10 @@
 "Abstract supertype for FFT plans."
 abstract type AbstractPlan{F} end
 
+#TODO add a new dimension for plans (F,PT}
+# it could be FFT
+# also CS for compact scheme
+
 struct Plan2D{F} <: AbstractPlan{F}
    "plan in all directions"
    plan :: AbstractFFTs.Plan
@@ -37,7 +41,7 @@ function Plan(f::F) where {F<:AbstractField2D}
    # if GPU do something
    Ξx = reshape(ξx,f.g.nx,1)
    Ξy = reshape(ξy,1,f.g.ny)
-   return Plan2D{F}(plan_fft(f.ϕ),
+   return Plan2D{F}(plan_fft(f.ϕ,(1,2)),
                     plan_fft(f.ϕ,1),
                     plan_fft(f.ϕ,2),
                     Ξx, Ξy)
@@ -51,7 +55,7 @@ function Plan(f::F) where {F<:AbstractField3D}
    Ξx = reshape(ξx,f.g.nx,1,1)
    Ξy = reshape(ξy,1,f.g.ny,1)
    Ξz = reshape(ξz,1,1,f.g.nz)
-   return Plan3D{F}(plan_fft(f.ϕ),
+   return Plan3D{F}(plan_fft(f.ϕ,(1,2,3)),
                     plan_fft(f.ϕ,1),
                     plan_fft(f.ϕ,2),
                     plan_fft(f.ϕ,3),

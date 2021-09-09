@@ -22,6 +22,8 @@ abstract type AbstractField3D{A,G} <: AbstractField{A,G} end
 Type representing a 2D field on a 2D grid.
 """
 mutable struct Field2D{A,G} <: AbstractField2D{A,G}
+   "number of dimensions"
+   ndims :: Integer
    "g Grid"
    g :: G
    "ϕ array containing data"
@@ -34,6 +36,8 @@ end
 Type representing a 3D field on a 3D grid.
 """
 mutable struct Field3D{A,G} <: AbstractField3D{A,G}
+   "number of dimensions"
+   ndims :: Integer
    "g Grid"
    g :: G
    "ϕ array containing data"
@@ -43,7 +47,7 @@ end
 """
     Field(g::AbstractGrid2D{FT,A},::RealField) where {FT<:Real,A<:Array}
 
-Returns a 2D field with real values.
+Returns a 2D field.
 
 Example
 =======
@@ -63,7 +67,7 @@ Field2D
   └──────────  memory: 0.5 MB
 ```
 """
-function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims=1) where {FT<:Real,A}
+function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims::Integer=1) where {FT<:Real,A}
    if typeof(t) == RealField
       myT = FT
    elseif typeof(t) == ComplexField
@@ -79,13 +83,13 @@ function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims=1) where {FT<:Real,A}
    else
       ϕ = Array{myT}(undef,g.nx,g.ny,ndims)
    end
-   return Field2D{typeof(ϕ),typeof(g)}(g,ϕ)
+   return Field2D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
 end
 
 """
-    Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A<:Array}
+    Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<:Real,A}
 
-Returns a 3D field with real values.
+Returns a 3D field.
 
 Example
 =======
@@ -105,7 +109,7 @@ Field3D
   └──────────  memory: 64.0 MB
 ```
 """
-function Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A}
+function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<:Real,A}
    if typeof(t) == RealField
       myT = FT
    elseif typeof(t) == ComplexField
@@ -121,7 +125,7 @@ function Field(g::AbstractGrid3D{FT,A},::RealField) where {FT<:Real,A}
    else
       ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
    end
-   return Field3D{typeof(ϕ),typeof(g)}(g,ϕ)
+   return Field3D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
 end
 
 function norm(f::Field2D)
@@ -161,9 +165,9 @@ end
 Base.show(io::IO, f::Field2D{A}) where A =
      print(io, "Field2D\n",
          "  ├──────  Array type: $(A)", '\n', 
-         "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
+         "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 
 Base.show(io::IO, f::Field3D{A}) where A =
      print(io, "Field3D\n",
          "  ├───────  FloatType: $(A)", '\n', 
-         "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")
+         "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")

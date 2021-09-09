@@ -78,6 +78,8 @@ function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
    elseif typeof(A) == CuArray
       myArray = CuArray
    end
+   println(typeof(A))
+   println(typeof(g))
    if ndims == 1
       ϕ = Array{myT}(undef,g.nx,g.ny)
    else
@@ -119,11 +121,14 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
       myArray = Array
    elseif typeof(A) == CuArray
       myArray = CuArray
+   else
+      println(typeof(A))
+      println(typeof(g))
    end
    if ndims == 1
-      ϕ = myArray{myT}(undef,g.nx,g.ny)
+      ϕ = Array{myT}(undef,g.nx,g.ny)
    else
-      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
+      ϕ = Array{myT}(undef,g.nx,g.ny,g.nz,ndims)
    end
    return Field3D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
 end

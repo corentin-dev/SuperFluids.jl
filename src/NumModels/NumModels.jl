@@ -5,13 +5,16 @@ abstract type AbstractParameters end
 abstract type AbstractNumModel{AbstractField,AbstractParameters,AbstractPlan} end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
+include("NavierStokes/NavierStokes.jl")
 
 export NumModelADI1, NumModelADI2
+export NumModelForwardEuler
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
 export NumModelCrankNicolson, NumModelCrankNicolsonQuasiNewton, NumModelCrankNicolsonT, NumModelCrankNicolsonQuasiNewtonT
 export NumModelExternalVelocity
 export solve!
 
+include("rk.jl")
 include("adi.jl")
 include("backward-euler.jl")
 include("crank-nicolson.jl")

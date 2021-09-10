@@ -73,17 +73,17 @@ function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
    elseif typeof(t) == ComplexField
       myT = Complex{FT}
    end
-   if typeof(A) == Array
+   if A <: Array
       myArray = Array
-   elseif typeof(A) == CuArray
+   elseif A <: CuArray
       myArray = CuArray
    end
    println(typeof(A))
    println(typeof(g))
    if ndims == 1
-      ϕ = Array{myT}(undef,g.nx,g.ny)
+      ϕ = myArray{myT}(undef,g.nx,g.ny)
    else
-      ϕ = Array{myT}(undef,g.nx,g.ny,ndims)
+      ϕ = myArray{myT}(undef,g.nx,g.ny,ndims)
    end
    return Field2D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
 end
@@ -117,18 +117,18 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
    elseif typeof(t) == ComplexField
       myT = Complex{FT}
    end
-   if typeof(A) == Array
+   if A <: Array
       myArray = Array
-   elseif typeof(A) == CuArray
+   elseif A <: CuArray
       myArray = CuArray
    else
       println(typeof(A))
       println(typeof(g))
    end
    if ndims == 1
-      ϕ = Array{myT}(undef,g.nx,g.ny)
+      ϕ = myArray{myT}(undef,g.nx,g.ny)
    else
-      ϕ = Array{myT}(undef,g.nx,g.ny,g.nz,ndims)
+      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
    end
    return Field3D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
 end

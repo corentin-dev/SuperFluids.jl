@@ -1,24 +1,20 @@
 using SuperFluids
+using LinearAlgebra
 
 # simulation parameters
-nx = 32
-ny = 32
-nz = 32
+nx = 128
+ny = 128
+nz = 128
 
 xrange = (-pi, pi)
 yrange = (-pi, pi)
 zrange = (-pi, pi)
 
-# potential
-α = 0
-γx = 1
-γy = 1
-
 # equation
-param = NavierStokesParameters(ν = 0.01)
+param = NavierStokesParameters(ν = 0.001)
 
 # solver
-Δt = 0.01
+Δt = 0.001
 niter = 1000
 freqbckp = 10
 
@@ -28,11 +24,12 @@ println(grid)
 # allocating a field
 field = Field(grid, ComplexField(), ndims=3)
 println(field)
-# initialisation
-taylor_green!(field.ϕ, grid.x, grid.y, grid.z)
 # solver
 nummodel = NumModelForwardEuler(field, param, Δt, niter, freqbckp)
 println(nummodel)
+# initialisation
+taylor_green!(field.ϕ, grid.x, grid.y, grid.z)
+mul!(nummodel.ϕ_hat, nummodel.plan.plan, field.ϕ)
 
 # solving
 solve!(nummodel, plot=false)

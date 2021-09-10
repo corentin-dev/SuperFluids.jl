@@ -90,7 +90,10 @@ function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField2D, P<:
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
       if resNewton < n.tolnewton
+         println("Number of Newton iterations: $(itnewton)")
          break
+      elseif itnewton == n.nnewton
+         println("warning: Newton algorithm did not converge")
       end
    end
    # update field
@@ -196,7 +199,10 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractF
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
       if resNewton < n.tolnewton
+         println("Number of Newton iterations: $(itnewton)")
          break
+      elseif itnewton == n.nnewton
+         println("warning: Newton algorithm did not converge")
       end
    end
    # update field
@@ -308,7 +314,10 @@ function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField2D, P<
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
       if resNewton < n.tolnewton
+         println("Number of Newton iterations: $(itnewton)")
          break
+      elseif itnewton == n.nnewton
+         println("warning: Newton algorithm did not converge")
       end
    end
    # update field
@@ -412,7 +421,10 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:Abstract
       # newton residual
       resNewton = sqrt(sum(real.(ϕw.*conj.(ϕw))))
       if resNewton < n.tolnewton
+         println("Number of Newton iterations: $(itnewton)")
          break
+      elseif itnewton == n.nnewton
+         println("warning: Newton algorithm did not converge")
       end
    end
    # update field

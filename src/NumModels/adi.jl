@@ -31,6 +31,7 @@ Base.show(io::IO, n::NumModelADI1) = print(io,
 function timeStep!(n::NumModelADI1)
    solveLapRot!(n,n.Δt)
    solveNL!(n,n.Δt)
+   return 1
 end
 
 mutable struct NumModelADI2{F,P,Plan} <: AbstractNumModel{F,P,Plan}
@@ -67,6 +68,7 @@ function timeStep!(n::NumModelADI2)
    solveLapRot!(n,n.Δt*0.5)
    solveNL!(n,n.Δt)
    solveLapRot!(n,n.Δt*0.5)
+   return 2
 end
 
 function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}

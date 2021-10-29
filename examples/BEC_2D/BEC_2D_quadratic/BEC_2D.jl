@@ -1,4 +1,6 @@
 using SuperFluids
+using DataFrames
+using CSV
 
 # simulation parameters
 nx = 128
@@ -31,12 +33,14 @@ field = Field(grid, ComplexField())
 println(field)
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
-# init = InitGauss(field, Ω = Ω)
+# init = InitGauss(field, Ω = param.Ω)
 field.ϕ .= init.(grid.x,grid.y)
 normalize!(field)
 # solver
-nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
+nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 500, tolkrylov = 1e-6)
 println(nummodel)
 
 # solving
-solve!(nummodel, plot=false)
+res = solve!(nummodel, plot=false)
+CSV.write("energy-noprecond-$(Δt).csv",DataFrame(res),delim=" ",header=false)
+nothing

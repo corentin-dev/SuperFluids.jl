@@ -74,3 +74,5 @@ solve!(nummodel, plot=false)
 nummodel = NumModelCrankNicolsonQuasiNewtonT(field, param, Δt*0.1, niter, freqbckp)
 println(nummodel)
 solve!(nummodel, plot=false)
+
+nothing

@@ -50,4 +50,5 @@ Base.show(io::IO, n::NumModelForwardEuler) = print(io,
 function timeStep!(n::NumModelForwardEuler{F}) where {F<:AbstractField3D}
    n.ϕ_hat .+= rhs(n) * n.Δt
    ldiv!(n.f.ϕ, n.plan.plan, n.ϕ_hat)
+   return 1
 end

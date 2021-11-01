@@ -61,7 +61,7 @@ function rhs(n :: AbstractNumModel{F,P}) where {F<:AbstractField3D, P<:NavierSto
    ξy = n.plan.ξy
    ξz = n.plan.ξz
    # computation
-   ω_hat = curl_hat(n.ϕ_hat, ξx, ξy, ξz) 
+   ω_hat = curl_hat(n.ϕ_hat, ξx, ξy, ξz)
    ω = n.plan.plan \ ω_hat
    # dU = u ∧ ω
    dU = cross(n.f.ϕ, ω)
@@ -71,8 +71,8 @@ function rhs(n :: AbstractNumModel{F,P}) where {F<:AbstractField3D, P<:NavierSto
    dealias!(dU_hat, ξx, ξy, ξz)
    # P_hat = ∇ ⋅ dU / Δ
    P_hat = - im * (
-            ξx .* dU_hat[:,:,:,1] .+ 
-            ξy .* dU_hat[:,:,:,2] .+ 
+            ξx .* dU_hat[:,:,:,1] .+
+            ξy .* dU_hat[:,:,:,2] .+
             ξz .* dU_hat[:,:,:,3]) ./ ξsquared.(ξx, ξy, ξz)
    # dU = (u∧ω) - νΔu
    dU_hat .-= n.param.ν .* (ξx.^2 .+ ξy.^2 .+ ξz.^2) .* n.ϕ_hat
@@ -84,22 +84,25 @@ function rhs(n :: AbstractNumModel{F,P}) where {F<:AbstractField3D, P<:NavierSto
 end
 
 function energy(n::AbstractNumModel{F,P}, showEnergy=false) where {F<:AbstractField2D, P<:NavierStokesParameters}
+   E = sum( 0.5 .* real.(
+      n.f.ϕ[:,:,:,1].^2 .+
+      n.f.ϕ[:,:,:,2].^2 .+
+      n.f.ϕ[:,:,:,3].^2 ) .* ( n.f.g.Δx * n.f.g.Δy * n.f.g.Δz )
+   )
    if(showEnergy)
-      println("for the moment no energy is computed")
+      println("E = $(E)")
    end
-
-   return nothing
+   return 0., E, 0., E
 end
 
 function energy(n::AbstractNumModel{F,P}, showEnergy=false) where {F<:AbstractField3D, P<:NavierStokesParameters}
    E = sum( 0.5 .* real.(
-                    n.f.ϕ[:,:,:,1].^2 .+ 
-                    n.f.ϕ[:,:,:,2].^2 .+ 
-                    n.f.ϕ[:,:,:,3].^2 ) .* ( n.f.g.Δx * n.f.g.Δy * n.f.g.Δz ) 
+                    n.f.ϕ[:,:,:,1].^2 .+
+                    n.f.ϕ[:,:,:,2].^2 .+
+                    n.f.ϕ[:,:,:,3].^2 ) .* ( n.f.g.Δx * n.f.g.Δy * n.f.g.Δz )
           )
    if(showEnergy)
       println("E = $(E)")
    end
-
-   return nothing
+   return 0., E, 0., E
 end

@@ -9,11 +9,11 @@ mutable struct NumModelCrankNicolson{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    nnewton :: Integer
    tolnewton :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray{F}
-   M :: AbstractArray{F}
-   b :: AbstractArray{F}
-   Anl :: AbstractArray{F}
-   Anl2 :: AbstractArray{F}
+   ϕ_hat :: AbstractArray
+   M :: AbstractArray
+   b :: AbstractArray
+   Anl :: AbstractArray
+   Anl2 :: AbstractArray
    writers :: AbstractWriterCollection{F}
 end
 
@@ -55,10 +55,10 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P,Plan} <: AbstractNumModel{F,
    nnewton :: Integer
    tolnewton :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray{F}
-   M :: AbstractArray{F}
-   b :: AbstractArray{F}
-   Anl :: AbstractArray{F}
+   ϕ_hat :: AbstractArray
+   M :: AbstractArray
+   b :: AbstractArray
+   Anl :: AbstractArray
    writers :: AbstractWriterCollection{F}
 end
 
@@ -99,11 +99,11 @@ mutable struct NumModelCrankNicolsonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    nnewton :: Integer
    tolnewton :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray{F}
-   M :: AbstractArray{F}
-   b :: AbstractArray{F}
-   Anl :: AbstractArray{F}
-   Anl2 :: AbstractArray{F}
+   ϕ_hat :: AbstractArray
+   M :: AbstractArray
+   b :: AbstractArray
+   Anl :: AbstractArray
+   Anl2 :: AbstractArray
    writers :: AbstractWriterCollection{F}
 end
 

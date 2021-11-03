@@ -67,6 +67,7 @@ function write!(w::WriterVTK{T};
    ξx, ξy = plan.ξx, plan.ξy
    x, y = vec(f.g.x), vec(f.g.y)
 
+   if w.f.ndims == 1
    ϕhat = plan_x * f.ϕ
    ϕhat .= im .* ξx .* ϕhat
    ∇ϕ_x = plan_x \ ϕhat
@@ -83,6 +84,12 @@ function write!(w::WriterVTK{T};
    vtkfile["VelocityX", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_x))
    vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
    vtkfile["Time"] = Δt * istep
+   else
+   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
+   vtkfile["VelocityX", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,1])
+   vtkfile["VelocityY", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,2])
+   vtkfile["Time"] = Δt * istep
+   end
 
    # write to file
    outfiles = vtk_save(vtkfile)
@@ -104,6 +111,7 @@ function write!(w::WriterVTK{T};
       icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where {T <: AbstractField3D}
+
    # references
    f = w.f
    plan = Plan(f)
@@ -112,6 +120,7 @@ function write!(w::WriterVTK{T};
    ξx, ξy, ξz = plan.ξx, plan.ξy, plan.ξz
    x, y, z = vec(f.g.x), vec(f.g.y), vec(f.g.z)
 
+   if w.f.ndims == 1
    ϕhat = plan_x * f.ϕ
    ϕhat .= im .* ξx .* ϕhat
    ∇ϕ_x = plan_x \ ϕhat
@@ -132,6 +141,13 @@ function write!(w::WriterVTK{T};
    vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
    vtkfile["VelocityZ", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_z))
    vtkfile["Time"] = Δt * istep
+   else
+   vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
+   vtkfile["VelocityX", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,1])
+   vtkfile["VelocityY", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,2])
+   vtkfile["VelocityZ", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,3])
+   vtkfile["Time"] = Δt * istep
+   end
 
    # write to file
    outfiles = vtk_save(vtkfile)

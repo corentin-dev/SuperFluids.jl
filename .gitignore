@@ -1,6 +1,7 @@
 Manifest.toml
 *.swp
 *.pvd
+*.h5
 *.vtr
 *.vti
 *.data

@@ -5,13 +5,16 @@ abstract type AbstractParameters end
 abstract type AbstractNumModel{AbstractField,AbstractParameters,AbstractPlan} end
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
+include("NavierStokes/NavierStokes.jl")
 
 export NumModelADI1, NumModelADI2
+export NumModelForwardEuler
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
 export NumModelCrankNicolson, NumModelCrankNicolsonQuasiNewton, NumModelCrankNicolsonT, NumModelCrankNicolsonQuasiNewtonT
 export NumModelExternalVelocity
 export solve!
 
+include("rk.jl")
 include("adi.jl")
 include("backward-euler.jl")
 include("crank-nicolson.jl")
@@ -25,11 +28,15 @@ function solve!(n::AbstractNumModel;istart=1,plot=false)
       p = Plot(n.f)
       createPlot!(p)
    end
+   res = Tuple{Int64, Int64, Float64, Float64, Float64, Float64}[]
+   nkrylovtotal = 0
    write!(n.writers,prefix="res",icpu=0,istep=istart,Δt=n.Δt)
    for it = istart:istart+n.niter
       println("iteration $(it)")
-      energy(n,true)
-      timeStep!(n)
+      E = energy(n,true)
+      nkrylov = timeStep!(n)
+      nkrylovtotal += nkrylov
+      push!(res, (nkrylov,nkrylovtotal,E...) )
       if it % n.freqbckp == 0
          write!(n.writers,prefix="res",icpu=0,istep=it,Δt=n.Δt)
       end
@@ -37,10 +44,5 @@ function solve!(n::AbstractNumModel;istart=1,plot=false)
          updatePlot!(p)
       end
    end
-   energy(n,true)
-   if plot
-      return p
-   else
-      return nothing
-   end
+   return res
 end

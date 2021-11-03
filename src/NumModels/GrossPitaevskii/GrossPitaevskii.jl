@@ -48,6 +48,14 @@ Base.show(io::IO, param::GrossPitaevskiiParameters) =
          "  ├─────── idϕ/dt = $(param.coeffΔ) Δϕ + $(param.β) |ϕ|²ϕ  + V(x)ϕ - i Lz $(param.Ω) ϕ \n",
          "  └──────────────── coeffΔ: $(param.coeffΔ), β: $(param.β), Ω: $(param.Ω)")
 
+@inline function non_linear(field::AbstractField2D, param::GrossPitaevskiiParameters)
+   return param.V.(field.g.x, field.g.y)              .+ param.β .* real.( field.ϕ .* conj.(field.ϕ) )
+end
+
+@inline function non_linear(field::AbstractField3D, param::GrossPitaevskiiParameters)
+   return param.V.(field.g.x, field.g.y, n.field.g.z) .+ param.β .* real.( field.ϕ .* conj.(field.ϕ) )
+end
+
 function lapRot(n::AbstractNumModel{F,P}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters}
    # references
    b = n.b

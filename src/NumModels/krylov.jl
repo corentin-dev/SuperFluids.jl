@@ -3,6 +3,7 @@ function krylov!(n::AbstractNumModel, ϕ)
    r = n.b - prodA(n,ϕ)
    r₂ = copy(r)
    p = copy(r)
+   niter = 0
    for i = 1:n.nkrylov
       Ap = prodA(n,p)
       α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
@@ -13,12 +14,16 @@ function krylov!(n::AbstractNumModel, ϕ)
       rr₂ = sum(r.*conj.(r₂))
       r = s - ω*As
       if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
+         println("Number of Krylov iterations: $(i)")
          break
+      elseif i == n.nkrylov
+         println("warning: Krylov solver did not converge")
       end
+      niter = i
       β = sum(r.*conj.(r₂)) / rr₂ * α / ω
       p = r + β * (p - ω*Ap)
    end
-   return nothing
+   return niter
 end
 
 function krylovPreCond!(n::AbstractNumModel, ϕ)
@@ -26,6 +31,7 @@ function krylovPreCond!(n::AbstractNumModel, ϕ)
    r = n.M .* (n.b .- prodA(n,ϕ))
    r₂ = copy(r)
    p = copy(r)
+   niter = 0
    for i = 1:n.nkrylov
       Ap = n.M .* prodA(n,p)
       α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
@@ -36,10 +42,14 @@ function krylovPreCond!(n::AbstractNumModel, ϕ)
       rr₂ = sum(r.*conj.(r₂))
       r = s - ω*As
       if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
+         println("Number of Krylov iterations: $(i)")
          break
+      elseif i == n.nkrylov
+         println("warning: Krylov solver did not converge")
       end
+      niter = i
       β = sum(r.*conj.(r₂)) / rr₂ * α / ω
       p = r + β * (p - ω*Ap)
    end
-   return nothing
+   return niter
 end

@@ -56,7 +56,7 @@ end
    return param.V.(field.g.x, field.g.y, n.field.g.z) .+ param.β .* real.( field.ϕ .* conj.(field.ϕ) )
 end
 
-function lapRot(n::AbstractNumModel{F,P}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters}
+function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan<:AbstractFFTPlan}
    # references
    b = n.b
    ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
@@ -81,7 +81,22 @@ function lapRot(n::AbstractNumModel{F,P}, ϕt) where {F<:AbstractField2D, P<:Gro
    return ϕtx
 end
 
-function lapRot(n::AbstractNumModel{F,P}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters}
+function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan<:AbstractFDPlan}
+   # references
+   coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
+   x, y = n.f.g.x, n.f.g.y
+   # compute derivatives
+   dx, ddx = computedxddx(n, ϕt)
+   #ϕtx = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕthat_x
+   ϕtx = -coeffΔ .* ddx .- im .* Ω .* y .*dx
+   # compute derivatives
+   dy, ddy = computedyddy(n, ϕt)
+   ϕty = -coeffΔ .* ddy .+ im .* Ω .* x .*dy
+   @. ϕtx = ϕtx+ϕty
+   return ϕtx
+end
+
+function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters, Plan<:AbstractFFTPlan}
    # references
    ϕthat_x, ϕthat_y, ϕthat_z = n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω = n.coeffΔ, n.Ω
@@ -110,7 +125,7 @@ function lapRot(n::AbstractNumModel{F,P}, ϕt) where {F<:AbstractField3D, P<:Gro
    @. ϕtx = (ϕtx+ϕty+ϕtz)
 end
 
-function energy(n::AbstractNumModel{F,P}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
+function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
    # references
    ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
@@ -153,7 +168,34 @@ function energy(n::AbstractNumModel{F,P}, showEnergy=false) where {F<:AbstractFi
    return EΩ, EΔ, Eβ, E
 end
 
-function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractField3D}
+function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan<:AbstractFDPlan}
+   # references
+   ϕ = n.f.ϕ
+   coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
+   x, y = n.f.g.x, n.f.g.y
+   Δx, Δy = n.f.g.Δx, n.f.g.Δy
+   V = n.param.V
+   # compute derivatives
+   dx, _ = computedxddx(n, ϕ)
+   dy, _ = computedxddx(n, ϕ)
+   # compute energies
+   EΩ = sum(real.(im.*conj.(ϕ).*( (Ω .* y .* dx) .- (Ω .* x .* dy)))) * Δx * Δy
+   EΔ = sum(-coeffΔ .* (abs.(dx).+abs.(dy)) .+ real.(V.(x,y)).*real.(ϕ.*conj.(ϕ))) * Δx * Δy
+   Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy
+   # compute sum
+   E = -EΩ + EΔ + Eβ
+
+   if(showEnergy)
+      println("Angular Momentum Energy : $(EΩ)")
+      println("Kinetic + Potential Energy : $(EΔ)")
+      println("Interaction Energy : $(Eβ)")
+      println("Total Energy: $(E)")
+   end
+
+   return EΩ, EΔ, Eβ, E
+end
+
+function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
    # references
    ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
    coeffΔ, Ω, β = n.coeffΔ, n.Ω, n.β
@@ -179,7 +221,7 @@ function energy(n::AbstractNumModel{F}, showEnergy=false) where {F<:AbstractFiel
    # compute roty
    ∇ϕ_hat = im .* -Ω .* x .* ξy .* ϕhat_y
    ldiv!(∇ϕ_y, plan_y, ∇ϕ_hat) # we get rot y
-   # compute grad z 
+   # compute grad z
    mul!(ϕhat_z, plan_z, ϕ)
    ∇ϕ_hat = im .* ξz .* ϕhat_z
    ∇ϕ_z = plan_z \ ∇ϕ_hat # we get grad x

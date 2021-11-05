@@ -35,8 +35,9 @@ Backward Euler
 """
 function NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
       Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
-   plan = Plan(f)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
+      plantype::PlanType = FFTPlan())
+   plan = Plan(f,t=plantype)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
@@ -74,8 +75,9 @@ end
 
 function NumModelBackwardEulerNoPrecond(f::AbstractField, param::AbstractParameters,
       Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
-   plan = Plan(f)
+      nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
+      plantype::PlanType = FFTPlan())
+   plan = Plan(f,t=plantype)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])

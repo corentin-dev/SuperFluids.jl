@@ -1,11 +1,18 @@
-"Abstract supertype for FFT plans."
+"Abstract supertype for plan type."
+abstract type PlanType end
+"FFT plan"
+struct FFTPlan <: PlanType end
+"Finite difference plan"
+struct FiniteDifferentePlan <: PlanType end
+
+"Abstract supertype for plans."
 abstract type AbstractPlan{F} end
+"Abstract supertype for FFT plans."
+abstract type AbstractFFTPlan{F} end
+"Abstract supertype for Finite Difference plans."
+abstract type AbstractFDPlan{F} end
 
-#TODO add a new dimension for plans (F,PT}
-# it could be FFT
-# also CS for compact scheme
-
-struct Plan2D{F} <: AbstractPlan{F}
+struct PlanFFT2D{F} <: AbstractFFTPlan{F}
    "plan in all directions"
    plan :: AbstractFFTs.Plan
    "plan in x direction only"
@@ -13,12 +20,12 @@ struct Plan2D{F} <: AbstractPlan{F}
    "plan in y direction only"
    plan_y :: AbstractFFTs.Plan
    "ξx x frequencies"
-   ξx :: Any
+   ξx :: AbstractArray
    "ξy y frequencies"
-   ξy :: Any
+   ξy :: AbstractArray
 end
 
-struct Plan3D{F} <: AbstractPlan{F}
+struct PlanFFT3D{F} <: AbstractFFTPlan{F}
    "plan in all directions"
    plan :: AbstractFFTs.Plan
    "plan in x direction only"
@@ -28,30 +35,49 @@ struct Plan3D{F} <: AbstractPlan{F}
    "plan in z direction only"
    plan_z :: AbstractFFTs.Plan
    "ξx x frequencies"
-   ξx :: Any
+   ξx :: AbstractArray
    "ξy y frequencies"
-   ξy :: Any
+   ξy :: AbstractArray
    "ξz z frequencies"
-   ξz :: Any
+   ξz :: AbstractArray
 end
 
-function Plan(f::F) where {F<:AbstractField2D}
-   ξx = fftfreq(f.g.nx,2π/f.g.Δx)
-   ξy = fftfreq(f.g.ny,2π/f.g.Δy)
-   if typeof(f.ϕ) <: Array
-      myArray = Array
-   elseif typeof(f.ϕ) <: CuArray
-      myArray = CuArray
+function ξsquared(ξx::Real, ξy::Real, ξz::Real)
+   a = ξx^2 + ξy^2 + ξz^2
+   if abs(a) < 1e-8
+      return 1
+   else
+      return a
    end
-   Ξx = reshape(myArray(ξx),f.g.nx,1)
-   Ξy = reshape(myArray(ξy),1,f.g.ny)
-   return Plan2D{F}(plan_fft(f.ϕ,(1,2)),
-                    plan_fft(f.ϕ,1),
-                    plan_fft(f.ϕ,2),
-                    Ξx, Ξy)
 end
 
-function Plan(f::F) where {F<:AbstractField3D}
+struct PlanFD2D{F} <: AbstractFDPlan{F}
+end
+
+struct PlanF32D{F} <: AbstractFDPlan{F}
+end
+
+function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
+   if typeof(t) == FFTPlan
+      ξx = fftfreq(f.g.nx,2π/f.g.Δx)
+      ξy = fftfreq(f.g.ny,2π/f.g.Δy)
+      if typeof(f.ϕ) <: Array
+         myArray = Array
+      elseif typeof(f.ϕ) <: CuArray
+         myArray = CuArray
+      end
+      Ξx = reshape(myArray(ξx),f.g.nx,1)
+      Ξy = reshape(myArray(ξy),1,f.g.ny)
+      return PlanFFT2D{F}(plan_fft(f.ϕ,(1,2)),
+                     plan_fft(f.ϕ,1),
+                     plan_fft(f.ϕ,2),
+                     Ξx, Ξy)
+   else
+      return PlanFD2D{F}()
+   end
+end
+
+function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
    ξx = fftfreq(f.g.nx,2π/f.g.Δx)
    ξy = fftfreq(f.g.ny,2π/f.g.Δy)
    ξz = fftfreq(f.g.nz,2π/f.g.Δz)
@@ -63,18 +89,9 @@ function Plan(f::F) where {F<:AbstractField3D}
    Ξx = reshape(myArray(ξx),f.g.nx,1,1)
    Ξy = reshape(myArray(ξy),1,f.g.ny,1)
    Ξz = reshape(myArray(ξz),1,1,f.g.nz)
-   return Plan3D{F}(plan_fft(f.ϕ,(1,2,3)),
+   return PlanFFT3D{F}(plan_fft(f.ϕ,(1,2,3)),
                     plan_fft(f.ϕ,1),
                     plan_fft(f.ϕ,2),
                     plan_fft(f.ϕ,3),
                     Ξx, Ξy, Ξz)
-end
-
-function ξsquared(ξx::Real, ξy::Real, ξz::Real)
-   a = ξx^2 + ξy^2 + ξz^2
-   if abs(a) < 1e-8
-      return 1
-   else
-      return a
-   end
 end

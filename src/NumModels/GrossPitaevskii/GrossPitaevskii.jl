@@ -56,29 +56,39 @@ end
    return param.V.(field.g.x, field.g.y, n.field.g.z) .+ param.β .* real.( field.ϕ .* conj.(field.ϕ) )
 end
 
+# function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan<:AbstractFFTPlan}
+#    # references
+#    b = n.b
+#    ϕthat_x, ϕthat_y = n.plan.ϕ_hat, n.plan.ϕ_hat
+#    coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
+#    x, y = n.f.g.x, n.f.g.y
+#    ξx, ξy = n.plan.ξx, n.plan.ξy
+#    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
+#    # perform FFT
+#    mul!(ϕthat_x, plan_x, ϕt)
+#    # compute the laplacian and rotation in the Fourier space (x)
+#    @. ϕthat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕthat_x
+#    # backward FFT
+#    ϕtx = plan_x \ ϕthat_x
+#    # perform FFT
+#    mul!(ϕthat_y, plan_y, ϕt)
+#    # compute the laplacian and rotation in the Fourier space (y)
+#    @. ϕthat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕthat_y
+#    # backward FFT
+#    ϕty = plan_y \ ϕthat_y
+#    # return
+#    @. ϕtx = ϕtx+ϕty
+#    return ϕtx
+# end
+
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan<:AbstractFFTPlan}
    # references
    b = n.b
-   ϕthat_x, ϕthat_y = n.plan.ϕ_hat, n.plan.ϕ_hat
    coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
-   x, y = n.f.g.x, n.f.g.y
-   ξx, ξy = n.plan.ξx, n.plan.ξy
-   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
-   # perform FFT
-   mul!(ϕthat_x, plan_x, ϕt)
-   # compute the laplacian and rotation in the Fourier space (x)
-   @. ϕthat_x = (coeffΔ*ξx^2 - Ω*y*ξx) * ϕthat_x
-   # backward FFT
-   ϕtx = plan_x \ ϕthat_x
-   # perform FFT
-   mul!(ϕthat_y, plan_y, ϕt)
-   # compute the laplacian and rotation in the Fourier space (y)
-   @. ϕthat_y = (coeffΔ*ξy^2 + Ω*x*ξy) * ϕthat_y
-   # backward FFT
-   ϕty = plan_y \ ϕthat_y
-   # return
-   @. ϕtx = ϕtx+ϕty
-   return ϕtx
+   # compute derivatives
+   computeDerivatives!(n.gf, n.plan, ϕt)
+   # return computation
+   return -coeffΔ .* ( n.gf.ddx .+ n.gf.ddy) + Ω .* im .* (n.gf.rx+n.gf.ry)
 end
 
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan<:AbstractFDPlan}

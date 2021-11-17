@@ -56,9 +56,15 @@ function ξsquared(ξx::Real, ξy::Real, ξz::Real)
 end
 
 struct PlanFD2D{F} <: AbstractFDPlan{F}
+   Δx :: Real
+   Δy :: Real
+   Δz :: Real
 end
 
-struct PlanF32D{F} <: AbstractFDPlan{F}
+struct PlanFD3D{F} <: AbstractFDPlan{F}
+   Δx :: Real
+   Δy :: Real
+   Δz :: Real
 end
 
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
@@ -79,25 +85,29 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
                      Ξx, Ξy,
                      ϕ_hat)
    else
-      return PlanFD2D{F}()
+      return PlanFD2D{F}(f.g.Δx, f.g.Δy)
    end
 end
 
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
-   ξx = fftfreq(f.g.nx,2π/f.g.Δx)
-   ξy = fftfreq(f.g.ny,2π/f.g.Δy)
-   ξz = fftfreq(f.g.nz,2π/f.g.Δz)
-   if typeof(f.ϕ) <: Array
-      myArray = Array
-   elseif typeof(f.ϕ) <: CuArray
-      myArray = CuArray
+   if typeof(t) == FFTPlan
+      ξx = fftfreq(f.g.nx,2π/f.g.Δx)
+      ξy = fftfreq(f.g.ny,2π/f.g.Δy)
+      ξz = fftfreq(f.g.nz,2π/f.g.Δz)
+      if typeof(f.ϕ) <: Array
+         myArray = Array
+      elseif typeof(f.ϕ) <: CuArray
+         myArray = CuArray
+      end
+      Ξx = reshape(myArray(ξx),f.g.nx,1,1)
+      Ξy = reshape(myArray(ξy),1,f.g.ny,1)
+      Ξz = reshape(myArray(ξz),1,1,f.g.nz)
+      return PlanFFT3D{F}(plan_fft(f.ϕ,(1,2,3)),
+                     plan_fft(f.ϕ,1),
+                     plan_fft(f.ϕ,2),
+                     plan_fft(f.ϕ,3),
+                     Ξx, Ξy, Ξz)
+   else
+      return PlanFD2D{F}(f.g.Δx, f.g.Δy, f.g.Δz)
    end
-   Ξx = reshape(myArray(ξx),f.g.nx,1,1)
-   Ξy = reshape(myArray(ξy),1,f.g.ny,1)
-   Ξz = reshape(myArray(ξz),1,1,f.g.nz)
-   return PlanFFT3D{F}(plan_fft(f.ϕ,(1,2,3)),
-                    plan_fft(f.ϕ,1),
-                    plan_fft(f.ϕ,2),
-                    plan_fft(f.ϕ,3),
-                    Ξx, Ξy, Ξz)
 end

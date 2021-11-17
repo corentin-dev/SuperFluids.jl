@@ -79,7 +79,7 @@ mutable struct GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
     ry :: A
 end
 
-function GradientField(f::F) where {F<:AbstractField3D}
+function GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
     dx = similar(f.ϕ)
     dy = similar(f.ϕ)
     dz = similar(f.ϕ)

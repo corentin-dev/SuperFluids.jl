@@ -1,5 +1,6 @@
 mutable struct NumModelBackwardEuler{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
@@ -36,13 +37,14 @@ function NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
       Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       plantype::PlanType = FFTPlan())
+   gf = GradientField(f,rotation=true)
    plan = Plan(f,t=plantype)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
    M = similar(f.ϕ)
    b = similar(f.ϕ)
-   return NumModelBackwardEuler{typeof(f),typeof(param),typeof(plan)}(f, param,
+   return NumModelBackwardEuler{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp,
          nkrylov, tolkrylov,
          plan, M, b,
@@ -58,6 +60,7 @@ Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
 
 mutable struct NumModelBackwardEulerNoPrecond{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
@@ -74,13 +77,14 @@ function NumModelBackwardEulerNoPrecond(f::AbstractField, param::AbstractParamet
       Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       plantype::PlanType = FFTPlan())
+   gf = GradientField(f,rotation=true)
    plan = Plan(f,t=plantype)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
    Anl = similar(f.ϕ)
    b = similar(f.ϕ)
-   return NumModelBackwardEulerNoPrecond{typeof(f),typeof(param),typeof(plan)}(f, param,
+   return NumModelBackwardEulerNoPrecond{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp,
          nkrylov, tolkrylov,
          plan, Anl, b,

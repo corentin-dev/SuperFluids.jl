@@ -95,12 +95,12 @@ function GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
     end
 end
 
-# Base.show(io::IO, f::GradientField2D{A}) where A =
-#      print(io, "GradientField2D\n",
-#          "  ├──────  Array type: $(A)", '\n',
-#          "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
+Base.show(io::IO, f::GradientField2D{F,A}) where {F,A} =
+    print(io, "GradientField2D\n",
+        "  ├──────  Array type: $(A)", '\n',
+        "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
 
-# Base.show(io::IO, f::GradientField3D{A}) where A =
-#      print(io, "GradientField3D\n",
-#          "  ├───────  FloatType: $(A)", '\n',
-#          "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")
+Base.show(io::IO, f::GradientField3D{F,A}) where {F,A} =
+    print(io, "GradientField3D\n",
+        "  ├───────  FloatType: $(A)", '\n',
+        "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")

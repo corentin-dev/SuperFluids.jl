@@ -151,7 +151,7 @@ function computeDerivatives!(gf :: GradientRotField2D, p :: AbstractFDPlan, ϕt 
    # compute
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)
    gf.rx .= y .* gf.dx
-   computedxddy!(ϕt, gf.dy, gf.ddy, p.Δy, order=6)
+   computedyddy!(ϕt, gf.dy, gf.ddy, p.Δy, order=6)
    gf.ry = -x .* gf.dy
    return nothing
 end
@@ -182,7 +182,7 @@ function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFDPlan, ϕt 
 end
 
 # Finite difference helper functions
-function computedxddx!(ϕt :: AbstractArray{A,2}, dx :: Real, ddx :: Real, Δx :: Real; order :: Integer = 2) where A
+function computedxddx!(ϕt :: AbstractArray{A,2}, dx :: AbstractArray{A,2}, ddx :: AbstractArray{A,2}, Δx :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    nx = N[1]
    if order == 2
@@ -211,7 +211,7 @@ function computedxddx!(ϕt :: AbstractArray{A,2}, dx :: Real, ddx :: Real, Δx :
    return nothing
 end
 
-function computedxddx!(ϕt :: AbstractArray{A,3}, dx :: Real, ddx :: Real, Δx :: Real; order :: Integer = 2) where A
+function computedxddx!(ϕt :: AbstractArray{A,3}, dx :: AbstractArray{A,2}, ddx :: AbstractArray{A,2}, Δx :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    nx = N[1]
    if order == 2
@@ -240,7 +240,7 @@ function computedxddx!(ϕt :: AbstractArray{A,3}, dx :: Real, ddx :: Real, Δx :
    return nothing
 end
 
-function computedyddy!(ϕt :: AbstractArray{A,2}, dy :: Real, ddy :: Real, Δy :: Real; order :: Integer = 2) where A
+function computedyddy!(ϕt :: AbstractArray{A,2}, dy :: AbstractArray{A,2}, ddy :: AbstractArray{A,2}, Δy :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    ny = N[2]
    if order == 2
@@ -269,7 +269,7 @@ function computedyddy!(ϕt :: AbstractArray{A,2}, dy :: Real, ddy :: Real, Δy :
    return nothing
 end
 
-function computedyddy!(ϕt :: AbstractArray{A,3}, dy :: Real, ddy :: Real, Δy :: Real; order :: Integer = 2) where A
+function computedyddy!(ϕt :: AbstractArray{A,3}, dy :: AbstractArray{A,2}, ddy :: AbstractArray{A,2}, Δy :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    ny = N[2]
    if order == 2
@@ -298,7 +298,7 @@ function computedyddy!(ϕt :: AbstractArray{A,3}, dy :: Real, ddy :: Real, Δy :
    return nothing
 end
 
-function computedzddz!(ϕt :: AbstractArray{A,3}, dz :: Real, ddz :: Real, Δz :: Real; order :: Integer = 2) where A
+function computedzddz!(ϕt :: AbstractArray{A,3}, dz :: AbstractArray{A,2}, ddz :: AbstractArray{A,2}, Δz :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    nz = N[3]
    if order == 2

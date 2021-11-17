@@ -58,7 +58,6 @@ end
 struct PlanFD2D{F} <: AbstractFDPlan{F}
    Δx :: Real
    Δy :: Real
-   Δz :: Real
 end
 
 struct PlanFD3D{F} <: AbstractFDPlan{F}

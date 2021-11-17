@@ -23,6 +23,8 @@ struct PlanFFT2D{F} <: AbstractFFTPlan{F}
    ξx :: AbstractArray
    "ξy y frequencies"
    ξy :: AbstractArray
+   "temporary storage"
+   ϕ_hat :: AbstractArray
 end
 
 struct PlanFFT3D{F} <: AbstractFFTPlan{F}
@@ -40,6 +42,8 @@ struct PlanFFT3D{F} <: AbstractFFTPlan{F}
    ξy :: AbstractArray
    "ξz z frequencies"
    ξz :: AbstractArray
+   "temporary storage"
+   ϕ_hat :: AbstractArray
 end
 
 function ξsquared(ξx::Real, ξy::Real, ξz::Real)
@@ -66,12 +70,14 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
       elseif typeof(f.ϕ) <: CuArray
          myArray = CuArray
       end
+      ϕ_hat = similar(f.ϕ)
       Ξx = reshape(myArray(ξx),f.g.nx,1)
       Ξy = reshape(myArray(ξy),1,f.g.ny)
       return PlanFFT2D{F}(plan_fft(f.ϕ,(1,2)),
                      plan_fft(f.ϕ,1),
                      plan_fft(f.ϕ,2),
-                     Ξx, Ξy)
+                     Ξx, Ξy,
+                     ϕ_hat)
    else
       return PlanFD2D{F}()
    end

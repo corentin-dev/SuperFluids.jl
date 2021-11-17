@@ -7,9 +7,8 @@ mutable struct NumModelBackwardEuler{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    nkrylov :: Integer
    tolkrylov :: Real
    plan :: Plan
-   ϕ_hat
-   M
-   b
+   M :: AbstractArray
+   b :: AbstractArray
    writers :: AbstractWriterCollection{F}
 end
 
@@ -41,13 +40,12 @@ function NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    return NumModelBackwardEuler{typeof(f),typeof(param),typeof(plan)}(f, param,
          Δt, niter, freqbckp,
          nkrylov, tolkrylov,
-         plan, ϕ_hat, M, b,
+         plan, M, b,
          writers
       )
 end
@@ -67,9 +65,8 @@ mutable struct NumModelBackwardEulerNoPrecond{F,P,Plan} <: AbstractNumModel{F,P,
    nkrylov :: Integer
    tolkrylov :: Real
    plan :: AbstractPlan{F}
-   ϕ_hat
-   Anl
-   b
+   Anl :: AbstractArray
+   b :: AbstractArray
    writers :: AbstractWriterCollection{F}
 end
 
@@ -81,13 +78,12 @@ function NumModelBackwardEulerNoPrecond(f::AbstractField, param::AbstractParamet
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
    Anl = similar(f.ϕ)
    b = similar(f.ϕ)
    return NumModelBackwardEulerNoPrecond{typeof(f),typeof(param),typeof(plan)}(f, param,
          Δt, niter, freqbckp,
          nkrylov, tolkrylov,
-         plan, ϕ_hat, Anl, b,
+         plan, Anl, b,
          writers
       )
 end

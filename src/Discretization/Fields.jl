@@ -169,10 +169,10 @@ end
 
 Base.show(io::IO, f::Field2D{A}) where A =
      print(io, "Field2D\n",
-         "  ├──────  Array type: $(A)", '\n', 
+         "  ├──────  Array type: $(A)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 
 Base.show(io::IO, f::Field3D{A}) where A =
      print(io, "Field3D\n",
-         "  ├───────  FloatType: $(A)", '\n', 
+         "  ├───────  FloatType: $(A)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")

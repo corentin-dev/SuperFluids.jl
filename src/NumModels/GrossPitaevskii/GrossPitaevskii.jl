@@ -59,7 +59,7 @@ end
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan<:AbstractFFTPlan}
    # references
    b = n.b
-   ϕthat_x, ϕthat_y = n.ϕ_hat, n.ϕ_hat
+   ϕthat_x, ϕthat_y = n.plan.ϕ_hat, n.plan.ϕ_hat
    coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
    x, y = n.f.g.x, n.f.g.y
    ξx, ξy = n.plan.ξx, n.plan.ξy
@@ -127,7 +127,7 @@ end
 
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
    # references
-   ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.ϕ_hat, n.ϕ_hat
+   ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.plan.ϕ_hat, n.plan.ϕ_hat
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
    x, y = n.f.g.x, n.f.g.y
    ξx, ξy = n.plan.ξx, n.plan.ξy
@@ -175,12 +175,19 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    x, y = n.f.g.x, n.f.g.y
    Δx, Δy = n.f.g.Δx, n.f.g.Δy
    V = n.param.V
+   #
+   # ∇ϕ_x = plan_x \ ∇ϕ_hat # we get grad x
+   # abs∇ϕ_x = sum(real.(∇ϕ_x.*conj(∇ϕ_x)))
+   # ∇ϕ_hat .= im .*  Ω .* y .* ξx .* ϕhat_x
+   # ldiv!(∇ϕ_x, plan_x, ∇ϕ_hat) # we get rot x
+
    # compute derivatives
    dx, _ = computedxddx(n, ϕ)
    dy, _ = computedxddx(n, ϕ)
    # compute energies
-   EΩ = sum(real.(im.*conj.(ϕ).*( (Ω .* y .* dx) .- (Ω .* x .* dy)))) * Δx * Δy
-   EΔ = sum(-coeffΔ .* (abs.(dx).+abs.(dy)) .+ real.(V.(x,y)).*real.(ϕ.*conj.(ϕ))) * Δx * Δy
+   EΩ = sum((im.*conj.(Ω) .* ( -( y .* dx ) .+  ( x .* dy ) ) )) * Δx * Δy
+   # EΩ = sum(real.(conj.(ϕ).* Ω .* ( -( y .* dx ) .+  ( x .* dy ) ) )) * Δx * Δy
+   EΔ = sum(-coeffΔ .* (real.(dx.*conj.(dx)) .+ real.(dy.*conj.(dy))) .+ real.(V.(x,y)).*real.(ϕ.*conj.(ϕ))) * Δx * Δy
    Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy
    # compute sum
    E = -EΩ + EΔ + Eβ
@@ -192,12 +199,12 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
       println("Total Energy: $(E)")
    end
 
-   return EΩ, EΔ, Eβ, E
+   return real(EΩ), EΔ, Eβ, real(E)
 end
 
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
    # references
-   ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
+   ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.plan.ϕ_hat, n.plan.ϕ_hat, n.plan.ϕ_hat
    coeffΔ, Ω, β = n.coeffΔ, n.Ω, n.β
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
    ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz

@@ -17,7 +17,7 @@ Aₙₗ₂ = β × ψ²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters}
+function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField, P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -31,13 +31,13 @@ function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField2D, P<:
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 2 × β × ∥ψ∥²
-      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 2 * n.param.β * ψ * conj(ψ)
+      @. n.Anl = n.param.pot.V + 2 * n.param.β * ψ * conj(ψ)
       # Anls2 = β × ψ²
       @. n.Anl2 = n.param.β * ψ * ψ
       # M⁻¹ = Δt⁻¹ + V + 3 × β × ∥ψ∥² + 0.5
-      @. n.M = 1. / ( 1. / n.Δt + ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. / n.Δt + ( n.param.pot.V + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
+      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.param.pot.V .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
       nkrylov += krylovPreCond!(n, ϕw)
       # update solution
@@ -86,7 +86,7 @@ Aₙₗ = V + 3 × β × ∥ψ∥²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
+function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractField,P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -100,11 +100,11 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractF
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 3 × β × ∥ψ∥²
-      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 3 * n.param.β * ψ * conj(ψ)
+      @. n.Anl = n.param.pot.V + 3 * n.param.β * ψ * conj(ψ)
       # M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
-      @. n.M = 1. / ( 1. / n.Δt + ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. / n.Δt + ( n.param.pot.V + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
+      n.b .= (1/n.Δt) .* (ϕ₁ .- n.f.ϕ) .+ (n.param.pot.V .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .- lapRot(n,ψ)
       # solving
       nkrylov += krylovPreCond!(n, ϕw)
       # update solution
@@ -155,7 +155,7 @@ Aₙₗ₂ = β × ψ²
 
 b = i Δt⁻¹ × (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters}
+function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField, P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -169,13 +169,13 @@ function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField2D, P<
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 2 × β × ∥ψ∥²
-      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 2 * n.param.β * ψ * conj(ψ)
+      @. n.Anl = n.param.pot.V + 2 * n.param.β * ψ * conj(ψ)
       # Anls2 = β × ψ²
       @. n.Anl2 = n.param.β * ψ * ψ
       # M⁻¹ = i Δt⁻¹ - 1/2 ( V + 3 × β × ∥ψ∥²)
-      @. n.M = 1. / ( 1. * im / n.Δt - ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. * im / n.Δt - ( n.param.pot.V + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
+      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.param.pot.V .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
       # solving
       nkrylov += krylovPreCond!(n, ϕw)
       # update solution
@@ -222,7 +222,7 @@ Aₙₗ = V + 3 × β × ∥ψ∥²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
-function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters}
+function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:AbstractField,P<:GrossPitaevskiiParameters}
    # create working vectors
    ψ = similar(n.f.ϕ)
    ϕ₁ = copy(n.f.ϕ)
@@ -236,11 +236,11 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:Abstract
       # ψ = 1/2 (ϕ₁+ϕ₀)
       @. ψ = 0.5 * (ϕ₁+n.f.ϕ)
       # Anls = V + 3 × β × ∥ψ∥²
-      @. n.Anl = n.param.V(n.f.g.x,n.f.g.y) + 3 * n.param.β * ψ * conj(ψ)
+      @. n.Anl = n.param.pot.V + 3 * n.param.β * ψ * conj(ψ)
       # M⁻¹ = i Δt⁻¹ - 1/2 × ( V + 3 × β × ∥ψ∥² )
-      @. n.M = 1. / ( 1. * im / n.Δt - ( n.param.V(n.f.g.x,n.f.g.y) + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
+      @. n.M = 1. / ( 1. * im / n.Δt - ( n.param.pot.V + 3 *  n.param.β * real( ψ * conj(ψ) ) ) * 0.5 )
       # b = i Δt⁻¹ * (ϕ₁ - ϕ₀) - (V + β × ∥ψ∥²) × ψ + (coeffΔ Δ + Ω Lz) × ψ + coeffΔ Δϕ - Ω Lz Φ
-      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.param.V.(n.f.g.x,n.f.g.y) .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
+      n.b .= (1. * im / n.Δt) .* (ϕ₁ .- n.f.ϕ) .- (n.param.pot.V .+ n.param.β .* conj.(ψ).*ψ ) .* ψ .+ lapRot(n,ψ)
       # solving
       nkrylov += krylovPreCond!(n, ϕw)
       # update solution

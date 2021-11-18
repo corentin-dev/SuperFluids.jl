@@ -9,6 +9,13 @@ xrange = (-8, 8)
 yrange = (-8, 8)
 zrange = (-8, 8)
 
+# creating a grid
+grid = Grid((nx,ny,nz), (xrange,yrange,zrange))
+println(grid)
+# allocating a field
+field = Field(grid, ComplexField())
+println(field)
+
 # potential
 α = 0
 γx = 1
@@ -16,22 +23,17 @@ zrange = (-8, 8)
 γz = 1
 
 # equation
-param = GrossPitaevskiiParameters(β = 1000,
-                                  Ω = 0.8,
-                                  V = PotentialQuadratic3D(γx = γx, γy = γy, γz = γz)
-                                 )
+param = GrossPitaevskiiParameters(
+    β = 1000,
+    Ω = 0.8,
+    pot = PotentialQuadratic(field, γx = γx, γy = γy, γz = γz)
+    )
 
 # solver
 Δt = 0.01
 niter = 25
 freqbckp = 10
 
-# creating a grid
-grid = Grid((nx,ny,nz), (xrange,yrange,zrange))
-println(grid)
-# allocating a field
-field = Field(grid, ComplexField())
-println(field)
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy, γz = γz)
 # init = InitGauss(field, Ω = Ω)

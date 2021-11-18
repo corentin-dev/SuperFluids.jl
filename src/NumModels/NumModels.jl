@@ -1,6 +1,3 @@
-"Abstract supertype for parameters."
-abstract type AbstractParameters end
-
 "Abstract supertype for numerical models."
 abstract type AbstractNumModel{AbstractField,AbstractParameters,AbstractPlan} end
 

@@ -12,7 +12,7 @@ end
 
 function InitThomasFermi(f :: AbstractField3D, β :: Real; γx :: Real = 1, γy :: Real = 1, γz :: Real = 1)
    ρ0 = ( 30 * β * √(γx * γy * γz) / ( 8 * π ) )^(2/5)
-   function TF(x,y)
+   function TF(x,y,z)
       if x^2 + y^2 + z^2 > ρ0
          return 0
       else

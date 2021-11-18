@@ -1,24 +1,24 @@
 mutable struct NumModelADI1{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
-   plan :: AbstractPlan{F}
-   ϕ_hat
+   plan :: Plan
    writers :: AbstractWriterCollection{F}
 end
 
 function NumModelADI1(f::AbstractField, param::AbstractParameters,
       Δt::Real, niter::Integer, freqbckp::Integer)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
-   return NumModelADI1{typeof(f),typeof(param),typeof(plan)}(f,param,
+   return NumModelADI1{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp,
-         plan, ϕ_hat,
+         plan,
          writers
       )
 end
@@ -36,25 +36,25 @@ end
 
 mutable struct NumModelADI2{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
-   plan :: AbstractPlan{F}
-   ϕ_hat
+   plan :: Plan
    writers :: AbstractWriterCollection{F}
 end
 
 function NumModelADI2(f::AbstractField, param::AbstractParameters,
       Δt::Real, niter::Integer, freqbckp::Integer)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
-   return NumModelADI2{typeof(f),typeof(param),typeof(plan)}(f,param,
+   return NumModelADI2{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp,
-         plan, ϕ_hat,
+         plan,
          writers
       )
 end

@@ -89,7 +89,7 @@ function GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
     if rotation
         rx = similar(f.ϕ)
         ry = similar(f.ϕ)
-        return GradientRotField3D{typeof(f),typeof(dx)}(f, dx, dy, dz, ddx, ddy, ddz, dz, rx, ry)
+        return GradientRotField3D{typeof(f),typeof(dx)}(f, dx, dy, dz, ddx, ddy, ddz, rx, ry)
     else
         return GradientField3D{typeof(f),typeof(dx)}(f, dx, dy, dz, ddx, ddy, ddz)
     end

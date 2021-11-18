@@ -108,38 +108,23 @@ end
 
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
    # references
-   ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.plan.ϕ_hat, n.plan.ϕ_hat, n.plan.ϕ_hat
-   coeffΔ, Ω, β = n.coeffΔ, n.Ω, n.β
+   ϕ = n.f.ϕ
+   coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
-   ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
-   plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
    V = n.param.V
-   # perform FFT
-   mul!(ϕhat_x, plan_x, ϕ)
-   # compute grad x
-   ∇ϕ_hat = im .* ξx .* ϕhat_x
-   ∇ϕ_x = plan_x \ ∇ϕ_hat # we get grad x
-   abs∇ϕ_x = sum(real.(∇ϕ_x.*conj(∇ϕ_x)))
-   # compute rotx
-   ∇ϕ_hat .= im .*  Ω .* y .* ξx .* ϕhat_x
-   ldiv!(∇ϕ_x, plan_x, ∇ϕ_hat) # we get rot x
-   # compute grad y
-   mul!(ϕhat_y, plan_y, ϕ)
-   ∇ϕ_hat = im .* ξy .* ϕhat_y
-   ∇ϕ_y = plan_y \ ∇ϕ_hat # we get grad y
-   abs∇ϕ_y = sum(real.(∇ϕ_y.*conj(∇ϕ_y)))
-   # compute roty
-   ∇ϕ_hat = im .* -Ω .* x .* ξy .* ϕhat_y
-   ldiv!(∇ϕ_y, plan_y, ∇ϕ_hat) # we get rot y
-   # compute grad z
-   mul!(ϕhat_z, plan_z, ϕ)
-   ∇ϕ_hat = im .* ξz .* ϕhat_z
-   ∇ϕ_z = plan_z \ ∇ϕ_hat # we get grad x
-   abs∇ϕ_z = sum(real.(∇ϕ_z.*conj(∇ϕ_z)))
-   # computing energies (locally)
-   EΩ = sum(real.(im.*conj.(ϕ).*(∇ϕ_x.+∇ϕ_y+∇ϕ_z))) * Δx * Δy *Δz
-   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y.+abs∇ϕ_z) + sum(V.(x,y,z).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy * Δz
+
+   computeDerivatives!(n.gf, n.plan, ϕ)
+
+   abs∇ϕ_x = sum( real.( n.gf.dx .* conj(n.gf.dx) ) )
+   abs∇ϕ_y = sum( real.( n.gf.dy .* conj(n.gf.dy) ) )
+   abs∇ϕ_z = sum( real.( n.gf.dz .* conj(n.gf.dz) ) )
+
+   # compute energies
+   EΩ = sum( real.( im.*conj.(ϕ).*(
+      Ω.*( n.gf.rx .+  n.gf.ry )
+      ) ) ) * Δx * Δy * Δz
+   EΔ = (-coeffΔ * (abs∇ϕ_x.+abs∇ϕ_y.+abs∇ϕ_z) + sum(real.(V.(x,y,z)).*real.(ϕ.*conj.(ϕ)))) * Δx * Δy * Δz
    Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy * Δz
    # compute sum
    E = -EΩ + EΔ + Eβ

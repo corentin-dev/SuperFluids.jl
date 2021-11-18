@@ -121,7 +121,7 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
       myArray = CuArray
    end
    if ndims == 1
-      ϕ = myArray{myT}(undef,g.nx,g.ny)
+      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz)
    else
       ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
    end

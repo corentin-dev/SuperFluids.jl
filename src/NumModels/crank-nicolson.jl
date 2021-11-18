@@ -1,5 +1,6 @@
 mutable struct NumModelCrankNicolson{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
@@ -8,8 +9,7 @@ mutable struct NumModelCrankNicolson{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray
+   plan :: Plan
    M :: AbstractArray
    b :: AbstractArray
    Anl :: AbstractArray
@@ -21,18 +21,18 @@ function NumModelCrankNicolson(f, param,
       Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
    Anl2 = similar(f.ϕ)
-   return NumModelCrankNicolson{typeof(f),typeof(param),typeof(plan)}(f,param,
+   return NumModelCrankNicolson{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         plan, ϕ_hat, M, b, Anl, Anl2,
+         plan, M, b, Anl, Anl2,
          writers
       )
 end
@@ -46,6 +46,7 @@ Base.show(io::IO, n::NumModelCrankNicolson) = print(io,
 
 mutable struct NumModelCrankNicolsonQuasiNewton{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
@@ -54,8 +55,7 @@ mutable struct NumModelCrankNicolsonQuasiNewton{F,P,Plan} <: AbstractNumModel{F,
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray
+   plan :: Plan
    M :: AbstractArray
    b :: AbstractArray
    Anl :: AbstractArray
@@ -66,17 +66,17 @@ function NumModelCrankNicolsonQuasiNewton(f, param,
       Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
-   return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(param),typeof(plan)}(f,param,
+   return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         plan, ϕ_hat, M, b, Anl,
+         plan, M, b, Anl,
          writers
       )
 end
@@ -90,6 +90,7 @@ Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton) = print(io,
 
 mutable struct NumModelCrankNicolsonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
@@ -98,8 +99,7 @@ mutable struct NumModelCrankNicolsonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray
+   plan :: Plan
    M :: AbstractArray
    b :: AbstractArray
    Anl :: AbstractArray
@@ -111,18 +111,18 @@ function NumModelCrankNicolsonT(f::AbstractField, param::AbstractParameters,
       Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
    Anl2 = similar(f.ϕ)
-   return NumModelCrankNicolsonT{typeof(f),typeof(param),typeof(plan)}(f, param,
+   return NumModelCrankNicolsonT{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         plan, ϕ_hat, M, b, Anl, Anl2,
+         plan, M, b, Anl, Anl2,
          writers
       )
 end
@@ -136,6 +136,7 @@ Base.show(io::IO, n::NumModelCrankNicolsonT) = print(io,
 
 mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
    param :: P
    Δt :: Real
    niter :: Integer
@@ -144,11 +145,10 @@ mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,Plan} <: AbstractNumModel{F
    tolkrylov :: Real
    nnewton :: Integer
    tolnewton :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat
-   M
-   b
-   Anl
+   plan :: Plan
+   M :: AbstractArray
+   b :: AbstractArray
+   Anl :: AbstractArray
    writers :: AbstractWriterCollection{F}
 end
 
@@ -156,17 +156,17 @@ function NumModelCrankNicolsonQuasiNewtonT(f::AbstractField, param::AbstractPara
       Δt::Real, niter::Integer, freqbckp::Integer;
       nkrylov::Integer = 70, tolkrylov::Real = 1e-8,
       nnewton::Integer = 15, tolnewton::Real = 1e-6)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
    M = similar(f.ϕ)
    b = similar(f.ϕ)
    Anl = similar(f.ϕ)
-   return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(param),typeof(plan)}(f,param,
+   return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp, nkrylov, tolkrylov, nnewton, tolnewton,
-         plan, ϕ_hat, M, b, Anl,
+         plan, M, b, Anl,
          writers
       )
 end

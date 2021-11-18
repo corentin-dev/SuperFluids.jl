@@ -45,7 +45,7 @@ end
 
 function timeStep!(n::NumModelBackwardEulerNoPrecond{F,P}) where {F <: AbstractField3D, P <: GrossPitaevskiiParameters}
    # compute matrices and vectors
-   n.Anl .= n.param.V(n.f.g.x,n.f.g.y,n.f.g.z) + n.param.β * real( n.f.ϕ * conj(n.f.ϕ) )
+   @. n.Anl = n.param.V(n.f.g.x,n.f.g.y,n.f.g.z) + n.param.β * real( n.f.ϕ * conj(n.f.ϕ) )
    # b = ϕ × Δt⁻¹
    @. n.b = n.f.ϕ / n.Δt
    # solving

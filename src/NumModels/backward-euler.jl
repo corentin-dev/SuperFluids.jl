@@ -67,7 +67,7 @@ mutable struct NumModelBackwardEulerNoPrecond{F,P,Plan} <: AbstractNumModel{F,P,
    freqbckp :: Integer
    nkrylov :: Integer
    tolkrylov :: Real
-   plan :: AbstractPlan{F}
+   plan :: Plan
    Anl :: AbstractArray
    b :: AbstractArray
    writers :: AbstractWriterCollection{F}

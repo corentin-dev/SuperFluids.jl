@@ -40,3 +40,4 @@ println(nummodel)
 
 # solving
 solve!(nummodel, plot=false)
+nothing

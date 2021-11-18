@@ -37,7 +37,7 @@ init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
 field.ϕ .= init.(grid.x,grid.y)
 normalize!(field)
 # solver
-nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 500, tolkrylov = 1e-6)
+nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 500, tolkrylov = 1e-6, plantype=SuperFluids.FiniteDifferentePlan())
 println(nummodel)
 
 # solving

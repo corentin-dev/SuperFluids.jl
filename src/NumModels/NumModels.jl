@@ -22,6 +22,8 @@ include("crank-nicolson.jl")
 
 include("krylov.jl")
 
+include("derivatives.jl")
+
 function solve!(n::AbstractNumModel;istart=1,plot=false)
    if plot
       @eval using SuperFluids.Plots

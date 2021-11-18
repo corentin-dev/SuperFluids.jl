@@ -78,8 +78,6 @@ function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
    elseif A <: CuArray
       myArray = CuArray
    end
-   println(typeof(A))
-   println(typeof(g))
    if ndims == 1
       ϕ = myArray{myT}(undef,g.nx,g.ny)
    else
@@ -121,9 +119,6 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
       myArray = Array
    elseif A <: CuArray
       myArray = CuArray
-   else
-      println(typeof(A))
-      println(typeof(g))
    end
    if ndims == 1
       ϕ = myArray{myT}(undef,g.nx,g.ny)
@@ -169,10 +164,10 @@ end
 
 Base.show(io::IO, f::Field2D{A}) where A =
      print(io, "Field2D\n",
-         "  ├──────  Array type: $(A)", '\n', 
+         "  ├──────  Array type: $(A)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 
 Base.show(io::IO, f::Field3D{A}) where A =
      print(io, "Field3D\n",
-         "  ├───────  FloatType: $(A)", '\n', 
+         "  ├───────  FloatType: $(A)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")

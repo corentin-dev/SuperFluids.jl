@@ -50,5 +50,5 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
 
  function solveNL!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField, P<:GrossPitaevskiiParameters}
     # ϕ ↦ exp ( -i ( V + ∥ϕ∥² ) Δt ) ϕ
-    @.n.f.ϕ = exp(-1im * ( n.param.pot.V + ( n.f.ϕ * conj(n.f.ϕ) ) ) * Δtl) * n.f.ϕ
+    @.n.f.ϕ = exp(-1im * ( n.param.pot.V + abs2(n.f.ϕ) ) * Δtl) * n.f.ϕ
  end

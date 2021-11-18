@@ -9,11 +9,11 @@ function krylov!(n::AbstractNumModel, ϕ)
       α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
       s = r - α * Ap
       As = prodA(n,s)
-      ω = sum(As.*conj.(s))/sum(As.*conj.(As))
+      ω = sum(As.*conj.(s))/sum(abs2.(As))
       @. ϕ = ϕ + α*p + ω*s
       rr₂ = sum(r.*conj.(r₂))
       r = s - ω*As
-      if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
+      if sqrt(sum(abs2.(r)))/normb < n.tolkrylov
          println("Number of Krylov iterations: $(i)")
          break
       elseif i == n.nkrylov
@@ -37,11 +37,11 @@ function krylovPreCond!(n::AbstractNumModel, ϕ)
       α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
       s = r - α * Ap
       As = n.M .* prodA(n,s)
-      ω = sum(As.*conj.(s))/sum(As.*conj.(As))
+      ω = sum(As.*conj.(s))/sum(abs2.(As))
       @. ϕ = ϕ + α*p + ω*s
       rr₂ = sum(r.*conj.(r₂))
       r = s - ω*As
-      if sqrt(real(sum(r.*conj.(r))))/normb < n.tolkrylov
+      if sqrt(sum(abs2.(r)))/normb < n.tolkrylov
          println("Number of Krylov iterations: $(i)")
          break
       elseif i == n.nkrylov

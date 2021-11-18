@@ -15,7 +15,7 @@ struct PotentialZero{F} <: AbstractPotential{F}
 end
 
 function PotentialZero(f::F) where {F<:AbstractField}
-   V = zeros(size(f.ϕ))
+   V = real.(similar(f.ϕ))
    V .= 0.
    return PotentialZero{F}(f, V)
 end

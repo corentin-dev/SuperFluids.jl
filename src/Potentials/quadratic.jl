@@ -8,7 +8,7 @@ struct PotentialQuadratic{F} <: AbstractPotential{F}
 end
 
 function PotentialQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, γz::Real = 1) where {F<:AbstractField}
-   V = zeros(size(f.ϕ))
+   V = real.(similar(f.ϕ))
    p = PotentialQuadratic{F}(f, V, α, γx, γy, γz)
    compute!(p)
    return p

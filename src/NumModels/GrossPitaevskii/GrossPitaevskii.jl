@@ -26,15 +26,15 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
 
    computeDerivatives!(n.gf, n.plan, ϕ)
 
-   abs∇ϕ_x = sum( real.( n.gf.dx .* conj(n.gf.dx) ) )
-   abs∇ϕ_y = sum( real.( n.gf.dy .* conj(n.gf.dy) ) )
+   abs∇ϕ_x = sum( abs2.( n.gf.dx ) )
+   abs∇ϕ_y = sum( abs2.( n.gf.dy ) )
 
    # compute energies
    EΩ = sum( real.( im.*conj.(ϕ).*(
       Ω.*( n.gf.rx .+  n.gf.ry )
       ) ) ) * Δx * Δy
-   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y) + sum(V.*real.(ϕ.*conj.(ϕ)))) * Δx * Δy
-   Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy
+   EΔ = (-coeffΔ .* (abs∇ϕ_x.+abs∇ϕ_y) + sum(V.*abs2.(ϕ))) * Δx * Δy
+   Eβ = sum( 0.5*β*(abs2.(ϕ).^2)) * Δx * Δy
    # compute sum
    E = -EΩ + EΔ + Eβ
 
@@ -58,16 +58,16 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
 
    computeDerivatives!(n.gf, n.plan, ϕ)
 
-   abs∇ϕ_x = sum( real.( n.gf.dx .* conj(n.gf.dx) ) )
-   abs∇ϕ_y = sum( real.( n.gf.dy .* conj(n.gf.dy) ) )
-   abs∇ϕ_z = sum( real.( n.gf.dz .* conj(n.gf.dz) ) )
+   abs∇ϕ_x = sum( abs2.( n.gf.dx ) )
+   abs∇ϕ_y = sum( abs2.( n.gf.dy ) )
+   abs∇ϕ_z = sum( abs2.( n.gf.dz ) )
 
    # compute energies
    EΩ = sum( real.( im.*conj.(ϕ).*(
       Ω.*( n.gf.rx .+  n.gf.ry )
       ) ) ) * Δx * Δy * Δz
-   EΔ = (-coeffΔ * (abs∇ϕ_x.+abs∇ϕ_y.+abs∇ϕ_z) + sum(V.*real.(ϕ.*conj.(ϕ)))) * Δx * Δy * Δz
-   Eβ = sum( 0.5*β*(real.(ϕ.*conj.(ϕ)).^2)) * Δx * Δy * Δz
+   EΔ = (-coeffΔ * (abs∇ϕ_x.+abs∇ϕ_y.+abs∇ϕ_z) + sum(V.*abs2.(ϕ))) * Δx * Δy * Δz
+   Eβ = sum( 0.5*β*(abs2.(ϕ).^2)) * Δx * Δy * Δz
    # compute sum
    E = -EΩ + EΔ + Eβ
 

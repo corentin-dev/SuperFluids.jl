@@ -98,6 +98,7 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
       elseif typeof(f.ϕ) <: CuArray
          myArray = CuArray
       end
+      ϕ_hat = similar(f.ϕ)
       Ξx = reshape(myArray(ξx),f.g.nx,1,1)
       Ξy = reshape(myArray(ξy),1,f.g.ny,1)
       Ξz = reshape(myArray(ξz),1,1,f.g.nz)
@@ -105,7 +106,8 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
                      plan_fft(f.ϕ,1),
                      plan_fft(f.ϕ,2),
                      plan_fft(f.ϕ,3),
-                     Ξx, Ξy, Ξz)
+                     Ξx, Ξy, Ξz,
+                     ϕ_hat)
    else
       return PlanFD2D{F}(f.g.Δx, f.g.Δy, f.g.Δz)
    end

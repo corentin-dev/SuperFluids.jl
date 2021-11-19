@@ -1,34 +1,32 @@
-mutable struct NumModelExternalVelocity{F,P} <: AbstractNumModel{F,P}
+mutable struct NumModelExternalVelocity{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: Any
+   param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
-   coeffΔ :: Real
-   β :: Real
-   Ω :: Real
-   plan :: AbstractPlan{F}
-   ϕ_hat :: AbstractArray{F}
-   potential :: P
+   plan :: Plan
    writers :: AbstractWriterCollection{F}
 end
 
-function NumModelExternalVelocity(f, p,
-      coeffΔ::Real, β::Real, Ω::Real, Δt::Real, niter::Integer, freqbckp::Integer)
+function NumModelExternalVelocity(f, param,
+      Δt::Real, niter::Integer, freqbckp::Integer;)
+   plan = Plan(f)
+   gf = GradientField(f,rotation=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
-   return NumModelExternalVelocity{typeof(f),typeof(p)}(f,
+   return NumModelExternalVelocity{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp,
-         coeffΔ, β, Ω, plan, ϕ_hat, p,
+         plan,
          writers
       )
 end
 
 Base.show(io::IO, n::NumModelExternalVelocity) = print(io,
          "ARGLE scheme\n",
-         "  ├───────────  model: coeff Δ : $(n.coeffΔ) β : $(n.β), Ω : $(n.Ω)", '\n', 
+         "  ├───────────  model: coeff Δ : $(n.param.coeffΔ) β : $(n.param.β), Ω : $(n.param.Ω)", '\n',
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
@@ -39,37 +37,36 @@ Performs a single time step for stationnary field approximating a velocity field
 """
 function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
    # references
-   ϕ, ϕhat_x, ϕhat_y, ϕhat = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
-   Δt, coeffΔ, Ω, β = n.Δt, n.coeffΔ, n.Ω, n.β
-   x, y = n.f.g.x, n.f.g.y
+   ϕ = n.f.ϕ
+   ϕhat = n.plan.ϕ_hat
+   Δt, coeffΔ, β = n.Δt, n.param.coeffΔ, n.param.β
    ξx, ξy = n.plan.ξx, n.plan.ξy
-   plan, plan_x, plan_y = n.plan.plan, n.plan.plan_x, n.plan.plan_y
-   Δx, Δy = n.f.g.Δx, n.f.g.Δy
-   V, uadvx, uadvy = n.potential.V, n.potential.uadvx, n.potential.uadvy
+   plan = n.plan.plan
+   V, uadvx, uadvy = n.param.pot.V, n.param.pot.uadvx, n.param.pot.uadvy
    α = 1.
    γ = 1.
    # create working vectors
    ψ₁ = copy(ϕ)
    ψ₁ .= 0.
    ϕw = similar(ϕ)
+   computeDerivatives!(n.gf, n.plan, ϕ)
+   # function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
+
    # compute gradients
-   mul!(ϕhat_x, plan_x, ϕ)
-   ∇ϕ_x = plan_x \ (im .* ξx .* ϕhat_x) # we get grad x
-   mul!(ϕhat_y, plan_y, ϕ)
-   ∇ϕ_y = plan_y \ (im .* ξy .* ϕhat_y) # we get grad y
-   # compute ψ₁
    @. ψ₁ = ϕ + γ * Δt * (
-                - β * real(ϕ * conj(ϕ)) * ϕ
+                - β * abs2(ϕ) * ϕ
                 + β * ϕ
                 -  (uadvx^2+uadvy^2)/(-4*coeffΔ) * ϕ
-                - im * uadvx * ∇ϕ_x - im * uadvy * ∇ϕ_y
+                - im * uadvx * n.gf.dx - im * uadvy * n.gf.dy
                )
    # all to frequency domain
+   # ψ₁ ← ( ψ₁ + α Δt /2 (ddx + ddy ) ϕ ) / ()
    ψ₁hat = plan * ψ₁
    mul!(ϕhat, plan, ϕ)
    @. ψ₁hat = ( ψ₁hat + α * Δt * coeffΔ * (ξx^2+ξy^2) * ϕhat / 2 )/(
             1 - α * Δt * coeffΔ * (ξx^2+ξy^2) / 2 )
    ldiv!(ϕ, plan, ψ₁hat)
+   return 1
 end
 
 """

@@ -1,4 +1,4 @@
-export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic
+export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic, PotentialTaylorGreen
 
 """
     AbstractPotential
@@ -6,8 +6,6 @@ export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic
 Abstract supertype for field initialization classes.
 """
 abstract type AbstractPotential{F} end
-abstract type AbstractPotential2D{F} <: AbstractPotential{F} end
-abstract type AbstractPotential3D{F} <: AbstractPotential{F} end
 
 struct PotentialZero{F} <: AbstractPotential{F}
    f :: F
@@ -28,4 +26,4 @@ Base.show(io::IO, p::PotentialZero) = print(io, "Zero Potential")
 
 include("quadratic.jl")
 include("quartic.jl")
-# include("external-velocity.jl")
+include("external-velocity.jl")

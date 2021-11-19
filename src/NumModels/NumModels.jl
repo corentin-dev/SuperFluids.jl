@@ -12,7 +12,6 @@ export NumModelExternalVelocity
 export solve!
 
 include("rk.jl")
-# include("external-velocity.jl")
 
 include("krylov.jl")
 

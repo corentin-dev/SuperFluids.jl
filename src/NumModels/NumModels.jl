@@ -12,9 +12,6 @@ export NumModelExternalVelocity
 export solve!
 
 include("rk.jl")
-include("adi.jl")
-include("backward-euler.jl")
-include("crank-nicolson.jl")
 # include("external-velocity.jl")
 
 include("krylov.jl")

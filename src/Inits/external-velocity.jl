@@ -14,7 +14,7 @@ end
 
 function InitExternalVelocity(f :: AbstractField3D, coeffΔ, β)
    ξ = √(-coeffΔ / β)
-   function TG(x,y)
+   function TG(x,y,z)
       λ=cos(x)*√(2*abs(cos(z)))
       μ=cos(y)*√(2*abs(cos(z)))*sign(cos(z))
       vortex1=(λ + im*(μ-0.7))*tanh(√(λ^2 + (μ-0.7)^2)/ (√(2)*ξ))/√(λ^2 + (μ-0.7)^2)

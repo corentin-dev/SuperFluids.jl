@@ -121,7 +121,7 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
       myArray = CuArray
    end
    if ndims == 1
-      ϕ = myArray{myT}(undef,g.nx,g.ny)
+      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz)
    else
       ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
    end
@@ -129,12 +129,12 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
 end
 
 function norm(f::Field2D)
-   normϕ = real(sum(f.ϕ.*conj(f.ϕ)))
+   normϕ = sum(abs2.(f.ϕ))
    normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy)
 end
 
 function norm(f::Field3D)
-   normϕ = real(sum(f.ϕ.*conj.(f.ϕ)))
+   normϕ = sum(abs2.(f.ϕ))
    normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy*f.g.Δz)
 end
 

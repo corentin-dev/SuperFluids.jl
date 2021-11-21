@@ -95,10 +95,10 @@ end
 
 function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
    # references
-   x, y = gf.f.g.x, gf.f.g.y
-   ϕthat_x, ϕthat_y = p.ϕ_hat, p.ϕ_hat
-   ξx, ξy = p.ξx, p.ξy
-   plan_x, plan_y = p.plan_x, p.plan_y
+   x, y, z = gf.f.g.x, gf.f.g.y, gf.f.g.z
+   ϕthat_x, ϕthat_y, ϕthat_z = p.ϕ_hat, p.ϕ_hat, p.ϕ_hat
+   ξx, ξy, ξz = p.ξx, p.ξy, p.ξz
+   plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # FFT x
    mul!(ϕthat_x, plan_x, ϕt)
    # compute dx
@@ -116,12 +116,11 @@ function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt
    tmp .= im .* ξy .* ϕthat_y
    ldiv!(gf.dy, plan_y, tmp)
    # compute ry
-   tmp .= -im .* x .* ξy .* ϕhat_y
+   tmp .= -im .* x .* ξy .* ϕthat_y
    ldiv!(gf.ry, plan_y, tmp)
    # compute ddy
    tmp .= - ξy.^2 .* ϕthat_y
    ldiv!(gf.ddy, plan_y, tmp)
-   tmp = nothing
    # FFT z
    mul!(ϕthat_z, plan_z, ϕt)
    # compute dz

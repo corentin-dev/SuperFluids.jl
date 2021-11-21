@@ -1,14 +1,16 @@
 using SuperFluids
 
 # simulation parameters
-nx = 128
-ny = 128
+nx = 64
+ny = 64
+nz = 64
 
-xrange = (-12, 12)
-yrange = (-12, 12)
+xrange = (-8, 8)
+yrange = (-8, 8)
+zrange = (-8, 8)
 
 # creating a grid
-grid = Grid((nx,ny), (xrange,yrange))
+grid = Grid((nx,ny,nz), (xrange,yrange,zrange))
 println(grid)
 # allocating a field
 field = Field(grid, ComplexField())
@@ -18,12 +20,13 @@ println(field)
 α = 0
 γx = 1
 γy = 1
+γz = 1
 
 # equation
 param = GrossPitaevskiiParameters(
     β = 1000,
-    Ω = 0.9,
-    pot = PotentialQuadratic(field, γx = γx, γy = γy)
+    Ω = 0.8,
+    pot = PotentialQuadratic(field, γx = γx, γy = γy, γz = γz)
     )
 
 # solver
@@ -32,9 +35,9 @@ niter = 25
 freqbckp = 10
 
 # initialisation
-init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
+init = InitThomasFermi(field, param.β, γx = γx, γy = γy, γz = γz)
 # init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y)
+field.ϕ .= init.(grid.x,grid.y,grid.z)
 normalize!(field)
 
 # BackwardEuler (with precond)

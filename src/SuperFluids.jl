@@ -16,10 +16,11 @@ struct MPI <: Device end
 struct GPU <: Device end
 
 include("Discretization/Discretization.jl")
+include("Potentials/Potentials.jl")
+include("Parameters/Parameters.jl")
 include("Inits/Inits.jl")
 include("IO/IO.jl")
 include("NumModels/NumModels.jl")
-include("Potentials/Potentials.jl")
 
 export initField!, energy, finishWriter!
 export CPU, MPI, GPU, Grid, Field

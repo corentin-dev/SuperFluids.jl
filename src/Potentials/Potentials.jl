@@ -1,14 +1,28 @@
-export PotentialZero2D, PotentialZero3D
-export PotentialQuarticQuadratic2D, PotentialQuarticQuadratic3D
-export PotentialQuadratic2D, PotentialQuadratic3D
+export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic, PotentialTaylorGreen
 
-function PotentialZero2D()
-   return (x,y) -> 0
+"""
+    AbstractPotential
+
+Abstract supertype for field initialization classes.
+"""
+abstract type AbstractPotential{F} end
+
+struct PotentialZero{F} <: AbstractPotential{F}
+   f :: F
+   V :: AbstractArray
 end
 
-function PotentialZero3D()
-   return (x,y,z) -> 0
+function PotentialZero(f::F) where {F<:AbstractField}
+   V = real.(similar(f.ϕ))
+   V .= 0.
+   return PotentialZero{F}(f, V)
 end
+
+function compute!(p::PotentialZero{F}) where {F<:AbstractField}
+   @. p.V = 0.
+end
+
+Base.show(io::IO, p::PotentialZero) = print(io, "Zero Potential")
 
 include("quadratic.jl")
 include("quartic.jl")

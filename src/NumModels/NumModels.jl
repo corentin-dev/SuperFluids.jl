@@ -1,6 +1,3 @@
-"Abstract supertype for parameters."
-abstract type AbstractParameters end
-
 "Abstract supertype for numerical models."
 abstract type AbstractNumModel{AbstractField,AbstractParameters,AbstractPlan} end
 
@@ -15,10 +12,6 @@ export NumModelExternalVelocity
 export solve!
 
 include("rk.jl")
-include("adi.jl")
-include("backward-euler.jl")
-include("crank-nicolson.jl")
-# include("external-velocity.jl")
 
 include("krylov.jl")
 

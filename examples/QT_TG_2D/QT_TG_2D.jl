@@ -1,14 +1,15 @@
 using SuperFluids
 
 # simulation parameters
-nx = 256
-ny = 256
+nx = 128
+ny = 128
 
 xrange = (0, 2*π)
 yrange = (0, 2*π)
 
 # creating a grid
-grid = Grid((nx,ny), (xrange,yrange))
+# grid = Grid((nx,ny), (xrange,yrange), device=GPU())
+grid = Grid((nx,ny), (xrange,yrange), device=CPU())
 println(grid)
 # allocating a field
 field = Field(grid, ComplexField())
@@ -22,8 +23,8 @@ param = GrossPitaevskiiParameters(
     )
 
 # solver
-Δt = 0.0125
-niter = 1000
+Δt = 0.01
+niter = 500
 freqbckp = 10
 
 # initialisation
@@ -44,7 +45,7 @@ param_insta = GrossPitaevskiiParameters(
     pot = PotentialZero(field_insta)
     )
 
-Δt_insta = Δt / 100.
+Δt_insta = Δt / 2.
 niter_insta = 5000
 freqbckp_insta = 10
 nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta, freqbckp_insta)

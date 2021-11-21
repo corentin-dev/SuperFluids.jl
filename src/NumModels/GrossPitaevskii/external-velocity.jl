@@ -76,13 +76,13 @@ Performs a single time step for stationnary field approximating a velocity field
 """
 function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField3D}
    # references
-   ϕ, ϕhat_x, ϕhat_y, ϕhat_z, ϕhat = n.f.ϕ, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat, n.ϕ_hat
-   Δt, coeffΔ, Ω, β = n.Δt, n.coeffΔ, n.Ω, n.β
+   ϕ, ϕhat_x, ϕhat_y, ϕhat_z, ϕhat = n.f.ϕ, n.plan.ϕ_hat, n.plan.ϕ_hat, n.plan.ϕ_hat, n.plan.ϕ_hat
+   Δt, coeffΔ, Ω, β = n.Δt, n.param.coeffΔ, n.param.Ω, n.param.β
    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
    ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
    plan, plan_x, plan_y, plan_z = n.plan.plan, n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
-   V, uadvx, uadvy, uadvz = n.potential.V, n.potential.uadvx, n.potential.uadvy, n.potential.uadvz
+   V, uadvx, uadvy, uadvz = n.param.pot.V, n.param.pot.uadvx, n.param.pot.uadvy, n.param.pot.uadvz
    α = 1.
    γ = 1.
    # create working vectors
@@ -109,4 +109,5 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField3D}
    @. ψ₁hat = ( ψ₁hat + α * Δt * coeffΔ * (ξx^2+ξy^2+ξz^2) * ϕhat / 2 )/(
             1 - α * Δt * coeffΔ * (ξx^2+ξy^2+ξz^2) / 2 )
    ldiv!(ϕ, plan, ψ₁hat)
+   return 1
 end

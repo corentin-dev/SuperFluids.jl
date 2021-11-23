@@ -5,13 +5,14 @@ using AbstractFFTs
 using FFTW
 using LinearAlgebra: mul!, ldiv!
 using CUDA
+using MPI
+using PencilFFTs
 
 "Abstract supertype for device."
 abstract type Device end
 "CPU device."
 struct CPU <: Device end
-"MPI device."
-struct MPI <: Device end
+include("MPI/MPI.jl")
 "GPU device."
 struct GPU <: Device end
 

@@ -13,6 +13,8 @@ export Grid
 Type representing a 2D grid.
 """
 struct Grid2D{FT<:Real,A} <: AbstractGrid2D{FT,A}
+   "Device"
+   device :: Device
    "x range"
    x :: A
    "y range"
@@ -45,6 +47,8 @@ end
 Type representing a grid.
 """
 struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
+   "Device"
+   device :: Device
    # range
    x :: A
    y :: A
@@ -109,11 +113,14 @@ function Grid(size::Tuple{Real,Real},
    X = reshape(x[1:end-1],nx,1)
    Y = reshape(y[1:end-1],1,ny)
    if typeof(device) == CPU
-      return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
+      return Grid2D{FT,Array{FT,2}}(device, X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
    elseif typeof(device) == GPU
       X = CuArray(X)
       Y = CuArray(Y)
-      return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
+      return Grid2D{FT,typeof(X)}(device, X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
+   elseif typeof(device) <: MPIDevice
+
+      return Grid3D
    end
 end
 

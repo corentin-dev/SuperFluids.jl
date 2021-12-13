@@ -12,10 +12,10 @@ using PencilFFTs
 abstract type Device end
 "CPU device."
 struct CPU <: Device end
-include("MPI/MPI.jl")
 "GPU device."
 struct GPU <: Device end
 
+include("MPI/MPI.jl")
 include("Discretization/Discretization.jl")
 include("Potentials/Potentials.jl")
 include("Parameters/Parameters.jl")

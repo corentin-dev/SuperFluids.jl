@@ -10,18 +10,20 @@ export Field
 export norm, normalize!
 
 "Abstract supertype for numerical models."
-abstract type AbstractField{A,G} end
+abstract type AbstractField{A,G,D} end
 "Abstract supertype for numerical models."
-abstract type AbstractField2D{A,G} <: AbstractField{A,G} end
+abstract type AbstractField2D{A,G,D} <: AbstractField{A,G,D} end
 "Abstract supertype for numerical models."
-abstract type AbstractField3D{A,G} <: AbstractField{A,G} end
+abstract type AbstractField3D{A,G,D} <: AbstractField{A,G,D} end
 
 """
     Field2D{A,G<:AbstractGrid} <: AbstractField2D{A,G}
 
 Type representing a 2D field on a 2D grid.
 """
-mutable struct Field2D{A,G} <: AbstractField2D{A,G}
+mutable struct Field2D{A,G,D} <: AbstractField2D{A,G,D}
+   "decomposition"
+   decomp :: D
    "number of dimensions"
    ndims :: Integer
    "g Grid"
@@ -31,11 +33,13 @@ mutable struct Field2D{A,G} <: AbstractField2D{A,G}
 end
 
 """
-    Field3D{A,G<:AbstractGrid} <: AbstractField3D{A,G}
+    Field3D{A,G<:AbstractGrid,D} <: AbstractField3D{A,G,D}
 
 Type representing a 3D field on a 3D grid.
 """
-mutable struct Field3D{A,G} <: AbstractField3D{A,G}
+mutable struct Field3D{A,G,D} <: AbstractField3D{A,G,D}
+   "decomposition"
+   decomp :: D
    "number of dimensions"
    ndims :: Integer
    "g Grid"
@@ -45,7 +49,7 @@ mutable struct Field3D{A,G} <: AbstractField3D{A,G}
 end
 
 """
-    Field(g::AbstractGrid2D{FT,A},::RealField) where {FT<:Real,A<:Array}
+    Field(g::AbstractGrid2D{FT,A,D},::RealField) where {FT<:Real,A<:Array,D}
 
 Returns a 2D field.
 
@@ -67,7 +71,7 @@ Field2D
   └──────────  memory: 0.5 MB
 ```
 """
-function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims::Integer=1) where {FT<:Real,A}
+function Field(g::AbstractGrid2D{FT,A,D},t::FieldType;ndims::Integer=1) where {FT<:Real,A,D}
    if typeof(t) == RealField
       myT = FT
    elseif typeof(t) == ComplexField
@@ -87,7 +91,7 @@ function Field(g::AbstractGrid2D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
 end
 
 """
-    Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<:Real,A}
+    Field(g::AbstractGrid3D{FT,A,D},t::FieldType;ndims::Integer=1) where {FT<:Real,A,D}
 
 Returns a 3D field.
 
@@ -109,7 +113,7 @@ Field3D
   └──────────  memory: 64.0 MB
 ```
 """
-function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<:Real,A}
+function Field(g::AbstractGrid3D{FT,A,D},t::FieldType;ndims::Integer=1, mpi_topo::MPIAbstractTopo=MPINone()) where {FT<:Real,A,D}
    if typeof(t) == RealField
       myT = FT
    elseif typeof(t) == ComplexField
@@ -120,10 +124,14 @@ function Field(g::AbstractGrid3D{FT,A},t::FieldType;ndims::Integer=1) where {FT<
    elseif A <: CuArray
       myArray = CuArray
    end
-   if ndims == 1
-      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz)
+   if typoef(mpi_topo) <: AbstractNoMPIDecomposition
+      if ndims == 1
+         ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz)
+      else
+         ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
+      end
    else
-      ϕ = myArray{myT}(undef,g.nx,g.ny,g.nz,ndims)
+
    end
    return Field3D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
 end

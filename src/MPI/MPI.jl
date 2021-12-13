@@ -1,8 +1,26 @@
-"Abstract MPI device."
-abstract type MPIDevice <: Device end
+"Abstract domain decomposition"
+abstract type AbstractDomainDecomposition end
 
-"Abstract MPI 1D"
-struct MPI1D <: MPIDevice
+"Abstract MPI decomposition."
+abstract type AbstractMPIDecomposition <: AbstractDomainDecomposition end
+"Abstract no-MPI decomposition."
+abstract type AbstractNoMPIDecomposition <: AbstractDomainDecomposition end
+
+"No MPI"
+struct MPINone <: AbstractNoMPIDecomposition
+    comm :: Nothing
+    rank :: Integer
+    size :: Integer
+    topo :: Nothing
+    function MPI1D()
+        rank = 0
+        size = 1
+        new(nothing, rank, size, nothing)
+    end
+end
+
+"MPI 1D"
+struct MPITopo1D <: AbstractMPIDecomposition
     comm :: MPI.Comm
     rank :: Integer
     size :: Integer
@@ -19,8 +37,8 @@ struct MPI1D <: MPIDevice
     end
 end
 
-"Abstract MPI 2D"
-struct MPI2D <: MPIDevice
+"MPI 2D"
+struct MPITopo2D <: AbstractMPIDecomposition
     comm :: MPI.Comm
     rank :: Integer
     size :: Integer
@@ -31,6 +49,24 @@ struct MPI2D <: MPIDevice
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
         topo_dims = [0,0]
+        MPI.Dims_create!(size,topo_dims)
+        topo = MPITopology(comm, Tuple(topo_dims))
+        new(comm, rank, size, topo)
+    end
+end
+
+"MPI 3D"
+struct MPITopo3D <: AbstractMPIDecomposition
+    comm :: MPI.Comm
+    rank :: Integer
+    size :: Integer
+    topo :: MPITopology
+    function MPI3D()
+        MPI.Init()
+        comm = MPI.COMM_WORLD
+        rank = MPI.Comm_rank(comm)
+        size = MPI.Comm_size(comm)
+        topo_dims = [0,0,0]
         MPI.Dims_create!(size,topo_dims)
         topo = MPITopology(comm, Tuple(topo_dims))
         new(comm, rank, size, topo)

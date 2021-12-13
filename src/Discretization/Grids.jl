@@ -49,28 +49,41 @@ Type representing a grid.
 struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
    "Device"
    device :: Device
-   # range
+   "x range"
    x :: A
+   "y range"
    y :: A
+   "z range"
    z :: A
-   # Size
+   "nx size in x direction"
    nx :: Integer
+   "ny size in y direction"
    ny :: Integer
+   "nz size in z direction"
    nz :: Integer
-   # Bounds
+   "xmin minimum x boundary"
    xmin :: FT
+   "xmax maximum x boundary"
    xmax :: FT
+   "ymin minimum y boundary"
    ymin :: FT
+   "ymax maximum y boundary"
    ymax :: FT
+   "zmin minimum z boundary"
    zmin :: FT
+   "zmax maximum z boundary"
    zmax :: FT
-   # Length.
+   "Lx x length"
    Lx :: FT
+   "Ly y length"
    Ly :: FT
+   "Lz z length"
    Lz :: FT
-   # Discretization.
+   "Δx x discretization"
    Δx :: FT
+   "Δy y discretization"
    Δy :: FT
+   "Δz z discretization"
    Δz :: FT
 end
 
@@ -94,7 +107,7 @@ Grid2D
 """
 function Grid(size::Tuple{Real,Real},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};
-      FT=Float64,device=CPU())
+      FT=Float64, device=CPU())
    # size
    nx, ny = size
    @assert nx > 0
@@ -118,9 +131,8 @@ function Grid(size::Tuple{Real,Real},
       X = CuArray(X)
       Y = CuArray(Y)
       return Grid2D{FT,typeof(X)}(device, X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
-   elseif typeof(device) <: MPIDevice
-
-      return Grid3D
+   else
+      throw(ArgumentError("Device type $(typeof(device)) is not supported"))
    end
 end
 
@@ -144,7 +156,7 @@ Grid3D
 """
 function Grid(size::Tuple{Integer,Integer,Integer},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real},Tuple{Real,Real}};
-      FT=Float64,device=CPU())
+      FT=Float64, device=CPU())
    # size
    nx, ny, nz = size
    @assert nx > 0
@@ -166,12 +178,29 @@ function Grid(size::Tuple{Integer,Integer,Integer},
    Y = reshape(y[1:end-1],1,ny,1)
    Z = reshape(z[1:end-1],1,1,nz)
    if typeof(device) == CPU
-      return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+      return Grid3D{FT,Array{FT,3}}(device, X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    elseif typeof(device) == GPU
       X = CuArray(X)
       Y = CuArray(Y)
       Z = CuArray(Z)
-      return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+      return Grid3D{FT,typeof(X)}(device, X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+   else
+      throw(ArgumentError("Device type $(typeof(device)) is not supported"))
+      # # throwaway pencilarray
+      # pen_x = Pencil(device.topo, (nx,ny,nz), (2,3))
+      # pen_z = Pencil(device.topo, (nx,ny,nz), (2,3), permute = Permutation(3, 2, 1))
+      # A = PencilArray{Complex{Float64}}(undef, pen_x)
+      # A_glob = global_view(A)
+      # rx,ry,rz = axes(A_glob)
+
+      # xl = X[rx]
+      # yl = Y[ry]
+      # zl = Z[rz]
+      # nxl,nyl,nzl = size_local(A)
+      # A = nothing
+      # A_glob = nothing
+
+      # return GridMPI3D{FT,typeof(X)}(device, pen_x, pen_z, rx, ry, rz, X, Y, Z, xl, yl, zl, nx, ny, nz, nxl, nyl, nzl, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    end
 end
 

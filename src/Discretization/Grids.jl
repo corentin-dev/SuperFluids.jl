@@ -186,21 +186,6 @@ function Grid(size::Tuple{Integer,Integer,Integer},
       return Grid3D{FT,typeof(X)}(device, X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    else
       throw(ArgumentError("Device type $(typeof(device)) is not supported"))
-      # # throwaway pencilarray
-      # pen_x = Pencil(device.topo, (nx,ny,nz), (2,3))
-      # pen_z = Pencil(device.topo, (nx,ny,nz), (2,3), permute = Permutation(3, 2, 1))
-      # A = PencilArray{Complex{Float64}}(undef, pen_x)
-      # A_glob = global_view(A)
-      # rx,ry,rz = axes(A_glob)
-
-      # xl = X[rx]
-      # yl = Y[ry]
-      # zl = Z[rz]
-      # nxl,nyl,nzl = size_local(A)
-      # A = nothing
-      # A_glob = nothing
-
-      # return GridMPI3D{FT,typeof(X)}(device, pen_x, pen_z, rx, ry, rz, X, Y, Z, xl, yl, zl, nx, ny, nz, nxl, nyl, nzl, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    end
 end
 

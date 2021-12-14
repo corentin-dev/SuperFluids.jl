@@ -24,6 +24,10 @@ Type representing a 2D field on a 2D grid.
 mutable struct Field2D{A,G,D} <: AbstractField2D{A,G,D}
    "decomposition"
    decomp :: D
+   "local x"
+   x :: AbstractArray
+   "local y"
+   y :: AbstractArray
    "number of dimensions"
    ndims :: Integer
    "g Grid"
@@ -77,24 +81,28 @@ Field2D
   └──────────  memory: 0.5 MB
 ```
 """
-# function Field(g::AbstractGrid2D{FT,A,D},t::FieldType;ndims::Integer=1) where {FT<:Real,A,D}
-#    if typeof(t) == RealField
-#       myT = FT
-#    elseif typeof(t) == ComplexField
-#       myT = Complex{FT}
-#    end
-#    if A <: Array
-#       myArray = Array
-#    elseif A <: CuArray
-#       myArray = CuArray
-#    end
-#    if ndims == 1
-#       ϕ = myArray{myT}(undef,g.nx,g.ny)
-#    else
-#       ϕ = myArray{myT}(undef,g.nx,g.ny,ndims)
-#    end
-#    return Field2D{typeof(ϕ),typeof(g)}(ndims,g,ϕ)
-# end
+function Field(
+      g::AbstractGrid2D{FT,A}, t::FieldType;
+      ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPINone()
+   ) where {FT<:Real, A}
+   if typeof(t) == RealField
+      myT = FT
+   elseif typeof(t) == ComplexField
+      myT = Complex{FT}
+   end
+   myArray = get_array_type(A)
+   if ndims == 1
+      dims = (g.nx,g.ny)
+   else
+      dims = (g.nx,g.ny,ndims)
+   end
+   ϕ = myArray{myT}(undef, dims...)
+   r = axes(ϕ)
+   x = g.x
+   y = g.y
+   decomp = NoFieldDecomposition(dd, r, nl)
+   return Field2D{typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, ϕ)
+end
 
 """
     Field(g::AbstractGrid3D{FT,A,D},t::FieldType;ndims::Integer=1) where {FT<:Real,A,D}
@@ -122,17 +130,13 @@ Field3D
 function Field(
       g::AbstractGrid3D{FT,A}, t::FieldType;
       ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPINone()
-   ) where {FT<:Real,A}
+   ) where {FT<:Real, A}
    if typeof(t) == RealField
       myT = FT
    elseif typeof(t) == ComplexField
       myT = Complex{FT}
    end
-   if A <: Array
-      myArray = Array
-   elseif A <: CuArray
-      myArray = CuArray
-   end
+   myArray = get_array_type(A)
    if ndims == 1
       dims = (g.nx,g.ny,g.nz)
    else
@@ -147,22 +151,16 @@ function Field(
       decomp = NoFieldDecomposition(dd, r, nl)
    elseif typeof(mpi_topo) <: AbstractMPIDecomposition
       pen_x = Pencil(mpi_topo.topo, dims, (2,3))
-      nl = size_local(pen_x)
-      ϕ = PencilArray(pen_x, myArray{myT}(undef, dims))
-      #ϕ = PencilArray{myT}(undef, pen_x)
+      local_dims = size_local(pen_x)
+      ϕ = PencilArray(pen_x, myArray{myT}(undef, local_dims))
       ϕglob = global_view(ϕ)
-      r = axes(ϕglob)
-      @assert size_local(ϕ) == nl
+      r = Tuple([ myArray(a) for a in axes(ϕglob) ])
 
-      # function PencilArray(pencil::Pencil{Np, Mp} where {Np, Mp},
-      #    data::AbstractArray{T, N}) where {T, N}
-      # dims = (size_local(pencil, MemoryOrder())..., extra_dims...)
-      # PencilArray(pencil, Array{T}(init, dims))
+      x = reshape(g.x[r[1]],local_dims[1],1,1)
+      y = reshape(g.y[r[2]],1,local_dims[2],1)
+      z = reshape(g.z[r[3]],1,1,local_dims[3])
 
-      x = reshape(g.x[r[1]],nl[1],1,1)
-      y = reshape(g.y[r[2]],1,nl[2],1)
-      z = reshape(g.z[r[3]],1,1,nl[3])
-      decomp = MPIFieldDecomposition(mpi_topo, pen_x, r, nl)
+      decomp = MPIFieldDecomposition(mpi_topo, r, local_dims)
    end
    return Field3D{typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
 end
@@ -200,6 +198,36 @@ function normalize!(f::AbstractField)
    f.ϕ ./= normϕ
    return nothing
 end
+
+function get_array_type(A::DataType)
+   if A <: Array
+      myArray = Array
+   elseif A <: CuArray
+      myArray = CuArray
+   end
+   return myArray
+end
+
+function get_array_type(a::A) where (A<:AbstractArray)
+   if A <: Array
+      myArray = Array
+   elseif A <: CuArray
+      myArray = CuArray
+   elseif A<:PencilArray
+      if typeof(a.data) <: Array
+         myArray = Array
+      elseif typeof(a.data) <: CuArray
+         myArray = CuArray
+      end
+   end
+   return myArray
+end
+
+get_type_array(A::AbstractArray{T}) where T = T
+
+get_real_type_array(A::AbstractArray{T}) where T = T
+
+get_real_type_array(A::AbstractArray{Complex{T}}) where T = T
 
 Base.show(io::IO, f::Field2D{A}) where A =
      print(io, "Field2D\n",

@@ -9,7 +9,7 @@ struct PotentialQuarticQuadratic{F} <: AbstractPotential{F}
 end
 
 function PotentialQuarticQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, κ4::Real = 1) where {F<:AbstractField}
-   V = real.(similar(f.ϕ))
+   V = similar_real(f.ϕ)
    p = PotentialQuarticQuadratic{F}(f, V, α, γx, γy, γz, κ4)
    compute!(p)
    return p

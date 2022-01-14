@@ -16,11 +16,11 @@ function PotentialQuarticQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real 
 end
 
 function compute!(p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D}
-   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.g.x^2+γy*p.f.g.y^2) + 0.5*p.κ4 * (p.f.g.x^2 + p.f.g.y^2)^2
+   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.x^2+γy*p.f.y^2) + 0.5*p.κ4 * (p.f.x^2 + p.f.y^2)^2
 end
 
 function compute!(p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D}
-   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.g.x^2+γy*p.f.g.y^2+γz*p.f.g.z^2) + 0.5*p.κ4 * (p.f.g.x^2 + p.f.g.y^2)^2
+   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.x^2+γy*p.f.y^2+γz*p.f.z^2) + 0.5*p.κ4 * (p.f.x^2 + p.f.y^2)^2
 end
 
 Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D} =

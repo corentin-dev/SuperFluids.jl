@@ -152,15 +152,16 @@ function Field(
    elseif typeof(mpi_topo) <: AbstractMPIDecomposition
       pen_x = Pencil(mpi_topo.topo, dims, (2,3))
       local_dims = size_local(pen_x)
-      ϕ = PencilArray(pen_x, myArray{myT}(undef, local_dims))
-      ϕglob = global_view(ϕ)
-      r = Tuple([ myArray(a) for a in axes(ϕglob) ])
+      pen_array = PencilArray(pen_x, myArray{myT}(undef, local_dims))
+      ϕ = pen_array.data
+      pen_array_glob = global_view(pen_array)
+      r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
       x = reshape(g.x[r[1]],local_dims[1],1,1)
       y = reshape(g.y[r[2]],1,local_dims[2],1)
       z = reshape(g.z[r[3]],1,1,local_dims[3])
 
-      decomp = MPIFieldDecomposition(mpi_topo, r, local_dims)
+      decomp = MPIFieldDecomposition(mpi_topo, pen_array, r, local_dims)
    end
    return Field3D{typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
 end

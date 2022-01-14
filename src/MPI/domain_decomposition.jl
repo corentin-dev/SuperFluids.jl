@@ -14,9 +14,10 @@ end
 "Field decomposition"
 struct MPIFieldDecomposition{DD} <: AbstractFieldDecomposition{DD}
     dd :: DD
+    pen_array :: PencilArray
     r :: Tuple
     n :: Tuple
-    function MPIFieldDecomposition(dd, r::Tuple, n::Tuple)
-        new{typeof(dd)}(dd, r, n)
+    function MPIFieldDecomposition(dd, pen_array::PencilArray, r::Tuple, n::Tuple)
+        new{typeof(dd)}(dd, pen_array, r, n)
     end
 end

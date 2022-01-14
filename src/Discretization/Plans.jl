@@ -68,8 +68,10 @@ end
 
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
    if typeof(t) == FFTPlan
-      ξx = fftfreq(f.g.nx,2π/f.g.Δx)
-      ξy = fftfreq(f.g.ny,2π/f.g.Δy)
+      ξx = similar(f.x)
+      ξy = similar(f.y)
+      ξx .= fftfreq(f.g.nx,2π/f.g.Δx)
+      ξy .= fftfreq(f.g.ny,2π/f.g.Δy)
       if typeof(f.ϕ) <: Array
          myArray = Array
       elseif typeof(f.ϕ) <: CuArray

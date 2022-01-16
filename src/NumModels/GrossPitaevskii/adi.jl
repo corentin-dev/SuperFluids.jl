@@ -95,11 +95,14 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
 
  function solveLapRot!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters}
     # references
-    ϕ, ϕhat_x, ϕhat_y, ϕhat_z = n.f.ϕ, n.plan.ϕ_hat, n.plan.ϕ_hat, n.plan.ϕ_hat
+    ϕ = n.f.ϕ
     coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
-    x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
+    x, y, z = n.f.x, n.f.y, n.f.z
     ξx, ξy, ξz = n.plan.ξx, n.plan.ξy, n.plan.ξz
     plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
+    ϕhat_x = allocate_output(n.plan.plan_x)
+    ϕhat_y = allocate_output(n.plan.plan_y)
+    ϕhat_z = allocate_output(n.plan.plan_z)
     # perform FFT
     mul!(ϕhat_x, plan_x, ϕ)
     # compute the laplacian and rotation in the Fourier space (x)

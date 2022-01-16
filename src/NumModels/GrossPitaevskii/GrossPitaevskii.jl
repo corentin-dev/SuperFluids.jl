@@ -13,7 +13,9 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, 
    # compute derivatives
    computeDerivatives!(n.gf, n.plan, ϕt)
    # return computation
-   return -coeffΔ .* ( n.gf.ddx .+ n.gf.ddy .+ n.gf.ddz) + Ω .* im .* (n.gf.rx+n.gf.ry)
+   tmp = allocate_input(n.plan.plan)
+   @. tmp = -coeffΔ * ( n.gf.ddx + n.gf.ddy + n.gf.ddz) + Ω * im * (n.gf.rx + n.gf.ry)
+   return tmp
 end
 
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan}

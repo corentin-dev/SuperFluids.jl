@@ -23,6 +23,10 @@ struct PlanFFT2D{F} <: AbstractFFTPlan{F}
    ξx :: AbstractArray
    "ξy y frequencies"
    ξy :: AbstractArray
+   "x for plan"
+   x :: AbstractArray
+   "y for plan"
+   y :: AbstractArray
    "temporary storage"
    ϕ_hat :: AbstractArray
 end
@@ -42,6 +46,12 @@ struct PlanFFT3D{F} <: AbstractFFTPlan{F}
    ξy :: AbstractArray
    "ξz z frequencies"
    ξz :: AbstractArray
+   "x for plan"
+   x :: AbstractArray
+   "y for plan"
+   y :: AbstractArray
+   "z for plan"
+   z :: AbstractArray
    "temporary storage"
    ϕ_hat :: AbstractArray
 end
@@ -84,6 +94,7 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
                      plan_fft(f.ϕ,1),
                      plan_fft(f.ϕ,2),
                      Ξx, Ξy,
+                     f.g.x, f.g.y,
                      ϕ_hat)
    else
       return PlanFD2D{F}(f.g.Δx, f.g.Δy)
@@ -92,23 +103,36 @@ end
 
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
    if typeof(t) == FFTPlan
-      ξx = fftfreq(f.g.nx,2π/f.g.Δx)
-      ξy = fftfreq(f.g.ny,2π/f.g.Δy)
-      ξz = fftfreq(f.g.nz,2π/f.g.Δz)
-      if typeof(f.ϕ) <: Array
-         myArray = Array
-      elseif typeof(f.ϕ) <: CuArray
-         myArray = CuArray
-      end
-      ϕ_hat = similar(f.ϕ)
-      Ξx = reshape(myArray(ξx),f.g.nx,1,1)
-      Ξy = reshape(myArray(ξy),1,f.g.ny,1)
-      Ξz = reshape(myArray(ξz),1,1,f.g.nz)
-      return PlanFFT3D{F}(plan_fft(f.ϕ,(1,2,3)),
-                     plan_fft(f.ϕ,1),
-                     plan_fft(f.ϕ,2),
-                     plan_fft(f.ϕ,3),
+      ξx = fftfreq(f.g.nx, 2π/f.g.Δx)
+      ξy = fftfreq(f.g.ny, 2π/f.g.Δy)
+      ξz = fftfreq(f.g.nz, 2π/f.g.Δz)
+
+      plan = PencilFFTPlan(f.decomp.pen_array, Transforms.FFT())
+      plan_x = PencilFFTPlan(f.decomp.pen_array, (Transforms.FFT(),Transforms.NoTransform(),Transforms.NoTransform()))
+      plan_y = PencilFFTPlan(f.decomp.pen_array, (Transforms.NoTransform(),Transforms.FFT(),Transforms.NoTransform()))
+      plan_z = PencilFFTPlan(f.decomp.pen_array, (Transforms.NoTransform(),Transforms.NoTransform(),Transforms.FFT()))
+
+      # temporary arrays
+      ϕ_hat = allocate_output(plan)
+
+      # axes
+      ϕ_hat_glob = global_view(ϕ_hat)
+      # ranges
+      rx_hat, ry_hat, rz_hat = axes(ϕ_hat_glob)
+      nxl_hat, nyl_hat, nzl_hat = size_local(ϕ_hat)
+
+      #
+      x_hat = reshape(f.g.x[rx_hat],nxl_hat,1,1)
+      y_hat = reshape(f.g.y[ry_hat],1,nyl_hat,1)
+      z_hat = reshape(f.g.z[rz_hat],1,1,nzl_hat)
+      Ξx = reshape(ξx[rx_hat],nxl_hat,1,1)
+      Ξy = reshape(ξy[ry_hat],1,nyl_hat,1)
+      Ξz = reshape(ξz[rz_hat],1,1,nzl_hat)
+
+      return PlanFFT3D{F}(plan,
+                     plan_x, plan_y, plan_z,
                      Ξx, Ξy, Ξz,
+                     x_hat, y_hat, z_hat,
                      ϕ_hat)
    else
       return PlanFD2D{F}(f.g.Δx, f.g.Δy, f.g.Δz)

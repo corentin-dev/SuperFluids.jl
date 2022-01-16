@@ -24,12 +24,15 @@ end
 function initField!(init::InitThomasFermi2D{F}) where {F<:AbstractField2D}
    x = init.f.x
    y = init.f.y
-   @. init.f.ϕ = √(
-            (im*
-             √(init.β*init.γx*init.γy/π) - # μ
-             0.5*((init.γx*x)^2+(init.γy*y)^2) # V
-            )/init.β
-           )
+   ρ0 = √( 4* init.β * √(init.γx * init.γy) / π )
+   function TF(x,y)
+      if x^2 + y^2 > ρ0
+         return 0
+      else
+         return ρ0 .- (x^2 + y^2 )
+      end
+   end
+   @. init.f.ϕ = TF(x,y)
    normalize!(init.f)
    return nothing
 end
@@ -38,12 +41,15 @@ function initField!(init::InitThomasFermi3D{F}) where {F<:AbstractField3D}
    x = init.f.x
    y = init.f.y
    z = init.f.z
-   @. init.f.ϕ = √(im*
-            (
-             0.5 * (15. * init.β * init.γx * init.γy * init.γz / 4. / π)^(2. / 5.) - # μ
-             0.5 * ( init.γx*x^2 + init.γy*y^2 + init.γz*z^2 )  # V
-            )/init.β
-           )
+   ρ0 = ( 30 * init.β * √(init.γx * init.γy * init.γz) / ( 8 * π ) )^(2/5)
+   function TF(x,y,z)
+      if x^2 + y^2 + z^2 > ρ0
+         return 0
+      else
+         return ρ0 .- (x^2 + y^2 + z^2)
+      end
+   end
+   @. init.f.ϕ = TF(x,y,z)
    normalize!(init.f)
    return nothing
 end

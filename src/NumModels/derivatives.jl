@@ -95,41 +95,59 @@ end
 
 function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
    # references
-   x, y, z = gf.f.g.x, gf.f.g.y, gf.f.g.z
-   ϕthat_x, ϕthat_y, ϕthat_z = p.ϕ_hat, p.ϕ_hat, p.ϕ_hat
+   x, y, z = p.x, p.y, p.z
+   #ϕp = gf.f.decomp.pen_array
+   ϕthat = p.ϕ_hat
    ξx, ξy, ξz = p.ξx, p.ξy, p.ξz
    plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # FFT x
-   mul!(ϕthat_x, plan_x, ϕt)
+   ϕthat = allocate_output(plan_x)
+   tmp_in = allocate_input(plan_x)
+   tmp_out = allocate_output(plan_x)
+   mul!(ϕthat, plan_x, ϕt)
    # compute dx
-   tmp = im .* ξx .* ϕthat_x
-   ldiv!(gf.dx, plan_x, tmp)
+   tmp_out .= im .* ξx .* ϕthat
+   ldiv!(tmp_in, plan_x, tmp_out)
+   gf.dx .= tmp_in
    # compute rx
-   tmp .= im .* y .* ξx .* ϕthat_x
-   ldiv!(gf.rx, plan_x, tmp)
+   tmp_out .= im .* y .* ξx .* ϕthat
+   ldiv!(tmp_in, plan_x, tmp_out)
+   gf.rx .= tmp_in
    # compute ddx
-   tmp .= - ξx.^2 .* ϕthat_x
-   ldiv!(gf.ddx, plan_x, tmp)
+   tmp_out .= - ξx.^2 .* ϕthat
+   ldiv!(tmp_in, plan_x, tmp_out)
+   gf.ddx .= tmp_in
    # FFT y
-   mul!(ϕthat_y, plan_y, ϕt)
+   ϕthat = allocate_output(plan_y)
+   tmp_in = allocate_input(plan_y)
+   tmp_out = allocate_output(plan_y)
+   mul!(ϕthat, plan_y, ϕt)
    # compute dy
-   tmp .= im .* ξy .* ϕthat_y
-   ldiv!(gf.dy, plan_y, tmp)
+   tmp_out .= im .* ξy .* ϕthat
+   ldiv!(tmp_in, plan_y, tmp_out)
+   gf.dy .= tmp_in
    # compute ry
-   tmp .= -im .* x .* ξy .* ϕthat_y
-   ldiv!(gf.ry, plan_y, tmp)
+   tmp_out .= -im .* x .* ξy .* ϕthat
+   ldiv!(tmp_in, plan_y, tmp_out)
+   gf.ry .= tmp_in
    # compute ddy
-   tmp .= - ξy.^2 .* ϕthat_y
-   ldiv!(gf.ddy, plan_y, tmp)
+   tmp_out .= - ξy.^2 .* ϕthat
+   ldiv!(tmp_in, plan_y, tmp_out)
+   gf.ddy .= tmp_in
    # FFT z
-   mul!(ϕthat_z, plan_z, ϕt)
+   ϕthat = allocate_output(plan_z)
+   tmp_in = allocate_input(plan_z)
+   tmp_out = allocate_output(plan_z)
+   mul!(ϕthat, plan_z, ϕt)
    # compute dz
-   tmp .= im .* ξz .* ϕthat_z
-   ldiv!(gf.dz, plan_z, tmp)
+   tmp_out .= im .* ξz .* ϕthat
+   ldiv!(tmp_in, plan_z, tmp_out)
+   gf.dz .= tmp_in
    # compute ddz
-   tmp .= - ξz.^2 .* ϕthat_z
-   ldiv!(gf.ddz, plan_z, tmp)
-   tmp = nothing
+   tmp_out .= - ξz.^2 .* ϕthat
+   ldiv!(tmp_in, plan_z, tmp_out)
+   gf.ddz .= tmp_in
+   tmp_out = nothing
    return nothing
 end
 

@@ -145,7 +145,7 @@ function Field(
       dims = (g.nx,g.ny,g.nz,ndims)
    end
 
-   pen_x = Pencil(mpi_topo.topo, dims, (2,3))
+   pen_x = Pencil(myArray, mpi_topo.topo, dims, (2,3))
    local_dims = size_local(pen_x)
    pen_array = PencilArray(pen_x, myArray{myT}(undef, local_dims))
    ϕ = pen_array#.data

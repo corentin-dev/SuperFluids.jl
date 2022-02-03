@@ -121,13 +121,21 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
       rx_hat, ry_hat, rz_hat = axes(ϕ_hat_glob)
       nxl_hat, nyl_hat, nzl_hat = size_local(ϕ_hat)
 
-      #
-      x_hat = reshape(f.g.x[rx_hat],nxl_hat,1,1)
-      y_hat = reshape(f.g.y[ry_hat],1,nyl_hat,1)
-      z_hat = reshape(f.g.z[rz_hat],1,1,nzl_hat)
-      Ξx = reshape(ξx[rx_hat],nxl_hat,1,1)
-      Ξy = reshape(ξy[ry_hat],1,nyl_hat,1)
-      Ξz = reshape(ξz[rz_hat],1,1,nzl_hat)
+      # range compatible to all types of Array
+      rrx_hat = rx_hat[begin]:rx_hat[end]
+      rry_hat = ry_hat[begin]:ry_hat[end]
+      rrz_hat = rz_hat[begin]:rz_hat[end]
+      # reshape hat versions of positions
+      x_hat = reshape(f.g.x[rrx_hat],1,1,nxl_hat)
+      y_hat = reshape(f.g.y[rry_hat],1,nyl_hat,1)
+      z_hat = reshape(f.g.z[rrz_hat],nzl_hat,1,1)
+      # reshape versions of ξ
+      Ξx = similar(x_hat)
+      Ξy = similar(y_hat)
+      Ξz = similar(z_hat)
+      copyto!(Ξx, reshape(ξx[rrx_hat],1,1,nxl_hat))
+      copyto!(Ξy, reshape(ξy[rry_hat],1,nyl_hat,1))
+      copyto!(Ξz, reshape(ξz[rrz_hat],nzl_hat,1,1))
 
       return PlanFFT3D{F}(plan,
                      plan_x, plan_y, plan_z,

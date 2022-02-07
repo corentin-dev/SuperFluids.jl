@@ -1,26 +1,32 @@
 function krylov!(n::AbstractNumModel, ϕ)
-   normb=sqrt(real(sum(n.b.*conj.(n.b))))
+   normb = sqrt( mapreduce((x)->real(x*conj(x)),+,n.b) )
    r = n.b - prodA(n,ϕ)
    r₂ = copy(r)
    p = copy(r)
    niter = 0
    for i = 1:n.nkrylov
       Ap = prodA(n,p)
-      α = real(sum(r.*conj.(r₂))/sum(Ap.*conj.(r₂)))
+      rr₂ = mapreduce((x,y)->real(x*conj(y)),+,r,r₂)
+      Apr₂ = mapreduce((x,y)->real(x*conj(y)),+,Ap,r₂)
+      α = rr₂/Apr₂
       s = r - α * Ap
       As = prodA(n,s)
-      ω = sum(As.*conj.(s))/sum(abs2.(As))
+      Ass = mapreduce((x,y)->real(x*conj(y)),+,As,s)
+      AsAs = mapreduce((x)->real(x*conj(x)),+,As)
+      ω = Ass/AsAs
       @. ϕ = ϕ + α*p + ω*s
-      rr₂ = sum(r.*conj.(r₂))
+      rr₂old = mapreduce((x,y)->real(x*conj(y)),+,r,r₂)
       r = s - ω*As
-      if sqrt(sum(abs2.(r)))/normb < n.tolkrylov
+      rr = mapreduce((x)->real(x*conj(x)),+,r)
+      if sqrt(rr)/normb < n.tolkrylov
          println("Number of Krylov iterations: $(i)")
          break
       elseif i == n.nkrylov
          println("warning: Krylov solver did not converge")
       end
       niter = i
-      β = sum(r.*conj.(r₂)) / rr₂ * α / ω
+      rr₂ = mapreduce((x,y)->real(x*conj(y)),+,r,r₂)
+      β = rr₂ / rr₂old * α / ω
       p = r + β * (p - ω*Ap)
    end
    return niter

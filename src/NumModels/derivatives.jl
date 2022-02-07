@@ -61,97 +61,134 @@ end
 ## 3D
 
 function computeDerivatives!(gf :: GradientField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # references
-   ϕthat_x, ϕthat_y = p.ϕ_hat, p.ϕ_hat
-   ξx, ξy = p.ξx, p.ξy
-   plan_x, plan_y = p.plan_x, p.plan_y
-   # FFT x
-   mul!(ϕthat_x, plan_x, ϕt)
-   # compute dx
-   tmp = im .* ξx .* ϕthat_x
-   ldiv!(gf.dx, plan_x, tmp)
-   # compute ddx
-   tmp .= - ξx.^2 .* ϕthat_x
-   ldiv!(gf.ddx, plan_x, tmp)
-   # FFT y
-   mul!(ϕthat_y, plan_y, ϕt)
-   # compute dy
-   tmp .= im .* ξy .* ϕthat_y
-   ldiv!(gf.dy, plan_y, tmp)
-   # compute ddy
-   tmp .= - ξy.^2 .* ϕthat_y
-   ldiv!(gf.ddy, plan_y, tmp)
-   # FFT z
-   mul!(ϕthat_z, plan_z, ϕt)
-   # compute dz
-   tmp .= im .* ξz .* ϕthat_z
-   ldiv!(gf.dz, plan_z, tmp)
-   # compute ddz
-   tmp .= - ξz.^2 .* ϕthat_z
-   ldiv!(gf.ddz, plan_z, tmp)
-   tmp = nothing
-   return nothing
-end
-
-function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # references
-   x, y = p.x, p.y
    # temporary fields
    ϕxthat = p.ϕx_hat
    ϕythat = p.ϕy_hat
    ϕzthat = p.ϕz_hat
-   # frequencies
-   ξx, ξy, ξz = p.ξx, p.ξy, p.ξz
+   ϕxtmphat = p.ϕxtmp_hat
+   ϕytmphat = p.ϕytmp_hat
+   ϕztmphat = p.ϕztmp_hat
    # plans
    plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # FFT x
-   tmp_out = similar(ϕxthat)
+   # frequencies
+   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(p.pen_x, (p.ξx, p.ξy, p.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
    tmp_in = similar(ϕxthat)
    mul!(parent(ϕxthat), plan_x, parent(ϕt))
    # compute dx
-   tmp_out .= im .* ξx .* ϕxthat
-   ldiv!(parent(tmp_in), plan_x, parent(tmp_out))
+   ϕxtmphat .= im .* ξx .* ϕxthat
+   ldiv!(parent(tmp_in), plan_x, parent(ϕxtmphat))
    transpose!(gf.dx,tmp_in)
-   # compute rx
-   tmp_out .= im .* y .* ξx .* ϕxthat
-   ldiv!(parent(tmp_in), plan_x, parent(gf.rx))
-   transpose!(gf.rx,tmp_in)
    # compute ddx
-   tmp_out .= - ξx.^2 .* ϕxthat
-   ldiv!(parent(tmp_in), plan_x, parent(tmp_out))
+   ϕxtmphat .= - ξx.^2 .* ϕxthat
+   ldiv!(parent(tmp_in), plan_x, parent(ϕxtmphat))
    transpose!(gf.ddx,tmp_in)
    # FFT y
-   tmp_out = similar(ϕythat)
+   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(p.pen_y, (p.ξx, p.ξy, p.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
    tmp_in = similar(ϕythat)
    transpose!(tmp_in, ϕt)
    mul!(parent(ϕythat), plan_y, parent(tmp_in))
    # compute dy
-   tmp_out .= im .* ξy .* ϕythat
-   ldiv!(parent(tmp_in), plan_y, parent(tmp_out))
+   ϕytmphat .= im .* ξy .* ϕythat
+   ldiv!(parent(tmp_in), plan_y, parent(ϕytmphat))
    transpose!(gf.dy,tmp_in)
-   # compute ry
-   tmp_out .= -im .* x .* ξy .* ϕythat
-   ldiv!(parent(tmp_in), plan_y, parent(tmp_out))
-   transpose!(gf.ry, tmp_in)
    # compute ddy
-   tmp_out .= - ξy.^2 .* ϕythat
-   ldiv!(parent(tmp_in), plan_y, parent(tmp_out))
+   ϕytmphat .= - ξy.^2 .* ϕythat
+   ldiv!(parent(tmp_in), plan_y, parent(ϕytmphat))
    transpose!(gf.ddy,tmp_in)
    # FFT z
-   tmp_out = similar(ϕzthat)
+   grid = localgrid(p.pen_z, (p.f.g.x, p.f.g.y, p.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
    tmp_in = similar(ϕzthat)
    transpose!(tmp_in,ϕt)
    mul!(parent(ϕzthat), plan_z, parent(tmp_in))
    # compute dz
-   tmp_out .= im .* ξz .* ϕzthat
-   ldiv!(parent(tmp_in), plan_z, parent(tmp_out))
+   ϕztmphat .= im .* ξz .* ϕzthat
+   ldiv!(parent(tmp_in), plan_z, parent(ϕztmphat))
    transpose!(gf.dz,tmp_in)
    # compute ddz
-   tmp_out .= - ξz.^2 .* ϕzthat
-   ldiv!(parent(tmp_in), plan_z, parent(tmp_out))
+   ϕztmphat .= - ξz.^2 .* ϕzthat
+   ldiv!(parent(tmp_in), plan_z, parent(ϕztmphat))
    transpose!(gf.ddz, tmp_in)
-   tmp_out = nothing
    tmp_in = nothing
+   return nothing
+end
+
+function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
+   # temporary fields
+   ϕxthat = p.ϕx_hat
+   ϕythat = p.ϕy_hat
+   ϕzthat = p.ϕz_hat
+   ϕxtmphat = p.ϕxtmp_hat
+   ϕytmphat = p.ϕytmp_hat
+   ϕztmphat = p.ϕztmp_hat
+   # plans
+   plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
+   # FFT x
+   # frequencies
+   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(p.pen_x, (p.ξx, p.ξy, p.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
+   mul!(parent(ϕxthat), plan_x, parent(ϕt))
+   # compute dx
+   ϕxtmphat .= im .* ξx .* ϕxthat
+   ldiv!(parent(gf.dx), plan_x, parent(ϕxtmphat))
+   # compute rx
+   ϕxtmphat .= im .* y .* ξx .* ϕxthat
+   ldiv!(parent(gf.rx), plan_x, parent(ϕxtmphat))
+   # compute ddx
+   ϕxtmphat .= - ξx.^2 .* ϕxthat
+   ldiv!(parent(gf.ddx), plan_x, parent(ϕxtmphat))
+   # FFT y
+   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(p.pen_y, (p.ξx, p.ξy, p.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
+   tmp_y = similar(ϕythat)
+   transpose!(tmp_y, ϕt)
+   mul!(parent(ϕythat), plan_y, parent(tmp_y))
+   # compute dy
+   ϕytmphat .= im .* ξy .* ϕythat
+   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
+   transpose!(gf.dy,tmp_y)
+   # compute ry
+   ϕytmphat .= -im .* x .* ξy .* ϕythat
+   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
+   transpose!(gf.ry, tmp_y)
+   # compute ddy
+   ϕytmphat .= - ξy.^2 .* ϕythat
+   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
+   transpose!(gf.ddy,tmp_y)
+   # FFT z
+   grid = localgrid(p.pen_z, (p.f.g.x, p.f.g.y, p.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
+   tmp_z = similar(ϕzthat)
+   transpose!(tmp_y,ϕt)
+   transpose!(tmp_z,tmp_y)
+   mul!(parent(ϕzthat), plan_z, parent(tmp_z))
+   # compute dz
+   ϕztmphat .= im .* ξz .* ϕzthat
+   ldiv!(parent(tmp_z), plan_z, parent(ϕztmphat))
+   transpose!(tmp_y,tmp_z)
+   transpose!(gf.dz,tmp_y)
+   # compute ddz
+   ϕztmphat .= - ξz.^2 .* ϕzthat
+   ldiv!(parent(tmp_z), plan_z, parent(ϕztmphat))
+   transpose!(tmp_y,tmp_z)
+   transpose!(gf.ddz, tmp_y)
+   tmp_y = nothing
+   tmp_z = nothing
    return nothing
 end
 

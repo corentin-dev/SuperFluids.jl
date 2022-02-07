@@ -174,16 +174,22 @@ function Grid(size::Tuple{Integer,Integer,Integer},
    # spacing
    Δx, Δy, Δz = Lx / nx, Ly / ny, Lz / nz
    # reshaping arrays for broadcast
-   X = reshape(x[1:end-1],nx,1,1)
-   Y = reshape(y[1:end-1],1,ny,1)
-   Z = reshape(z[1:end-1],1,1,nz)
+   # X = reshape(x[1:end-1],nx,1,1)
+   # Y = reshape(y[1:end-1],1,ny,1)
+   # Z = reshape(z[1:end-1],1,1,nz)
+   x = x[1:end-1]
+   y = y[1:end-1]
+   z = z[1:end-1]
    if typeof(device) == CPU
-      return Grid3D{FT,Array{FT,3}}(device, X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+      x = Array(x)
+      y = Array(y)
+      z = Array(z)
+      return Grid3D{FT,typeof(x)}(device, x, y, z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    elseif typeof(device) == GPU
-      X = CuArray(X)
-      Y = CuArray(Y)
-      Z = CuArray(Z)
-      return Grid3D{FT,typeof(X)}(device, X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
+      x = CuArray(x)
+      y = CuArray(y)
+      z = CuArray(z)
+      return Grid3D{FT,typeof(x)}(device, x, y, z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
    else
       throw(ArgumentError("Device type $(typeof(device)) is not supported"))
    end

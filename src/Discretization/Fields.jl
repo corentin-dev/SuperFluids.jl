@@ -10,30 +10,30 @@ export Field
 export norm, normalize!
 
 "Abstract supertype for numerical models."
-abstract type AbstractField{A,G,D} end
+abstract type AbstractField{FT,A,PA,G,D} end
 "Abstract supertype for numerical models."
-abstract type AbstractField2D{A,G,D} <: AbstractField{A,G,D} end
+abstract type AbstractField2D{FT,A,PA,G,D} <: AbstractField{FT,A,PA,G,D} end
 "Abstract supertype for numerical models."
-abstract type AbstractField3D{A,G,D} <: AbstractField{A,G,D} end
+abstract type AbstractField3D{FT,A,PA,G,D} <: AbstractField{FT,A,PA,G,D} end
 
 """
     Field2D{A,G<:AbstractGrid} <: AbstractField2D{A,G}
 
 Type representing a 2D field on a 2D grid.
 """
-mutable struct Field2D{A,G,D} <: AbstractField2D{A,G,D}
+mutable struct Field2D{FT,A,PA,G,D} <: AbstractField2D{FT,A,PA,G,D}
    "decomposition"
    decomp :: D
    "local x"
-   x :: AbstractArray
+   x :: A
    "local y"
-   y :: AbstractArray
+   y :: A
    "number of dimensions"
    ndims :: Integer
    "g Grid"
    g :: G
    "ϕ array containing data"
-   ϕ :: A
+   ϕ :: PA
 end
 
 """
@@ -41,21 +41,21 @@ end
 
 Type representing a 3D field on a 3D grid.
 """
-mutable struct Field3D{A,G,D} <: AbstractField3D{A,G,D}
+mutable struct Field3D{FT,A,PA,G,D} <: AbstractField3D{FT,A,PA,G,D}
    "decomposition"
    decomp :: D
    "local x"
-   x :: AbstractArray
+   x :: A
    "local y"
-   y :: AbstractArray
+   y :: A
    "local z"
-   z :: AbstractArray
+   z :: A
    "number of dimensions"
    ndims :: Integer
    "g Grid"
    g :: G
    "ϕ array containing data"
-   ϕ :: A
+   ϕ :: PA
 end
 
 """
@@ -101,7 +101,7 @@ function Field(
    x = g.x
    y = g.y
    decomp = NoFieldDecomposition(dd, r, nl)
-   return Field2D{typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, ϕ)
+   return Field2D{myT,A,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, ϕ)
 end
 
 """
@@ -153,13 +153,12 @@ function Field(
    pen_array_glob = global_view(pen_array)
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
-   x = reshape(g.x[r[1]],local_dims[1],1,1)
-   y = reshape(g.y[r[2]],1,local_dims[2],1)
-   z = reshape(g.z[r[3]],1,1,local_dims[3])
+   grid = localgrid(pen_x, (g.x,g.y,g.z))
+   x, y, z = grid.x, grid.y, grid.z
 
    decomp = MPIFieldDecomposition(mpi_topo, pen_array, r, local_dims)
 
-   return Field3D{typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
+   return Field3D{myT,Any,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
 end
 
 function norm(f::Field2D)
@@ -226,12 +225,12 @@ get_real_type_array(A::AbstractArray{T}) where T = T
 
 get_real_type_array(A::AbstractArray{Complex{T}}) where T = T
 
-Base.show(io::IO, f::Field2D{A}) where A =
+Base.show(io::IO, f::Field2D{FT}) where FT =
      print(io, "Field2D\n",
-         "  ├──────  Array type: $(A)", '\n',
+         "  ├──────  Array type: $(FT)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 
-Base.show(io::IO, f::Field3D{A}) where A =
+Base.show(io::IO, f::Field3D{FT}) where FT =
      print(io, "Field3D\n",
-         "  ├───────  FloatType: $(A)", '\n',
+         "  ├───────  FloatType: $(FT)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")

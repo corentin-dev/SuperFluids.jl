@@ -22,7 +22,6 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    # references
    ϕ = n.f.ϕ
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
-   x, y = n.f.g.x, n.f.g.y
    Δx, Δy = n.f.g.Δx, n.f.g.Δy
    V = n.param.pot.V
 
@@ -54,7 +53,6 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    # references
    ϕ = n.f.ϕ
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
-   x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
    V = n.param.pot.V
 

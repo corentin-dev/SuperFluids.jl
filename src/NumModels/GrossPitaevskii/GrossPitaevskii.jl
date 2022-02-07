@@ -13,7 +13,7 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, 
    # compute derivatives
    computeDerivatives!(n.gf, n.plan, ϕt)
    # return computation
-   tmp = allocate_input(n.plan.plan)
+   tmp = similar(ϕt)
    @. tmp = -coeffΔ * ( n.gf.ddx + n.gf.ddy + n.gf.ddz) + Ω * im * (n.gf.rx + n.gf.ry)
    return tmp
 end

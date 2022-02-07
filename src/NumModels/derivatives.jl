@@ -95,59 +95,63 @@ end
 
 function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
    # references
-   x, y, z = p.x, p.y, p.z
-   #ϕp = gf.f.decomp.pen_array
-   ϕthat = p.ϕ_hat
+   x, y = p.x, p.y
+   # temporary fields
+   ϕxthat = p.ϕx_hat
+   ϕythat = p.ϕy_hat
+   ϕzthat = p.ϕz_hat
+   # frequencies
    ξx, ξy, ξz = p.ξx, p.ξy, p.ξz
+   # plans
    plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # FFT x
-   ϕthat = allocate_output(plan_x)
-   tmp_in = allocate_input(plan_x)
-   tmp_out = allocate_output(plan_x)
-   mul!(ϕthat, plan_x, ϕt)
+   tmp_out = similar(ϕxthat)
+   tmp_in = similar(ϕxthat)
+   mul!(parent(ϕxthat), plan_x, parent(ϕt))
    # compute dx
-   tmp_out .= im .* ξx .* ϕthat
-   ldiv!(tmp_in, plan_x, tmp_out)
-   gf.dx .= tmp_in
+   tmp_out .= im .* ξx .* ϕxthat
+   ldiv!(parent(tmp_in), plan_x, parent(tmp_out))
+   transpose!(gf.dx,tmp_in)
    # compute rx
-   tmp_out .= im .* y .* ξx .* ϕthat
-   ldiv!(tmp_in, plan_x, tmp_out)
-   gf.rx .= tmp_in
+   tmp_out .= im .* y .* ξx .* ϕxthat
+   ldiv!(parent(tmp_in), plan_x, parent(gf.rx))
+   transpose!(gf.rx,tmp_in)
    # compute ddx
-   tmp_out .= - ξx.^2 .* ϕthat
-   ldiv!(tmp_in, plan_x, tmp_out)
-   gf.ddx .= tmp_in
+   tmp_out .= - ξx.^2 .* ϕxthat
+   ldiv!(parent(tmp_in), plan_x, parent(tmp_out))
+   transpose!(gf.ddx,tmp_in)
    # FFT y
-   ϕthat = allocate_output(plan_y)
-   tmp_in = allocate_input(plan_y)
-   tmp_out = allocate_output(plan_y)
-   mul!(ϕthat, plan_y, ϕt)
+   tmp_out = similar(ϕythat)
+   tmp_in = similar(ϕythat)
+   transpose!(tmp_in, ϕt)
+   mul!(parent(ϕythat), plan_y, parent(tmp_in))
    # compute dy
-   tmp_out .= im .* ξy .* ϕthat
-   ldiv!(tmp_in, plan_y, tmp_out)
-   gf.dy .= tmp_in
+   tmp_out .= im .* ξy .* ϕythat
+   ldiv!(parent(tmp_in), plan_y, parent(tmp_out))
+   transpose!(gf.dy,tmp_in)
    # compute ry
-   tmp_out .= -im .* x .* ξy .* ϕthat
-   ldiv!(tmp_in, plan_y, tmp_out)
-   gf.ry .= tmp_in
+   tmp_out .= -im .* x .* ξy .* ϕythat
+   ldiv!(parent(tmp_in), plan_y, parent(tmp_out))
+   transpose!(gf.ry, tmp_in)
    # compute ddy
-   tmp_out .= - ξy.^2 .* ϕthat
-   ldiv!(tmp_in, plan_y, tmp_out)
-   gf.ddy .= tmp_in
+   tmp_out .= - ξy.^2 .* ϕythat
+   ldiv!(parent(tmp_in), plan_y, parent(tmp_out))
+   transpose!(gf.ddy,tmp_in)
    # FFT z
-   ϕthat = allocate_output(plan_z)
-   tmp_in = allocate_input(plan_z)
-   tmp_out = allocate_output(plan_z)
-   mul!(ϕthat, plan_z, ϕt)
+   tmp_out = similar(ϕzthat)
+   tmp_in = similar(ϕzthat)
+   transpose!(tmp_in,ϕt)
+   mul!(parent(ϕzthat), plan_z, parent(tmp_in))
    # compute dz
-   tmp_out .= im .* ξz .* ϕthat
-   ldiv!(tmp_in, plan_z, tmp_out)
-   gf.dz .= tmp_in
+   tmp_out .= im .* ξz .* ϕzthat
+   ldiv!(parent(tmp_in), plan_z, parent(tmp_out))
+   transpose!(gf.dz,tmp_in)
    # compute ddz
-   tmp_out .= - ξz.^2 .* ϕthat
-   ldiv!(tmp_in, plan_z, tmp_out)
-   gf.ddz .= tmp_in
+   tmp_out .= - ξz.^2 .* ϕzthat
+   ldiv!(parent(tmp_in), plan_z, parent(tmp_out))
+   transpose!(gf.ddz, tmp_in)
    tmp_out = nothing
+   tmp_in = nothing
    return nothing
 end
 

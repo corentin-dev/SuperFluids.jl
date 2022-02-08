@@ -1,5 +1,7 @@
 using SuperFluids
 
+mpi_topo = SuperFluids.MPITopo1D();
+
 # simulation parameters
 nx = 128
 ny = 128
@@ -9,10 +11,10 @@ yrange = (-12, 12)
 
 # creating a grid
 grid = Grid((nx,ny), (xrange,yrange))
-println(grid)
+println_parallel(grid)
 # allocating a field
-field = Field(grid, ComplexField())
-println(field)
+field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
+println_parallel(field)
 
 # potential
 α = 0
@@ -34,47 +36,46 @@ freqbckp = 10
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
 # init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y)
-normalize!(field)
+initField!(init)
 
 # BackwardEuler (with precond)
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # BackwardEulerNoPrecond
 nummodel = NumModelBackwardEulerNoPrecond(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # CrankNicolson
 nummodel = NumModelCrankNicolson(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # CrankNicolsonQuasiNewton
 nummodel = NumModelCrankNicolsonQuasiNewton(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # ADI1
 nummodel = NumModelADI1(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # ADI2
 nummodel = NumModelADI2(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # CrankNicolsonT
 nummodel = NumModelCrankNicolsonT(field, param, Δt*0.1, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 # CrankNicolsonQuasiNewtonT
 nummodel = NumModelCrankNicolsonQuasiNewtonT(field, param, Δt*0.1, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 nothing

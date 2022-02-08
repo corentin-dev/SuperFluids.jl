@@ -13,8 +13,10 @@ abstract type AbstractFFTPlan{F} end
 abstract type AbstractFDPlan{F} end
 
 struct PlanFFT2D{F} <: AbstractFFTPlan{F}
-   "plan in all directions"
-   plan :: AbstractFFTs.Plan
+   "field"
+   f :: AbstractField2D
+   pen_x
+   pen_y
    "plan in x direction only"
    plan_x :: AbstractFFTs.Plan
    "plan in y direction only"
@@ -23,12 +25,14 @@ struct PlanFFT2D{F} <: AbstractFFTPlan{F}
    ξx :: AbstractArray
    "ξy y frequencies"
    ξy :: AbstractArray
-   "x for plan"
-   x :: AbstractArray
-   "y for plan"
-   y :: AbstractArray
-   "temporary storage"
-   ϕ_hat :: AbstractArray
+   "temporary storage x"
+   ϕx_hat :: AbstractArray
+   "temporary storage y"
+   ϕy_hat :: AbstractArray
+   "temporary storage x"
+   ϕxtmp_hat :: AbstractArray
+   "temporary storage y"
+   ϕytmp_hat :: AbstractArray
 end
 
 struct PlanFFT3D{F} <: AbstractFFTPlan{F}
@@ -85,24 +89,33 @@ end
 
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
    if typeof(t) == FFTPlan
-      ξx = similar(f.x)
-      ξy = similar(f.y)
-      ξx .= fftfreq(f.g.nx,2π/f.g.Δx)
-      ξy .= fftfreq(f.g.ny,2π/f.g.Δy)
-      if typeof(f.ϕ) <: Array
-         myArray = Array
-      elseif typeof(f.ϕ) <: CuArray
-         myArray = CuArray
-      end
-      ϕ_hat = similar(f.ϕ)
-      Ξx = reshape(myArray(ξx),f.g.nx,1)
-      Ξy = reshape(myArray(ξy),1,f.g.ny)
-      return PlanFFT2D{F}(plan_fft(f.ϕ,(1,2)),
-                     plan_fft(f.ϕ,1),
-                     plan_fft(f.ϕ,2),
-                     Ξx, Ξy,
-                     f.g.x, f.g.y,
-                     ϕ_hat)
+      # frequencies
+      ξx = A(fftfreq(f.g.nx, 2π/f.g.Δx))
+      ξy = A(fftfreq(f.g.ny, 2π/f.g.Δy))
+
+      # Pencil decompositions
+      pen_x = f.decomp.pen_array.pencil
+      pen_y = Pencil(pen_x, decomp_dims=(1,), permute = Permutation(2, 1) )
+
+      # create arrays for FFT
+      ϕx_hat = PencilArray{FFT}(undef, pen_x)
+      ϕy_hat = PencilArray{FFT}(undef, pen_y)
+
+      # temporary arrays
+      ϕxtmp_hat = PencilArray{FFT}(undef, pen_x)
+      ϕytmp_hat = PencilArray{FFT}(undef, pen_y)
+
+      # create plans
+      plan_x = plan_fft(parent(ϕx_hat),1)
+      plan_y = plan_fft(parent(ϕy_hat),1)
+
+      return PlanFFT2D{FT}(
+                     f,
+                     pen_x, pen_y,
+                     plan_x, plan_y,
+                     ξx, ξy,
+                     ϕx_hat, ϕy_hat,
+                     ϕxtmp_hat, ϕytmp_hat)
    else
       return PlanFD2D{F}(f.g.Δx, f.g.Δy)
    end

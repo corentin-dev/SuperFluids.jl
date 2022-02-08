@@ -23,7 +23,8 @@ function NumModelADI1(f::AbstractField, param::AbstractParameters,
       )
 end
 
-Base.show(io::IO, n::NumModelADI1) = print(io,
+Base.show(io::IO, n::NumModelADI1) =
+   print(io,
          "Splitting Order 1\n",
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
@@ -59,7 +60,8 @@ function NumModelADI2(f::AbstractField, param::AbstractParameters,
       )
 end
 
-Base.show(io::IO, n::NumModelADI2) = print(io,
+Base.show(io::IO, n::NumModelADI2) =
+   print(io,
          "Splitting Order 2\n",
          "  ├───────  time step: $(n.Δt)\n",
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
@@ -72,25 +74,36 @@ function timeStep!(n::NumModelADI2)
 end
 
 function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
-    # references
-    ϕ, ϕhat_x, ϕhat_y = n.f.ϕ, n.plan.ϕ_hat, n.plan.ϕ_hat
-    coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
-    x, y = n.f.g.x, n.f.g.y
-    ξx, ξy = n.plan.ξx, n.plan.ξy
-    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
-    # perform FFT
-    mul!(ϕhat_x, plan_x, ϕ)
-    # compute the laplacian and rotation in the Fourier space (x)
-    @. ϕhat_x = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕhat_x
-    # backward FFT
-    ldiv!(ϕ, plan_x, ϕhat_x)
-    # perform FFT
-    mul!(ϕhat_y, plan_y, ϕ)
-    # compute the laplacian and rotation in the Fourier space (y)
-    @. ϕhat_y = exp(im*(coeffΔ*ξy^2+Ω*x*ξy)*Δtl) * ϕhat_y
-    # backward FFT
-    ldiv!(ϕ, plan_y, ϕhat_y)
-    return nothing
+   # field
+   ϕ = n.f.ϕ
+   # parameters
+   coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
+   # temporary fields
+   ϕxthat = n.plan.ϕx_hat
+   ϕythat = n.plan.ϕy_hat
+   ϕxtmphat = n.plan.ϕxtmp_hat
+   ϕytmphat = n.plan.ϕytmp_hat
+   # plans
+   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
+   # FFT x
+   grid = localgrid(n.plan.pen_x, (n.f.g.x, n.f.g.y))
+   x, y = grid.x, grid.y
+   gridξ = localgrid(n.plan.pen_x, (n.plan.ξx, n.plan.ξy))
+   ξx, ξy = gridξ.x, gridξ.y
+   mul!(parent(ϕxthat), plan_x, parent(ϕ))
+   @. ϕxthat = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕxthat
+   ldiv!(parent(ϕ), plan_x, parent(ϕxthat))
+   # FFT y
+   grid = localgrid(n.plan.pen_y, (n.f.g.x, n.f.g.y))
+   x, y = grid.x, grid.y
+   gridξ = localgrid(n.plan.pen_y, (n.plan.ξx, n.plan.ξy))
+   ξx, ξy = gridξ.x, gridξ.y
+   transpose!(ϕytmphat, ϕ)
+   mul!(parent(ϕythat), plan_y, parent(ϕytmphat))
+   @. ϕythat = exp(im*(coeffΔ*ξy^2+Ω*x*ξy)*Δtl) * ϕythat
+   ldiv!(parent(ϕytmphat), plan_y, parent(ϕythat))
+   transpose!(ϕ, ϕytmphat)
+   return nothing
  end
 
  function solveLapRot!(n::AbstractNumModel{F,P}, Δtl) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters}

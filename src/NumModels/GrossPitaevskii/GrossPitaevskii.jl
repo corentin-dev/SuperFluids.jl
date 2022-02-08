@@ -4,7 +4,9 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, 
    # compute derivatives
    computeDerivatives!(n.gf, n.plan, ϕt)
    # return computation
-   return -coeffΔ .* ( n.gf.ddx .+ n.gf.ddy) + Ω .* im .* (n.gf.rx+n.gf.ry)
+   tmp = similar(ϕt)
+   @. tmp = -coeffΔ * ( n.gf.ddx + n.gf.ddy) + Ω * im * (n.gf.rx + n.gf.ry)
+   return tmp
 end
 
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters, Plan}

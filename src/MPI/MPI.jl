@@ -2,7 +2,7 @@ include("domain_topology.jl")
 include("domain_decomposition.jl")
 
 "Global variable for print"
-_rank = 0
+global _rank = -1
 
 """
     print_parallel(arg...)
@@ -10,9 +10,10 @@ _rank = 0
 Only prints for rank 0.
 """
 function print_parallel(arg...)
-    global _rank
     if _rank == 0
         print(arg...)
+    elseif _rank == -1
+        print("error", arg...)
     end
 end
 
@@ -22,8 +23,9 @@ end
 Only prints for rank 0.
 """
 function println_parallel(arg...)
-    global _rank
     if _rank == 0
         println(arg...)
+    elseif _rank == -1
+        print("error", arg...)
     end
 end

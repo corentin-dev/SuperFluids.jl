@@ -1,62 +1,56 @@
 using SuperFluids
 
 # simulation parameters
-nx = 64
-ny = 64
-nz = 64
+nx = 128
+ny = 128
+nz = 128
 
-xrange = (-8, 8)
-yrange = (-8, 8)
-zrange = (-8, 8)
+xrange = (-12, 12)
+yrange = (-12, 12)
+zrange = (-12, 12)
 
-device = GPU()
-#device = CPU()
-#if device.rank==0
-#    println(device)
-#end
+mpi_topo = SuperFluids.MPITopo2D();
+
+#device = CuArray
+device = Array
 
 # creating a grid
-grid = Grid((nx,ny,nz), (xrange,yrange,zrange), device=device)
-println(grid)
+grid = Grid((nx,ny,nz), (xrange,yrange,zrange), array_type=Array)
+println_parallel(grid)
 
-
-field = Field(grid, ComplexField(), ndims=1, mpi_topo=SuperFluids.MPITopo2D())
-println(field)
+field = Field(grid, ComplexField(), ndims=1, mpi_topo = mpi_topo)
+println_parallel(field)
 
 # potential
-α = 0
-γx = 1
-γy = 1
-γz = 1
+α = 0;
+γx = 1;
+γy = 1;
+γz = 1;
 
 # equation
 param = GrossPitaevskiiParameters(
     β = 1000,
-    Ω = 0.8,
+    Ω = 0.9,
     pot = PotentialQuadratic(field, γx = γx, γy = γy, γz = γz)
     )
+print_parallel(param)
 
 # solver
-Δt = 0.01
-niter = 25
-freqbckp = 10
+Δt = 0.01;
+niter = 100;
+freqbckp = 10;
 
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy, γz = γz)
+# init = InitGauss(field, Ω = param.Ω)
+print_parallel(init)
 initField!(init)
 
 # BackwardEuler (with precond)
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
+print_parallel(nummodel)
 
-# n = nummodel
-# @. n.M = 1. / ( 1 / n.Δt + n.param.pot.V + n.param.β * abs2(n.f.ϕ) );
-# # b = M × ϕ × Δt⁻¹
-# @. n.b = n.M * n.f.ϕ / n.Δt;
-# #n.nkrylov = 2;
-# #
-# # solving
-# n.nkrylov = 10
-# nkrylov = SuperFluids.krylov!(n, n.f.ϕ)
-
-# println(nummodel)
+# Solve
+nummodel.niter = 0
 solve!(nummodel, plot=false)
+nothing

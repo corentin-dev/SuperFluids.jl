@@ -118,10 +118,9 @@ function Grid(size::Tuple{Integer,Integer},
    x, y = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1)
    # spacing
    Δx, Δy = Lx / nx, Ly / ny
-   # reshaping arrays for broadcast
    x = array_type(x[1:end-1])
    y = array_type(y[1:end-1])
-   return Grid2D{FT,array_type}(device, x, x, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
+   return Grid2D{FT,array_type}(x, y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
 end
 
 """

@@ -72,10 +72,10 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    E = -EΩ + EΔ + Eβ
 
    if(showEnergy)
-      println("Angular Momentum Energy : $(EΩ)")
-      println("Kinetic + Potential Energy : $(EΔ)")
-      println("Interaction Energy : $(Eβ)")
-      println("Total Energy: $(E)")
+      println_parallel("Angular Momentum Energy : $(EΩ)")
+      println_parallel("Kinetic + Potential Energy : $(EΔ)")
+      println_parallel("Interaction Energy : $(Eβ)")
+      println_parallel("Total Energy: $(E)")
    end
 
    return EΩ, EΔ, Eβ, E

@@ -3,21 +3,6 @@ abstract type AbstractDomainDecomposition end
 
 "Abstract MPI decomposition."
 abstract type AbstractMPIDecomposition <: AbstractDomainDecomposition end
-"Abstract no-MPI decomposition."
-abstract type AbstractNoMPIDecomposition <: AbstractDomainDecomposition end
-
-"No MPI"
-struct MPINone <: AbstractNoMPIDecomposition
-    comm :: Nothing
-    rank :: Integer
-    size :: Integer
-    topo :: Nothing
-    function MPI1D()
-        rank = 0
-        size = 1
-        new(nothing, rank, size, nothing)
-    end
-end
 
 "MPI 1D"
 struct MPITopo1D <: AbstractMPIDecomposition
@@ -33,6 +18,8 @@ struct MPITopo1D <: AbstractMPIDecomposition
         topo_dims = [0]
         MPI.Dims_create!(size,topo_dims)
         topo = MPITopology(comm, Tuple(topo_dims))
+        global _rank
+        _rank = rank
         new(comm, rank, size, topo)
     end
 end
@@ -51,6 +38,8 @@ struct MPITopo2D <: AbstractMPIDecomposition
         topo_dims = [0,0]
         MPI.Dims_create!(size,topo_dims)
         topo = MPITopology(comm, Tuple(topo_dims))
+        global _rank
+        _rank = rank
         new(comm, rank, size, topo)
     end
 end

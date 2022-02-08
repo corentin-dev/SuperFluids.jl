@@ -24,9 +24,9 @@ mutable struct Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
    "decomposition"
    decomp :: D
    "local x"
-   x :: A
+   x :: LocalGrids.RectilinearGridComponent
    "local y"
-   y :: A
+   y :: LocalGrids.RectilinearGridComponent
    "number of dimensions"
    ndims :: Integer
    "g Grid"
@@ -82,25 +82,35 @@ Field2D
 """
 function Field(
       g::AbstractGrid2D{FT,A}, t::FieldType;
-      ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPINone()
+      ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo1D()
    ) where {FT<:Real, A}
+
    if typeof(t) == RealField
       myT = FT
    elseif typeof(t) == ComplexField
       myT = Complex{FT}
    end
-   myArray = get_array_type(A)
+
    if ndims == 1
       dims = (g.nx,g.ny)
    else
       dims = (g.nx,g.ny,ndims)
    end
-   ϕ = myArray{myT}(undef, dims...)
-   r = axes(ϕ)
-   x = g.x
-   y = g.y
-   decomp = NoFieldDecomposition(dd, r, nl)
-   return Field2D{myT,A,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, ϕ)
+
+   #pen_x = Pencil(A, mpi_topo.topo, dims, (2))
+   pen_x = Pencil(mpi_topo.topo, dims)
+   local_dims = size_local(pen_x)
+   pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
+   ϕ = pen_array
+
+   pen_array_glob = global_view(pen_array)
+   r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
+
+   grid = localgrid(pen_x, (g.x,g.y))
+   x, y = grid.x, grid.y
+
+   decomp = MPIFieldDecomposition(mpi_topo, pen_array, r, local_dims)
+   return Field2D{FT,myT,A,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, ϕ)
 end
 
 """
@@ -191,36 +201,6 @@ function normalize!(f::AbstractField)
    f.ϕ ./= normϕ
    return nothing
 end
-
-# function get_array_type(A::DataType)
-#    if A <: Array
-#       myArray = Array
-#    elseif A <: CuArray
-#       myArray = CuArray
-#    end
-#    return myArray
-# end
-
-# function get_array_type(a::A) where (A<:AbstractArray)
-#    if A <: Array
-#       myArray = Array
-#    elseif A <: CuArray
-#       myArray = CuArray
-#    elseif A<:PencilArray
-#       if typeof(a.data) <: Array
-#          myArray = Array
-#       elseif typeof(a.data) <: CuArray
-#          myArray = CuArray
-#       end
-#    end
-#    return myArray
-# end
-
-# get_type_array(A::AbstractArray{T}) where T = T
-
-# get_real_type_array(A::AbstractArray{T}) where T = T
-
-# get_real_type_array(A::AbstractArray{Complex{T}}) where T = T
 
 Base.show(io::IO, f::Field2D{FT,FFT}) where {FT,FFT} =
       print(io, "Field2D\n",

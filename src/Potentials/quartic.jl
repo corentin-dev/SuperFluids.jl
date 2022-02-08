@@ -8,8 +8,8 @@ struct PotentialQuarticQuadratic{F} <: AbstractPotential{F}
    κ4 :: Real
 end
 
-function PotentialQuarticQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, κ4::Real = 1) where {F<:AbstractField}
-   V = similar_real(f.ϕ)
+function PotentialQuarticQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, κ4::Real = 1) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+   V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
    p = PotentialQuarticQuadratic{F}(f, V, α, γx, γy, γz, κ4)
    compute!(p)
    return p

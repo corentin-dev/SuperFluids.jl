@@ -7,9 +7,8 @@ struct PotentialQuadratic{F} <: AbstractPotential{F}
    γz :: Real
 end
 
-function PotentialQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, γz::Real = 1) where {F<:AbstractField}
-   myArray = get_array_type(f.ϕ)
-   V = PencilArray(f.ϕ.pencil, myArray{Float64}(undef, size_local(f.ϕ)))
+function PotentialQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, γz::Real = 1) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+   V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
 
    p = PotentialQuadratic{F}(f, V, α, γx, γy, γz)
    compute!(p)

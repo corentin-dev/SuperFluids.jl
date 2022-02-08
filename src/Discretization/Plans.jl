@@ -83,7 +83,7 @@ struct PlanFD3D{F} <: AbstractFDPlan{F}
    Δz :: Real
 end
 
-function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
+function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
    if typeof(t) == FFTPlan
       ξx = similar(f.x)
       ξy = similar(f.y)
@@ -108,17 +108,12 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D}
    end
 end
 
-function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
+function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
    if typeof(t) == FFTPlan
-      # get array type
-      AT = get_array_type(f.ϕ)
-      # get type
-      T = get_type_array(f.ϕ)
-
       # frequencies
-      ξx = AT(fftfreq(f.g.nx, 2π/f.g.Δx))
-      ξy = AT(fftfreq(f.g.ny, 2π/f.g.Δy))
-      ξz = AT(fftfreq(f.g.nz, 2π/f.g.Δz))
+      ξx = A(fftfreq(f.g.nx, 2π/f.g.Δx))
+      ξy = A(fftfreq(f.g.ny, 2π/f.g.Δy))
+      ξz = A(fftfreq(f.g.nz, 2π/f.g.Δz))
 
       # Pencil decompositions
       pen_x = f.decomp.pen_array.pencil
@@ -126,25 +121,21 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
       pen_z = Pencil(pen_x, decomp_dims=(1, 2), permute = Permutation(3, 1, 2) )
 
       # create arrays for FFT
-      ϕx_hat = PencilArray{T}(undef, pen_x)
-      ϕy_hat = PencilArray{T}(undef, pen_y)
-      ϕz_hat = PencilArray{T}(undef, pen_z)
+      ϕx_hat = PencilArray{FFT}(undef, pen_x)
+      ϕy_hat = PencilArray{FFT}(undef, pen_y)
+      ϕz_hat = PencilArray{FFT}(undef, pen_z)
 
       # temporary arrays
-      ϕxtmp_hat = PencilArray{T}(undef, pen_x)
-      ϕytmp_hat = PencilArray{T}(undef, pen_y)
-      ϕztmp_hat = PencilArray{T}(undef, pen_z)
+      ϕxtmp_hat = PencilArray{FFT}(undef, pen_x)
+      ϕytmp_hat = PencilArray{FFT}(undef, pen_y)
+      ϕztmp_hat = PencilArray{FFT}(undef, pen_z)
 
       # create plans
       plan_x = plan_fft(parent(ϕx_hat),1)
       plan_y = plan_fft(parent(ϕy_hat),1)
       plan_z = plan_fft(parent(ϕz_hat),1)
 
-      # axes
-      #x_hat = AT(reshape(f.g.x[range_local(ϕy_hat)[1]],1,size_local(ϕy_hat)[1],1))
-      #y_hat = AT(reshape(f.g.y[range_local(ϕx_hat)[2]],1,size_local(ϕx_hat)[2],1))
-
-      return PlanFFT3D{F}(
+      return PlanFFT3D{FT}(
                      f,
                      pen_x, pen_y, pen_z,
                      plan_x, plan_y, plan_z,
@@ -152,6 +143,6 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D}
                      ϕx_hat, ϕy_hat, ϕz_hat,
                      ϕxtmp_hat, ϕytmp_hat, ϕztmp_hat)
    else
-      return PlanFD2D{F}(f.g.Δx, f.g.Δy, f.g.Δz)
+      return PlanFD3D{FT}(f.g.Δx, f.g.Δy, f.g.Δz)
    end
 end

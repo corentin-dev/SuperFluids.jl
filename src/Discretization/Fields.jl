@@ -7,21 +7,20 @@ struct RealField <: FieldType end
 
 export ComplexField, RealField
 export Field
-export norm, normalize!
 
 "Abstract supertype for numerical models."
-abstract type AbstractField{FT,A,PA,G,D} end
+abstract type AbstractField{FT,FFT,A,PA,G,D} end
 "Abstract supertype for numerical models."
-abstract type AbstractField2D{FT,A,PA,G,D} <: AbstractField{FT,A,PA,G,D} end
+abstract type AbstractField2D{FT,FFT,A,PA,G,D} <: AbstractField{FT,FFT,A,PA,G,D} end
 "Abstract supertype for numerical models."
-abstract type AbstractField3D{FT,A,PA,G,D} <: AbstractField{FT,A,PA,G,D} end
+abstract type AbstractField3D{FT,FFT,A,PA,G,D} <: AbstractField{FT,FFT,A,PA,G,D} end
 
 """
-    Field2D{A,G<:AbstractGrid} <: AbstractField2D{A,G}
+    Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
 
 Type representing a 2D field on a 2D grid.
 """
-mutable struct Field2D{FT,A,PA,G,D} <: AbstractField2D{FT,A,PA,G,D}
+mutable struct Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
    "decomposition"
    decomp :: D
    "local x"
@@ -37,19 +36,19 @@ mutable struct Field2D{FT,A,PA,G,D} <: AbstractField2D{FT,A,PA,G,D}
 end
 
 """
-    Field3D{A,G<:AbstractGrid,D} <: AbstractField3D{A,G,D}
+    Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
 
 Type representing a 3D field on a 3D grid.
 """
-mutable struct Field3D{FT,A,PA,G,D} <: AbstractField3D{FT,A,PA,G,D}
+mutable struct Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
    "decomposition"
    decomp :: D
    "local x"
-   x :: A
+   x :: LocalGrids.RectilinearGridComponent
    "local y"
-   y :: A
+   y :: LocalGrids.RectilinearGridComponent
    "local z"
-   z :: A
+   z :: LocalGrids.RectilinearGridComponent
    "number of dimensions"
    ndims :: Integer
    "g Grid"
@@ -115,7 +114,7 @@ Example
 julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
 julia> field = Field(grid, RealField())
 Field3D
-  ├───────  FloatType: Array{Float64, 3}
+  ├───────  FloatType: Float64
   └──────────  memory: 64.0 MB
 ```
 
@@ -123,13 +122,13 @@ Field3D
 julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
 julia> field = Field(grid, ComplexField())
 Field3D
-  ├───────  FloatType: Array{ComplexF64, 3}
+  ├───────  FloatType: ComplexF64
   └──────────  memory: 64.0 MB
 ```
 """
 function Field(
       g::AbstractGrid3D{FT,A}, t::FieldType;
-      ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPINone()
+      ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo2D()
    ) where {FT<:Real, A}
 
    if typeof(t) == RealField
@@ -138,17 +137,16 @@ function Field(
       myT = Complex{FT}
    end
 
-   myArray = get_array_type(A)
    if ndims == 1
       dims = (g.nx,g.ny,g.nz)
    else
       dims = (g.nx,g.ny,g.nz,ndims)
    end
 
-   pen_x = Pencil(myArray, mpi_topo.topo, dims, (2,3))
+   pen_x = Pencil(A, mpi_topo.topo, dims, (2,3))
    local_dims = size_local(pen_x)
-   pen_array = PencilArray(pen_x, myArray{myT}(undef, local_dims))
-   ϕ = pen_array#.data
+   pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
+   ϕ = pen_array
 
    pen_array_glob = global_view(pen_array)
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
@@ -157,8 +155,7 @@ function Field(
    x, y, z = grid.x, grid.y, grid.z
 
    decomp = MPIFieldDecomposition(mpi_topo, pen_array, r, local_dims)
-
-   return Field3D{myT,Any,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
+   return Field3D{FT,myT,A,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
 end
 
 function norm(f::Field2D)
@@ -195,42 +192,42 @@ function normalize!(f::AbstractField)
    return nothing
 end
 
-function get_array_type(A::DataType)
-   if A <: Array
-      myArray = Array
-   elseif A <: CuArray
-      myArray = CuArray
-   end
-   return myArray
-end
+# function get_array_type(A::DataType)
+#    if A <: Array
+#       myArray = Array
+#    elseif A <: CuArray
+#       myArray = CuArray
+#    end
+#    return myArray
+# end
 
-function get_array_type(a::A) where (A<:AbstractArray)
-   if A <: Array
-      myArray = Array
-   elseif A <: CuArray
-      myArray = CuArray
-   elseif A<:PencilArray
-      if typeof(a.data) <: Array
-         myArray = Array
-      elseif typeof(a.data) <: CuArray
-         myArray = CuArray
-      end
-   end
-   return myArray
-end
+# function get_array_type(a::A) where (A<:AbstractArray)
+#    if A <: Array
+#       myArray = Array
+#    elseif A <: CuArray
+#       myArray = CuArray
+#    elseif A<:PencilArray
+#       if typeof(a.data) <: Array
+#          myArray = Array
+#       elseif typeof(a.data) <: CuArray
+#          myArray = CuArray
+#       end
+#    end
+#    return myArray
+# end
 
-get_type_array(A::AbstractArray{T}) where T = T
+# get_type_array(A::AbstractArray{T}) where T = T
 
-get_real_type_array(A::AbstractArray{T}) where T = T
+# get_real_type_array(A::AbstractArray{T}) where T = T
 
-get_real_type_array(A::AbstractArray{Complex{T}}) where T = T
+# get_real_type_array(A::AbstractArray{Complex{T}}) where T = T
 
-Base.show(io::IO, f::Field2D{FT}) where FT =
-     print(io, "Field2D\n",
-         "  ├──────  Array type: $(FT)", '\n',
+Base.show(io::IO, f::Field2D{FT,FFT}) where {FT,FFT} =
+      print(io, "Field2D\n",
+         "  ├──────  Array type: $(FFT)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 
-Base.show(io::IO, f::Field3D{FT}) where FT =
-     print(io, "Field3D\n",
-         "  ├───────  FloatType: $(FT)", '\n',
-         "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
+Base.show(io::IO, f::Field3D{FT,FFT}) where {FT,FFT} =
+      print(io, "Field3D\n",
+         "  ├───────  FloatType: $(FFT)", '\n',
+         "  └──────────  memory: $(sizeof(f.ϕ.data)/1024^2) MB")

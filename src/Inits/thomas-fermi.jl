@@ -55,13 +55,13 @@ function initField!(init::InitThomasFermi3D{F}) where {F<:AbstractField3D}
 end
 
 Base.show(io::IO, init::InitThomasFermi3D{F}) where {F<:AbstractField3D} =
-     print(io, "InitThomasFermi\n",
+      print(io, "InitThomasFermi\n",
          "  ├──────  parameters: γx $(init.γx) γy $(init.γy) γz $(init.γz) β $(init.β)\n",
          "  ├──────────────  μ = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+z²))\n",
          "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
 
 Base.show(io::IO, init::InitThomasFermi2D{F}) where {F<:AbstractField2D} =
-     print(io, "InitThomasFermi\n",
+      print(io, "InitThomasFermi\n",
          "  ├──────  parameters: γx $(init.γx) γy $(init.γy) β $(init.β)\n",
          "  ├──────────────  μ = √(β γx γy)\n",
          "  └──────────────  ϕ = √( √μ - V )")

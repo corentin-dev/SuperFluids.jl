@@ -13,8 +13,6 @@ export Grid
 Type representing a 2D grid.
 """
 struct Grid2D{FT<:Real,A} <: AbstractGrid2D{FT,A}
-   "Device"
-   device :: Device
    "x range"
    x :: A
    "y range"
@@ -47,8 +45,6 @@ end
 Type representing a grid.
 """
 struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
-   "Device"
-   device :: Device
    "x range"
    x :: A
    "y range"
@@ -105,9 +101,9 @@ Grid2D
   └──────────  domain: [-12.0,12.0]×[-12.0,12.0]
 ```
 """
-function Grid(size::Tuple{Real,Real},
+function Grid(size::Tuple{Integer,Integer},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};
-      FT=Float64, device=CPU())
+      FT=Float64, array_type=Array)
    # size
    nx, ny = size
    @assert nx > 0
@@ -123,17 +119,9 @@ function Grid(size::Tuple{Real,Real},
    # spacing
    Δx, Δy = Lx / nx, Ly / ny
    # reshaping arrays for broadcast
-   X = reshape(x[1:end-1],nx,1)
-   Y = reshape(y[1:end-1],1,ny)
-   if typeof(device) == CPU
-      return Grid2D{FT,Array{FT,2}}(device, X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
-   elseif typeof(device) == GPU
-      X = CuArray(X)
-      Y = CuArray(Y)
-      return Grid2D{FT,typeof(X)}(device, X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
-   else
-      throw(ArgumentError("Device type $(typeof(device)) is not supported"))
-   end
+   x = array_type(x[1:end-1])
+   y = array_type(y[1:end-1])
+   return Grid2D{FT,array_type}(device, x, x, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
 end
 
 """
@@ -156,7 +144,7 @@ Grid3D
 """
 function Grid(size::Tuple{Integer,Integer,Integer},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real},Tuple{Real,Real}};
-      FT=Float64, device=CPU())
+      FT=Float64, array_type=Array)
    # size
    nx, ny, nz = size
    @assert nx > 0
@@ -173,26 +161,10 @@ function Grid(size::Tuple{Integer,Integer,Integer},
    x, y, z = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1), LinRange(zmin,zmax,nz+1)
    # spacing
    Δx, Δy, Δz = Lx / nx, Ly / ny, Lz / nz
-   # reshaping arrays for broadcast
-   # X = reshape(x[1:end-1],nx,1,1)
-   # Y = reshape(y[1:end-1],1,ny,1)
-   # Z = reshape(z[1:end-1],1,1,nz)
-   x = x[1:end-1]
-   y = y[1:end-1]
-   z = z[1:end-1]
-   if typeof(device) == CPU
-      x = Array(x)
-      y = Array(y)
-      z = Array(z)
-      return Grid3D{FT,typeof(x)}(device, x, y, z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
-   elseif typeof(device) == GPU
-      x = CuArray(x)
-      y = CuArray(y)
-      z = CuArray(z)
-      return Grid3D{FT,typeof(x)}(device, x, y, z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
-   else
-      throw(ArgumentError("Device type $(typeof(device)) is not supported"))
-   end
+   x = array_type(x[1:end-1])
+   y = array_type(y[1:end-1])
+   z = array_type(z[1:end-1])
+   return Grid3D{FT,array_type}(x, y, z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
 end
 
 Base.eltype(::AbstractGrid{FT}) where FT = FT
@@ -201,7 +173,7 @@ Base.size(grid::AbstractGrid2D) = (grid.nx, grid.ny)
 Base.length(grid::AbstractGrid2D) = (grid.Lx, grid.Ly)
 
 Base.show(io::IO, g::Grid2D) =
-     print(io, "Grid2D\n",
+      print(io, "Grid2D\n",
          "  ├──────  resolution: $(g.nx)×$(g.ny)\n",
          "  ├───────  mesh size: $(g.nx*g.ny)\n",
          "  ├────  grid spacing: $(g.Δx)×$(g.Δy)\n",

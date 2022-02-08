@@ -37,8 +37,7 @@ freqbckp = 10
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy, γz = γz)
 # init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y,grid.z)
-normalize!(field)
+initField!(init)
 
 # BackwardEuler (with precond)
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)

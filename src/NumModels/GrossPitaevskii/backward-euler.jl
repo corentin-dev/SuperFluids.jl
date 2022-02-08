@@ -52,11 +52,12 @@ function NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
       )
 end
 
-Base.show(io::IO, n::NumModelBackwardEuler) = print(io,
-         "Backward Euler\n",
-         "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-         "  ├───────  time step: $(n.Δt)\n",
-         "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
+Base.show(io::IO, n::NumModelBackwardEuler) =
+   print(io,
+      "Backward Euler\n",
+      "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
+      "  ├───────  time step: $(n.Δt)\n",
+      "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
 mutable struct NumModelBackwardEulerNoPrecond{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
@@ -92,7 +93,8 @@ function NumModelBackwardEulerNoPrecond(f::AbstractField, param::AbstractParamet
       )
 end
 
-Base.show(io::IO, n::NumModelBackwardEulerNoPrecond) = print(io,
+Base.show(io::IO, n::NumModelBackwardEulerNoPrecond) =
+      print(io,
          "Backward Euler without preconditionning\n",
          "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
          "  ├───────  time step: $(n.Δt)\n",

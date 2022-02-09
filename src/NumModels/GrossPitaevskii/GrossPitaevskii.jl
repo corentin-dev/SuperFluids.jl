@@ -51,7 +51,7 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    return EΩ, EΔ, Eβ, E
 end
 
-function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
+function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan}
    # references
    ϕ = n.f.ϕ
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β

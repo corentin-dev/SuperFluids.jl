@@ -292,12 +292,12 @@ end
 
 function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFDPlan, ϕt :: AbstractArray)
    # x direction
-   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
+   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
    x, y = grid.x, grid.y
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)
    gf.rx .= y .* gf.dx
    # y direction
-   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y))
+   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
    x, y = grid.x, grid.y
    transpose!(p.ϕytmp,ϕt)
    dϕytmp = similar(p.ϕytmp)
@@ -310,7 +310,7 @@ function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFDPlan, ϕt 
    transpose!(p.ϕztmp,p.ϕytmp)
    dϕztmp = similar(p.ϕztmp)
    ddϕztmp = similar(p.ϕztmp)
-   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   computedzddz!(p.ϕztmp, dϕztmp, ddϕztmp, p.Δz, order=6)
    transpose!(dϕytmp,dϕztmp)
    transpose!(ddϕytmp,ddϕztmp)
    transpose!(gf.dz,dϕytmp)
@@ -353,7 +353,7 @@ function computedxddx!(ϕt :: AbstractArray{A,2}, dx :: AbstractArray{A,2}, ddx 
    return nothing
 end
 
-function computedxddx!(ϕt :: AbstractArray{A,3}, dx :: AbstractArray{A,2}, ddx :: AbstractArray{A,2}, Δx :: Real; order :: Integer = 2) where A
+function computedxddx!(ϕt :: AbstractArray{A,3}, dx :: AbstractArray{A,3}, ddx :: AbstractArray{A,3}, Δx :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    nx = N[1]
    if order == 2
@@ -411,7 +411,7 @@ function computedyddy!(ϕt :: AbstractArray{A,2}, dy :: AbstractArray{A,2}, ddy 
    return nothing
 end
 
-function computedyddy!(ϕt :: AbstractArray{A,3}, dy :: AbstractArray{A,2}, ddy :: AbstractArray{A,2}, Δy :: Real; order :: Integer = 2) where A
+function computedyddy!(ϕt :: AbstractArray{A,3}, dy :: AbstractArray{A,3}, ddy :: AbstractArray{A,3}, Δy :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    ny = N[2]
    if order == 2
@@ -440,7 +440,7 @@ function computedyddy!(ϕt :: AbstractArray{A,3}, dy :: AbstractArray{A,2}, ddy 
    return nothing
 end
 
-function computedzddz!(ϕt :: AbstractArray{A,3}, dz :: AbstractArray{A,2}, ddz :: AbstractArray{A,2}, Δz :: Real; order :: Integer = 2) where A
+function computedzddz!(ϕt :: AbstractArray{A,3}, dz :: AbstractArray{A,3}, ddz :: AbstractArray{A,3}, Δz :: Real; order :: Integer = 2) where A
    N = size(ϕt)
    nz = N[3]
    if order == 2

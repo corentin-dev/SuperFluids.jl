@@ -185,6 +185,6 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}
       ϕxtmp = PencilArray{FFT}(undef, pen_x)
       ϕytmp = PencilArray{FFT}(undef, pen_y)
       ϕztmp = PencilArray{FFT}(undef, pen_y)
-      return PlanFD2D{F}(f, pen_x, pen_y, pen_z, f.g.Δx, f.g.Δy, f.g.Δz, ϕxtmp, ϕytmp, ϕztmp)
+      return PlanFD3D{F}(f, pen_x, pen_y, pen_z, f.g.Δx, f.g.Δy, f.g.Δz, ϕxtmp, ϕytmp, ϕztmp)
    end
 end

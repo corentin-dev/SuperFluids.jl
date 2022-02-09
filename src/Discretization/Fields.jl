@@ -97,8 +97,7 @@ function Field(
       dims = (g.nx,g.ny,ndims)
    end
 
-   #pen_x = Pencil(A, mpi_topo.topo, dims, (2))
-   pen_x = Pencil(mpi_topo.topo, dims)
+   pen_x = Pencil(A, mpi_topo.topo, dims)
    local_dims = size_local(pen_x)
    pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
    ϕ = pen_array

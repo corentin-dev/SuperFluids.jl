@@ -1,4 +1,5 @@
 using SuperFluids
+using CUDA
 
 # simulation parameters
 nx = 128
@@ -11,11 +12,8 @@ zrange = (-12, 12)
 
 mpi_topo = SuperFluids.MPITopo2D();
 
-#device = CuArray
-device = Array
-
 # creating a grid
-grid = Grid((nx,ny,nz), (xrange,yrange,zrange), array_type=Array)
+grid = Grid((nx,ny,nz), (xrange,yrange,zrange), array_type=CuArray)
 println_parallel(grid)
 
 field = Field(grid, ComplexField(), ndims=1, mpi_topo = mpi_topo)
@@ -33,7 +31,7 @@ param = GrossPitaevskiiParameters(
     Ω = 0.9,
     pot = PotentialQuadratic(field, γx = γx, γy = γy, γz = γz)
     )
-print_parallel(param)
+println_parallel(param)
 
 # solver
 Δt = 0.01;
@@ -43,14 +41,13 @@ freqbckp = 10;
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy, γz = γz)
 # init = InitGauss(field, Ω = param.Ω)
-print_parallel(init)
+println_parallel(init)
 initField!(init)
 
 # BackwardEuler (with precond)
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
-print_parallel(nummodel)
+println_parallel(nummodel)
 
 # Solve
-nummodel.niter = 0
 solve!(nummodel, plot=false)
 nothing

@@ -1,4 +1,7 @@
 using SuperFluids
+using CUDA
+
+mpi_topo = SuperFluids.MPITopo1D();
 
 # simulation parameters
 nx = 128
@@ -8,10 +11,10 @@ xrange = (-12, 12)
 yrange = (-12, 12)
 
 # creating a grid
-grid = Grid((nx,ny), (xrange,yrange), device=GPU())
+grid = Grid((nx,ny), (xrange,yrange), array_type=CuArray)
 println(grid)
 # allocating a field
-field = Field(grid, ComplexField())
+field = Field(grid, ComplexField(), mpi_topo=mpi_topo)
 println(field)
 
 # potential
@@ -34,8 +37,8 @@ freqbckp = 10
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
 # init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y)
-normalize!(field)
+initField!(init)
+
 # solver
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
 println(nummodel)

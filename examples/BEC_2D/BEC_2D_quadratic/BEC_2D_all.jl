@@ -1,3 +1,10 @@
+# ENV["JULIA_MPI_BINARY"]="system"
+# ENV["JULIA_HDF5_PATH"]="/usr"
+# using Pkg
+# Pkg.build("MPI"; verbose=true)
+# using MPI
+# Pkg.build("HDF5";verbose=true)
+
 using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D();
@@ -32,6 +39,7 @@ param = GrossPitaevskiiParameters(
 Δt = 0.01
 niter = 25
 freqbckp = 10
+istart = 0
 
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
@@ -41,41 +49,49 @@ initField!(init)
 # BackwardEuler (with precond)
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # BackwardEulerNoPrecond
 nummodel = NumModelBackwardEulerNoPrecond(field, param, Δt, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolson
 nummodel = NumModelCrankNicolson(field, param, Δt, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolsonQuasiNewton
 nummodel = NumModelCrankNicolsonQuasiNewton(field, param, Δt, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # ADI1
 nummodel = NumModelADI1(field, param, Δt, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # ADI2
 nummodel = NumModelADI2(field, param, Δt, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolsonT
 nummodel = NumModelCrankNicolsonT(field, param, Δt*0.1, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolsonQuasiNewtonT
 nummodel = NumModelCrankNicolsonQuasiNewtonT(field, param, Δt*0.1, niter, freqbckp)
 println_parallel(nummodel)
-solve!(nummodel, plot=false)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 nothing

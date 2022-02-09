@@ -6,6 +6,7 @@ using FFTW
 using LinearAlgebra: mul!, ldiv!, transpose!
 using CUDA
 using MPI
+using HDF5
 using PencilArrays
 
 include("MPI/MPI.jl")

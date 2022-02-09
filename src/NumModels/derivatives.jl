@@ -229,19 +229,34 @@ end
 ## 2D
 
 function computeDerivatives!(gf :: GradientField2D, p :: AbstractFDPlan, ϕt :: AbstractArray)
-   # compute
+   # x direction
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)
-   computedxddy!(ϕt, gf.dy, gf.ddy, p.Δy, order=6)
+   # y direction
+   transpose!(p.ϕytmp,ϕt)
+   dϕytmp = similar(p.ϕytmp)
+   ddϕytmp = similar(p.ϕytmp)
+   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   transpose!(gf.dy,dϕytmp)
+   transpose!(gf.ddy,ddϕytmp)
    return nothing
 end
 
 function computeDerivatives!(gf :: GradientRotField2D, p :: AbstractFDPlan, ϕt :: AbstractArray)
-   # references
-   x, y = gf.f.g.x, gf.f.g.y
-   # compute
+   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
+   x, y = grid.x, grid.y
+   # x direction
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)
    gf.rx .= y .* gf.dx
-   computedyddy!(ϕt, gf.dy, gf.ddy, p.Δy, order=6)
+   # y direction
+   transpose!(p.ϕytmp,ϕt)
+   dϕytmp = similar(p.ϕytmp)
+   ddϕytmp = similar(p.ϕytmp)
+   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   transpose!(gf.dy,dϕytmp)
+   transpose!(gf.ddy,ddϕytmp)
+   dϕytmp = nothing
+   ddϕytmp = nothing
+   # compute (in pen_x)
    gf.ry = -x .* gf.dy
    return nothing
 end
@@ -249,25 +264,62 @@ end
 ## 3D
 
 function computeDerivatives!(gf :: GradientField3D, p :: AbstractFDPlan, ϕt :: AbstractArray)
-   # references
-   x, y = gf.f.g.x, gf.f.g.y
-   # compute
+   # x direction
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)
-   gf.rx .= y .* gf.dx
-   computedxddy!(ϕt, gf.dy, gf.ddy, p.Δy, order=6)
-   gf.ry = -x .* gf.dy
-   computedxddz!(ϕt, gf.dz, gf.ddz, p.Δz, order=6)
+   # y direction
+   transpose!(p.ϕytmp,ϕt)
+   dϕytmp = similar(p.ϕytmp)
+   ddϕytmp = similar(p.ϕytmp)
+   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   transpose!(gf.dy,dϕytmp)
+   transpose!(gf.ddy,ddϕytmp)
+   # z direction
+   transpose!(p.ϕztmp,p.ϕytmp)
+   dϕztmp = similar(p.ϕztmp)
+   ddϕztmp = similar(p.ϕztmp)
+   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   transpose!(dϕytmp,dϕztmp)
+   transpose!(ddϕytmp,ddϕztmp)
+   transpose!(gf.dz,dϕytmp)
+   transpose!(gf.ddz,ddϕytmp)
+   # deallocate
+   dϕztmp = nothing
+   ddϕztmp = nothing
+   dϕytmp = nothing
+   ddϕytmp = nothing
    return nothing
 end
 
 function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFDPlan, ϕt :: AbstractArray)
-   # references
-   x, y = gf.f.g.x, gf.f.g.y
-   # compute
+   # x direction
+   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
+   x, y = grid.x, grid.y
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)
    gf.rx .= y .* gf.dx
-   computedxddy!(ϕt, gf.dy, gf.ddy, p.Δy, order=6)
+   # y direction
+   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y))
+   x, y = grid.x, grid.y
+   transpose!(p.ϕytmp,ϕt)
+   dϕytmp = similar(p.ϕytmp)
+   ddϕytmp = similar(p.ϕytmp)
+   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   transpose!(gf.dy,dϕytmp)
+   transpose!(gf.ddy,ddϕytmp)
    gf.ry = -x .* gf.dy
+   # z direction
+   transpose!(p.ϕztmp,p.ϕytmp)
+   dϕztmp = similar(p.ϕztmp)
+   ddϕztmp = similar(p.ϕztmp)
+   computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy, order=6)
+   transpose!(dϕytmp,dϕztmp)
+   transpose!(ddϕytmp,ddϕztmp)
+   transpose!(gf.dz,dϕytmp)
+   transpose!(gf.ddz,ddϕytmp)
+   # deallocate
+   dϕztmp = nothing
+   ddϕztmp = nothing
+   dϕytmp = nothing
+   ddϕytmp = nothing
    return nothing
 end
 

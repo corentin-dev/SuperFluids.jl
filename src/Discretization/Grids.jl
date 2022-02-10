@@ -45,28 +45,41 @@ end
 Type representing a grid.
 """
 struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
-   # range
+   "x range"
    x :: A
+   "y range"
    y :: A
+   "z range"
    z :: A
-   # Size
+   "nx size in x direction"
    nx :: Integer
+   "ny size in y direction"
    ny :: Integer
+   "nz size in z direction"
    nz :: Integer
-   # Bounds
+   "xmin minimum x boundary"
    xmin :: FT
+   "xmax maximum x boundary"
    xmax :: FT
+   "ymin minimum y boundary"
    ymin :: FT
+   "ymax maximum y boundary"
    ymax :: FT
+   "zmin minimum z boundary"
    zmin :: FT
+   "zmax maximum z boundary"
    zmax :: FT
-   # Length.
+   "Lx x length"
    Lx :: FT
+   "Ly y length"
    Ly :: FT
+   "Lz z length"
    Lz :: FT
-   # Discretization.
+   "Δx x discretization"
    Δx :: FT
+   "Δy y discretization"
    Δy :: FT
+   "Δz z discretization"
    Δz :: FT
 end
 
@@ -88,9 +101,9 @@ Grid2D
   └──────────  domain: [-12.0,12.0]×[-12.0,12.0]
 ```
 """
-function Grid(size::Tuple{Real,Real},
+function Grid(size::Tuple{Integer,Integer},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};
-      FT=Float64,device=CPU())
+      FT=Float64, array_type=Array)
    # size
    nx, ny = size
    @assert nx > 0
@@ -105,16 +118,9 @@ function Grid(size::Tuple{Real,Real},
    x, y = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1)
    # spacing
    Δx, Δy = Lx / nx, Ly / ny
-   # reshaping arrays for broadcast
-   X = reshape(x[1:end-1],nx,1)
-   Y = reshape(y[1:end-1],1,ny)
-   if typeof(device) == CPU
-      return Grid2D{FT,Array{FT,2}}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
-   elseif typeof(device) == GPU
-      X = CuArray(X)
-      Y = CuArray(Y)
-      return Grid2D{FT,typeof(X)}(X, Y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
-   end
+   x = array_type(x[1:end-1])
+   y = array_type(y[1:end-1])
+   return Grid2D{FT,array_type}(x, y, nx, ny, xmin, xmax, ymin, ymax, Lx, Ly, Δx, Δy)
 end
 
 """
@@ -137,7 +143,7 @@ Grid3D
 """
 function Grid(size::Tuple{Integer,Integer,Integer},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real},Tuple{Real,Real}};
-      FT=Float64,device=CPU())
+      FT=Float64, array_type=Array)
    # size
    nx, ny, nz = size
    @assert nx > 0
@@ -154,18 +160,10 @@ function Grid(size::Tuple{Integer,Integer,Integer},
    x, y, z = LinRange(xmin,xmax,nx+1), LinRange(ymin,ymax,ny+1), LinRange(zmin,zmax,nz+1)
    # spacing
    Δx, Δy, Δz = Lx / nx, Ly / ny, Lz / nz
-   # reshaping arrays for broadcast
-   X = reshape(x[1:end-1],nx,1,1)
-   Y = reshape(y[1:end-1],1,ny,1)
-   Z = reshape(z[1:end-1],1,1,nz)
-   if typeof(device) == CPU
-      return Grid3D{FT,Array{FT,3}}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
-   elseif typeof(device) == GPU
-      X = CuArray(X)
-      Y = CuArray(Y)
-      Z = CuArray(Z)
-      return Grid3D{FT,typeof(X)}(X, Y, Z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
-   end
+   x = array_type(x[1:end-1])
+   y = array_type(y[1:end-1])
+   z = array_type(z[1:end-1])
+   return Grid3D{FT,array_type}(x, y, z, nx, ny, nz, xmin, xmax, ymin, ymax, zmin, zmax, Lx, Ly, Lz, Δx, Δy, Δz)
 end
 
 Base.eltype(::AbstractGrid{FT}) where FT = FT
@@ -174,7 +172,7 @@ Base.size(grid::AbstractGrid2D) = (grid.nx, grid.ny)
 Base.length(grid::AbstractGrid2D) = (grid.Lx, grid.Ly)
 
 Base.show(io::IO, g::Grid2D) =
-     print(io, "Grid2D\n",
+      print(io, "Grid2D\n",
          "  ├──────  resolution: $(g.nx)×$(g.ny)\n",
          "  ├───────  mesh size: $(g.nx*g.ny)\n",
          "  ├────  grid spacing: $(g.Δx)×$(g.Δy)\n",

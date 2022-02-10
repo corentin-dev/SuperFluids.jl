@@ -4,7 +4,9 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, 
    # compute derivatives
    computeDerivatives!(n.gf, n.plan, ϕt)
    # return computation
-   return -coeffΔ .* ( n.gf.ddx .+ n.gf.ddy) + Ω .* im .* (n.gf.rx+n.gf.ry)
+   tmp = similar(ϕt)
+   @. tmp = -coeffΔ * ( n.gf.ddx + n.gf.ddy) + Ω * im * (n.gf.rx + n.gf.ry)
+   return tmp
 end
 
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters, Plan}
@@ -13,14 +15,15 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, 
    # compute derivatives
    computeDerivatives!(n.gf, n.plan, ϕt)
    # return computation
-   return -coeffΔ .* ( n.gf.ddx .+ n.gf.ddy .+ n.gf.ddz) + Ω .* im .* (n.gf.rx+n.gf.ry)
+   tmp = similar(ϕt)
+   @. tmp = -coeffΔ * ( n.gf.ddx + n.gf.ddy + n.gf.ddz) + Ω * im * (n.gf.rx + n.gf.ry)
+   return tmp
 end
 
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan}
    # references
    ϕ = n.f.ϕ
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
-   x, y = n.f.g.x, n.f.g.y
    Δx, Δy = n.f.g.Δx, n.f.g.Δy
    V = n.param.pot.V
 
@@ -39,20 +42,19 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    E = -EΩ + EΔ + Eβ
 
    if(showEnergy)
-      println("Angular Momentum Energy : $(EΩ)")
-      println("Kinetic + Potential Energy : $(EΔ)")
-      println("Interaction Energy : $(Eβ)")
-      println("Total Energy: $(E)")
+      println_parallel("Angular Momentum Energy : $(EΩ)")
+      println_parallel("Kinetic + Potential Energy : $(EΔ)")
+      println_parallel("Interaction Energy : $(Eβ)")
+      println_parallel("Total Energy: $(E)")
    end
 
    return EΩ, EΔ, Eβ, E
 end
 
-function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan<:AbstractFFTPlan}
+function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan}
    # references
    ϕ = n.f.ϕ
    coeffΔ, Ω, β = n.param.coeffΔ, n.param.Ω, n.param.β
-   x, y, z = n.f.g.x, n.f.g.y, n.f.g.z
    Δx, Δy, Δz = n.f.g.Δx, n.f.g.Δy, n.f.g.Δz
    V = n.param.pot.V
 
@@ -72,10 +74,10 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    E = -EΩ + EΔ + Eβ
 
    if(showEnergy)
-      println("Angular Momentum Energy : $(EΩ)")
-      println("Kinetic + Potential Energy : $(EΔ)")
-      println("Interaction Energy : $(Eβ)")
-      println("Total Energy: $(E)")
+      println_parallel("Angular Momentum Energy : $(EΩ)")
+      println_parallel("Kinetic + Potential Energy : $(EΔ)")
+      println_parallel("Interaction Energy : $(Eβ)")
+      println_parallel("Total Energy: $(E)")
    end
 
    return EΩ, EΔ, Eβ, E

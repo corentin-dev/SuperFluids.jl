@@ -3,18 +3,13 @@ module SuperFluids
 using ConfParser
 using AbstractFFTs
 using FFTW
-using LinearAlgebra: mul!, ldiv!
+using LinearAlgebra: mul!, ldiv!, transpose!
 using CUDA
+using MPI
+using HDF5
+using PencilArrays
 
-"Abstract supertype for device."
-abstract type Device end
-"CPU device."
-struct CPU <: Device end
-"MPI device."
-struct MPI <: Device end
-"GPU device."
-struct GPU <: Device end
-
+include("MPI/MPI.jl")
 include("Discretization/Discretization.jl")
 include("Potentials/Potentials.jl")
 include("Parameters/Parameters.jl")
@@ -23,6 +18,7 @@ include("IO/IO.jl")
 include("NumModels/NumModels.jl")
 
 export initField!, energy, finishWriter!
-export CPU, MPI, GPU, Grid, Field
+export Grid, Field
+export print_parallel, println_parallel
 
 end # module

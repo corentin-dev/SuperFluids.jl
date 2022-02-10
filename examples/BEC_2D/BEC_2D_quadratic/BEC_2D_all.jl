@@ -1,4 +1,13 @@
+# ENV["JULIA_MPI_BINARY"]="system"
+# ENV["JULIA_HDF5_PATH"]="/usr"
+# using Pkg
+# Pkg.build("MPI"; verbose=true)
+# using MPI
+# Pkg.build("HDF5";verbose=true)
+
 using SuperFluids
+
+mpi_topo = SuperFluids.MPITopo1D();
 
 # simulation parameters
 nx = 128
@@ -9,10 +18,10 @@ yrange = (-12, 12)
 
 # creating a grid
 grid = Grid((nx,ny), (xrange,yrange))
-println(grid)
+println_parallel(grid)
 # allocating a field
-field = Field(grid, ComplexField())
-println(field)
+field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
+println_parallel(field)
 
 # potential
 α = 0
@@ -30,51 +39,59 @@ param = GrossPitaevskiiParameters(
 Δt = 0.01
 niter = 25
 freqbckp = 10
+istart = 0
 
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
 # init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y)
-normalize!(field)
+initField!(init)
 
 # BackwardEuler (with precond)
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # BackwardEulerNoPrecond
 nummodel = NumModelBackwardEulerNoPrecond(field, param, Δt, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolson
 nummodel = NumModelCrankNicolson(field, param, Δt, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolsonQuasiNewton
 nummodel = NumModelCrankNicolsonQuasiNewton(field, param, Δt, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # ADI1
 nummodel = NumModelADI1(field, param, Δt, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # ADI2
 nummodel = NumModelADI2(field, param, Δt, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolsonT
 nummodel = NumModelCrankNicolsonT(field, param, Δt*0.1, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 # CrankNicolsonQuasiNewtonT
 nummodel = NumModelCrankNicolsonQuasiNewtonT(field, param, Δt*0.1, niter, freqbckp)
-println(nummodel)
-solve!(nummodel, plot=false)
+println_parallel(nummodel)
+solve!(nummodel, plot=false, istart = istart)
+istart += niter
 
 nothing

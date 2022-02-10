@@ -225,10 +225,10 @@ function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField, P<:Gr
       # newton residual
       resNewton = sqrt(sum(abs2.(ϕw)))
       if resNewton < n.tolnewton
-         println("Number of Newton iterations: $(itnewton)")
+         println_parallel("Number of Newton iterations: $(itnewton)")
          break
       elseif itnewton == n.nnewton
-         println("warning: Newton algorithm did not converge")
+         println_parallel("warning: Newton algorithm did not converge")
       end
    end
    # update field
@@ -292,10 +292,10 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractF
       # newton residual
       resNewton = sqrt(sum(abs2.(ϕw)))
       if resNewton < n.tolnewton
-         println("Number of Newton iterations: $(itnewton)")
+         println_parallel("Number of Newton iterations: $(itnewton)")
          break
       elseif itnewton == n.nnewton
-         println("warning: Newton algorithm did not converge")
+         println_parallel("warning: Newton algorithm did not converge")
       end
    end
    # update field
@@ -363,10 +363,10 @@ function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField, P<:G
       # newton residual
       resNewton = sqrt(sum(abs2.(ϕw)))
       if resNewton < n.tolnewton
-         println("Number of Newton iterations: $(itnewton)")
+         println_parallel("Number of Newton iterations: $(itnewton)")
          break
       elseif itnewton == n.nnewton
-         println("warning: Newton algorithm did not converge")
+         println_parallel("warning: Newton algorithm did not converge")
       end
    end
    # update field
@@ -428,10 +428,10 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:Abstract
       # newton residual
       resNewton = sqrt(sum(abs2.(ϕw)))
       if resNewton < n.tolnewton
-         println("Number of Newton iterations: $(itnewton)")
+         println_parallel("Number of Newton iterations: $(itnewton)")
          break
       elseif itnewton == n.nnewton
-         println("warning: Newton algorithm did not converge")
+         println_parallel("warning: Newton algorithm did not converge")
       end
    end
    # update field

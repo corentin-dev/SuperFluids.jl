@@ -27,7 +27,7 @@ function solve!(n::AbstractNumModel;istart=1,plot=false)
    nkrylovtotal = 0
    write!(n.writers,prefix="res",icpu=0,istep=istart,Δt=n.Δt)
    for it = istart:istart+n.niter
-      println("iteration $(it)")
+      println_parallel("iteration $(it)")
       E = energy(n,true)
       nkrylov = timeStep!(n)
       nkrylovtotal += nkrylov

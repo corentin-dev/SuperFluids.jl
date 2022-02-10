@@ -63,54 +63,31 @@ function WriterVTK(f::AbstractField, filename="GPS.pvd"::AbstractString)
    return WriterVTK{typeof(f)}(f,filename)
 end
 
-function write!(w::WriterVTK{T};
+function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {T <: AbstractField2D}
-   # # references
-   # f = w.f
-   # plan = Plan(f)
-   # plan_x, plan_y = plan.plan_x, plan.plan_y
-   # ϕ = parent(f.ϕ)
-   # ξx, ξy = plan.ξx, plan.ξy
-   # x, y = vec(f.g.x), vec(f.g.y)
+      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
 
-   # if w.f.ndims == 1
-   # ϕhat = plan_x * f.ϕ
-   # ϕhat .= im .* ξx .* ϕhat
-   # ∇ϕ_x = plan_x \ ϕhat
-   # ϕhat = plan_y * f.ϕ
-   # ϕhat .= im .* ξy .* ϕhat
-   # ∇ϕ_y = plan_y \ ϕhat
+   ϕ = w.f.ϕ
+   comm = w.f.ϕ.pencil.topology.comm
+   mpi_rank = MPI.Comm_rank(comm) + 1
+   mpi_size = MPI.Comm_size(comm)
 
-   # # create vtk
-   # vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
-   # vtkfile["Re_Phi", VTKPointData()] = Array(real.(ϕ))
-   # vtkfile["Im_Phi", VTKPointData()] = Array(imag.(ϕ))
-   # vtkfile["Module", VTKPointData()] = Array(real.(ϕ.*conj.(ϕ)))
-   # vtkfile["Phase", VTKPointData()] = Array(angle.(ϕ.*conj.(ϕ)))
-   # vtkfile["VelocityX", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_x))
-   # vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
-   # vtkfile["Time"] = Δt * istep
-   # else
-   # vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
-   # vtkfile["VelocityX", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,1])
-   # vtkfile["VelocityY", VTKPointData()] = real.(parent(f.ϕ)[:,:,:,2])
-   # vtkfile["Time"] = Δt * istep
-   # end
+   r_local = range_local(ϕ)
+   r_local = (r_local[1][begin]:r_local[1][end]+1, r_local[2][begin]:r_local[2][end]+1)
+   x, y = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]])
+   extents = MPI.Allgather(r_local,comm)
 
-   # # write to file
-   # outfiles = vtk_save(vtkfile)
-
-   # # add to pvd
-   # if istep == 0
-   #    pvd = paraview_collection(w.filename, append=false)
-   # else
-   #    pvd = paraview_collection(w.filename, append=true)
-   # end
-   # pvd[ Δt * istep] = vtkfile
-   # vtk_save(pvd)
+   tmp = A{FT}(undef, size_local(w.f.ϕ))
+   saved_files = pvtk_grid("$(prefix)-$(istep)", x, y, extents = extents, part = mpi_rank, nparts = mpi_size) do pvtk
+      tmp .= real.(parent(ϕ))
+      pvtk["re", VTKCellData()] = tmp
+      tmp .= imag.(parent(ϕ))
+      pvtk["im", VTKCellData()] = tmp
+      tmp .= sqrt.(abs2.(parent(ϕ)))
+      pvtk["module", VTKCellData()] = tmp
+   end
 
    return nothing
 end
@@ -121,40 +98,28 @@ function write!(w::WriterVTK{T};
       istep=0::Integer,
       Δt=1::Real) where {T <: AbstractField3D}
 
-#    # references
-#    f = w.f
-#    ϕ = f.ϕ
-#    # plan = Plan(f)
-#    # plan_x, plan_y, plan_z = plan.plan_x, plan.plan_y, plan.plan_z
-#    # ϕ = parent(f.ϕ)
-#    # ξx, ξy, ξz = plan.ξx, plan.ξy, plan.ξz
-#    x, y, z = vec(f.g.x), vec(f.g.y), vec(f.g.z)
 
-#    # if w.f.ndims == 1
-#    # ϕhat = plan_x * f.ϕ
-#    # ϕhat .= im .* ξx .* ϕhat
-#    # ∇ϕ_x = plan_x \ ϕhat
-#    # ϕhat = plan_y * f.ϕ
-#    # ϕhat .= im .* ξy .* ϕhat
-#    # ∇ϕ_y = plan_y \ ϕhat
-#    # ϕhat = plan_z * f.ϕ
-#    # ϕhat .= im .* ξz .* ϕhat
-#    # ∇ϕ_z = plan_z \ ϕhat
+   ϕ = w.f.ϕ
+   comm = w.f.ϕ.pencil.topology.comm
+   mpi_rank = MPI.Comm_rank(comm) + 1
+   mpi_size = MPI.Comm_size(comm)
+   grid = localgrid(w.f.ϕ.pencil, (w.f.g.x, w.f.g.y, w.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
 
-# saved_files = pvtk_grid("simulation", x, y, z; part = 1, nparts = 1) do pvtk
-#    pvtk["Pressure"] = Array(real.(ϕ))
-#    #pvtk["Processor"] = rand(2)
-# end
+   tmp = similar(parent(ϕ))
+   saved_files = pvtk_grid("$(prefix)-$(istep)", x, y, z; part = mpi_rank, nparts = mpi_size) do pvtk
+      tmp .= real.(parent(ϕ))
+      pvtk["re"] = tmp
+      pvtk["im"] = tmp
+      # pvtk["Processor"] = rand(2)
+   end
+   # outfiles = vtk_save(vtkfile)
 
 #    # create vtk
 #    vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", x, y, z)
 #    vtkfile["Re_Phi", VTKPointData()] = Array(real.(ϕ))
 #    vtkfile["Im_Phi", VTKPointData()] = Array(imag.(ϕ))
 #    vtkfile["Module", VTKPointData()] = Array(real.(ϕ.*conj.(ϕ)))
-#    # vtkfile["Phase", VTKPointData()] = Array(angle.(ϕ.*conj.(ϕ)))
-#    # vtkfile["VelocityX", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_x))
-#    # vtkfile["VelocityY", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_y))
-#    # vtkfile["VelocityZ", VTKPointData()] = Array(imag.(conj.(ϕ).*∇ϕ_z))
 #    vtkfile["Time"] = Δt * istep
 #    # else
 #    # vtkfile = vtk_grid("$(prefix)-$(icpu)-$(istep).vtr", Array(x), Array(y))
@@ -167,14 +132,14 @@ function write!(w::WriterVTK{T};
 #    # write to file
 #    outfiles = vtk_save(vtkfile)
 
-#    # add to pvd
-#    if istep == 0
-#       pvd = paraview_collection(w.filename, append=false)
-#    else
-#       pvd = paraview_collection(w.filename, append=true)
-#    end
-#    pvd[ Δt * istep] = vtkfile
-#    vtk_save(pvd)
+   # add to pvd
+   # if istep == 0
+   #    pvd = paraview_collection(w.filename, append=false)
+   # else
+   #    pvd = paraview_collection(w.filename, append=true)
+   # end
+   # pvd[ Δt * istep] = vtkfile
+   # vtk_save(pvd)
 
    return nothing
 end

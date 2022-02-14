@@ -31,8 +31,8 @@ param = GrossPitaevskiiParameters(
 
 # solver
 Δt = 0.01
-niter = 1000
-freqbckp = 10
+niter = 2000
+freqbckp = 100
 
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy)

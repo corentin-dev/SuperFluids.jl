@@ -49,5 +49,5 @@ println_parallel(nummodel)
 res = solve!(nummodel, plot=false)
 initField!(init)
 
-CSV.write("energy-noprecond-$(Δt).csv",DataFrame(res),delim=" ",header=false)
+#CSV.write("energy-noprecond-$(Δt).csv",DataFrame(res),delim=" ",header=false)
 nothing

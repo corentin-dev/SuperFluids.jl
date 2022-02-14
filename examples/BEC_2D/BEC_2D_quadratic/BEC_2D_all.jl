@@ -1,10 +1,3 @@
-# ENV["JULIA_MPI_BINARY"]="system"
-# ENV["JULIA_HDF5_PATH"]="/usr"
-# using Pkg
-# Pkg.build("MPI"; verbose=true)
-# using MPI
-# Pkg.build("HDF5";verbose=true)
-
 using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D();

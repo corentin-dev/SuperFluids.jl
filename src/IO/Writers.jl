@@ -128,21 +128,27 @@ function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F <: AbstractField3D}
+      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
 
 
    ϕ = w.f.ϕ
    comm = ϕ.pencil.topology.comm
    mpi_rank = MPI.Comm_rank(comm) + 1
    mpi_size = MPI.Comm_size(comm)
-   grid = localgrid(w.f.ϕ.pencil, (w.f.g.x, w.f.g.y, w.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
 
-   tmp = similar(parent(ϕ))
-   vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y, z; part = mpi_rank, nparts = mpi_size)
+   r_local = range_local(ϕ)
+   r_local = (r_local[1][begin]:r_local[1][end]+1, r_local[2][begin]:r_local[2][end]+1)
+   x, y, z = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]]), A(LinRange(w.f.g.zmin,w.f.g.zmax,w.f.g.nz+1)[r_local[2]])
+   extents = MPI.Allgather(r_local,comm)
+
+   tmp = A{FT}(undef, size_local(ϕ))
+   vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y, z, extents = extents, part = mpi_rank, nparts = mpi_size)
    tmp .= real.(parent(ϕ))
-   vtkfile["re"] = tmp
-   vtkfile["im"] = tmp
+   vtkfile["re", VTKCellData()] = tmp
+   tmp .= imag.(parent(ϕ))
+   vtkfile["im", VTKCellData()] = tmp
+   tmp .= sqrt.(abs2.(parent(ϕ)))
+   vtkfile["module", VTKCellData()] = tmp
 
    # write to file
    outfiles = vtk_save(vtkfile)

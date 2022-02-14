@@ -88,7 +88,7 @@ function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
 
    ϕ = w.f.ϕ
    comm = ϕ.pencil.topology.comm
@@ -128,7 +128,7 @@ function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
 
 
    ϕ = w.f.ϕ

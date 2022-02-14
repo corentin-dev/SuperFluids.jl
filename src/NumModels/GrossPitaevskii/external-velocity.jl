@@ -38,10 +38,10 @@ Performs a single time step for stationnary field approximating a velocity field
 function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
    # references
    ϕ = n.f.ϕ
-   ϕhat = n.plan.ϕ_hat
+   ϕxhat = n.plan.ϕx_hat
+   ψ₁hat, ϕytmphat = n.plan.ϕy_hat, n.plan.ϕytmp_hat
    Δt, coeffΔ, β = n.Δt, n.param.coeffΔ, n.param.β
-   ξx, ξy = n.plan.ξx, n.plan.ξy
-   plan = n.plan.plan
+   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    V, uadvx, uadvy = n.param.pot.V, n.param.pot.uadvx, n.param.pot.uadvy
    α = 1.
    γ = 1.
@@ -61,11 +61,23 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
                )
    # all to frequency domain
    # ψ₁ ← ( ψ₁ + α Δt /2 (ddx + ddy ) ϕ ) / ()
-   ψ₁hat = plan * ψ₁
-   mul!(ϕhat, plan, ϕ)
+   # ψ₁hat
+   mul!(parent(ϕxhat),plan_x,parent(ψ₁))
+   transpose!(ϕytmphat,ϕxhat)
+   mul!(parent(ψ₁hat),plan_x,parent(ϕytmphat))
+   # ϕhat
+   mul!(parent(ϕxhat),plan_x,parent(ϕ))
+   transpose!(ϕytmphat,ϕxhat)
+   ϕhat = plan_y * parent(ϕytmphat)
+   # compute
+   gridξ = localgrid(n.plan.pen_x, (n.plan.ξx, n.plan.ξy))
+   ξx, ξy = gridξ.x, gridξ.y
    @. ψ₁hat = ( ψ₁hat + α * Δt * coeffΔ * (ξx^2+ξy^2) * ϕhat / 2 )/(
             1 - α * Δt * coeffΔ * (ξx^2+ξy^2) / 2 )
-   ldiv!(ϕ, plan, ψ₁hat)
+   # back to physical
+   ldiv!(parent(ϕytmphat), plan_y, parent(ψ₁hat))
+   transpose!(ϕxhat, ϕytmphat)
+   ldiv!(parent(ϕ), plan_x, parent(ϕxhat))
    return 1
 end
 

@@ -8,9 +8,9 @@ xrange = (0, 2*π)
 yrange = (0, 2*π)
 
 # creating a grid
-# grid = Grid((nx,ny), (xrange,yrange), device=GPU())
-grid = Grid((nx,ny), (xrange,yrange), device=CPU())
+grid = Grid((nx,ny), (xrange,yrange), array_type=Array)
 println(grid)
+
 # allocating a field
 field = Field(grid, ComplexField())
 println(field)
@@ -29,8 +29,7 @@ freqbckp = 10
 
 # initialisation
 init = InitExternalVelocity(field, param.coeffΔ, param.β)
-# init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y)
+initField!(init)
 
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 println(nummodel)

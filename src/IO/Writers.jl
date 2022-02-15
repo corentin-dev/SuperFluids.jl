@@ -1,11 +1,14 @@
 using WriteVTK
 using HDF5
 
+export WriterSave, WriterVTK
+export write!, read!
+
 "Abstract supertype for writer."
 abstract type AbstractWriter{F} end
 
 """
-    WriterSave{F<:AbstractField} <: AbstractWriter{F}
+   WriterSave{F<:AbstractField} <: AbstractWriter{F}
 
 Type representing a saving writer for a given field.
 """
@@ -13,9 +16,32 @@ struct WriterSave{F<:AbstractField} <: AbstractWriter{F}
    f :: F
 end
 
+"""
+   write!(w::WriterSave{AbstractField};
+      prefix="res"::AbstractString,
+      istep=0::Integer,
+      Δt=1::Real)
+
+Write a given field in a HDF5 format.
+
+Parameters:
+
+- `w`: a `WriterSave` with a `Field` to save,
+- `prefix`: a string that is put in front of the saved file (default: `"res"`),
+- `istep`: an integer representing the current `istep` value (default: `0`),
+- `Δt` : a real representing the time step value (default: `1.`).
+
+The HDF5 handles parallel files through a `PencilArray`.
+
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField());
+julia> writer = WriterSave(field);
+julia> write!(writer)
+```
+"""
 function write!(w::WriterSave{F};
    prefix="res"::AbstractString,
-   icpu=0::Integer,
    istep=0::Integer,
    Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A<:Array}
 
@@ -24,9 +50,9 @@ function write!(w::WriterSave{F};
    open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5", tmp.pencil.topology.comm, write=true) do h5file
       tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp)))
       @. tmpr = real(tmp)
-      h5file["re"] = tmp
+      h5file["re"] = tmpr
       @. tmpr = imag(tmp)
-      h5file["im"] = tmp
+      h5file["im"] = tmpr
    end
 
    return nothing
@@ -34,7 +60,6 @@ end
 
 function write!(w::WriterSave{F};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
 
@@ -45,17 +70,41 @@ function write!(w::WriterSave{F};
    open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5", tmp.pencil.topology.comm, write=true) do h5file
       tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp)))
       @. tmpr = real(tmp)
-      h5file["re"] = tmp
+      h5file["re"] = tmpr
       @. tmpr = imag(tmp)
-      h5file["im"] = tmp
+      h5file["im"] = tmpr
    end
 
    return nothing
 end
 
-function read!(w::WriterSave{F};
+"""
+   write!(w::WriterSave{AbstractField};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
+      istep=0::Integer,
+      Δt=1::Real)
+
+Write a given field in a HDF5 format.
+
+Parameters:
+
+- `w`: a `WriterSave` with a `Field` to save,
+- `prefix`: a string that is put in front of the saved file (default: `"res"`),
+- `istep`: an integer representing the current `istep` value (default: `0`),
+- `Δt` : a real representing the time step value (default: `1.`).
+
+The HDF5 handles parallel files through a `PencilArray`.
+
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField());
+julia> writer = WriterSave(field);
+julia> write!(writer)
+julia> read!(writer)
+```
+"""
+function Base.read!(w::WriterSave{F};
+      prefix="res"::AbstractString,
       istep=0::Integer,
       Δt=1::Real) where F
 
@@ -64,7 +113,7 @@ function read!(w::WriterSave{F};
       read!(h5file, tmp, "re")
       w.f.ϕ .= tmp
       read!(h5file, tmp, "im")
-      w.f.ϕ .+= 1j .* tmp
+      w.f.ϕ .+= im .* tmp
    end
 
    return nothing
@@ -86,7 +135,6 @@ end
 
 function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
 
@@ -128,7 +176,6 @@ end
 
 function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
 
@@ -169,9 +216,8 @@ function write!(w::WriterVTK{F};
    return nothing
 end
 
-function read!(w::WriterVTK{F};
+function Base.read!(w::WriterVTK{F};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where F
 
@@ -187,7 +233,6 @@ end
 
 function write!(wc::WriterCollection{F};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where F
    for writer in wc.writerList
@@ -195,9 +240,8 @@ function write!(wc::WriterCollection{F};
    end
 end
 
-function read!(wc::WriterCollection{F};
+function Base.read!(wc::WriterCollection{F};
       prefix="res"::AbstractString,
-      icpu=0::Integer,
       istep=0::Integer,
       Δt=1::Real) where F
    for writer in wc.writerList

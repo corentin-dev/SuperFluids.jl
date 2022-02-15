@@ -9,11 +9,11 @@ yrange = (0, 2*π)
 
 # creating a grid
 grid = Grid((nx,ny), (xrange,yrange), array_type=Array)
-println(grid)
+println_parallel(grid)
 
 # allocating a field
 field = Field(grid, ComplexField())
-println(field)
+println_parallel(field)
 
 # equation
 param = GrossPitaevskiiParameters(
@@ -32,7 +32,7 @@ init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 field_insta = Field(grid, ComplexField())

@@ -88,7 +88,7 @@ function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
 
    ϕ = w.f.ϕ
    comm = ϕ.pencil.topology.comm
@@ -113,13 +113,15 @@ function write!(w::WriterVTK{F};
    outfiles = vtk_save(vtkfile)
 
    # add to pvd
-   if istep == 0
-      pvd = paraview_collection(w.filename, append=false)
-   else
-      pvd = paraview_collection(w.filename, append=true)
+   if mpi_rank == 1
+      if istep == 0
+         pvd = paraview_collection(w.filename, append=false)
+      else
+         pvd = paraview_collection(w.filename, append=true)
+      end
+      pvd[ Δt * istep] = vtkfile
+      vtk_save(pvd)
    end
-   pvd[ Δt * istep] = vtkfile
-   vtk_save(pvd)
 
    return nothing
 end
@@ -128,7 +130,7 @@ function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       icpu=0::Integer,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
 
 
    ϕ = w.f.ϕ
@@ -137,8 +139,8 @@ function write!(w::WriterVTK{F};
    mpi_size = MPI.Comm_size(comm)
 
    r_local = range_local(ϕ)
-   r_local = (r_local[1][begin]:r_local[1][end]+1, r_local[2][begin]:r_local[2][end]+1)
-   x, y, z = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]]), A(LinRange(w.f.g.zmin,w.f.g.zmax,w.f.g.nz+1)[r_local[2]])
+   r_local = (r_local[1][begin]:r_local[1][end]+1, r_local[2][begin]:r_local[2][end]+1, r_local[3][begin]:r_local[3][end]+1)
+   x, y, z = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]]), A(LinRange(w.f.g.zmin,w.f.g.zmax,w.f.g.nz+1)[r_local[3]])
    extents = MPI.Allgather(r_local,comm)
 
    tmp = A{FT}(undef, size_local(ϕ))
@@ -154,13 +156,15 @@ function write!(w::WriterVTK{F};
    outfiles = vtk_save(vtkfile)
 
    # add to pvd
-   if istep == 0
-      pvd = paraview_collection(w.filename, append=false)
-   else
-      pvd = paraview_collection(w.filename, append=true)
+   if mpi_rank == 1
+      if istep == 0
+         pvd = paraview_collection(w.filename, append=false)
+      else
+         pvd = paraview_collection(w.filename, append=true)
+      end
+      pvd[ Δt * istep] = vtkfile
+      vtk_save(pvd)
    end
-   pvd[ Δt * istep] = vtkfile
-   vtk_save(pvd)
 
    return nothing
 end

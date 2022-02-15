@@ -7,23 +7,13 @@ Abstract supertype for field initialization classes.
 """
 abstract type AbstractPotential{F} end
 
-function similar_real(a::AbstractArray{A}) where A
-   T = get_real_type_array(a)
-   myArray = get_array_type(a)
-   if A <: PencilArray
-      return PencilArray(a.pencil, myArray{T}(undef, size(a.data)))
-   else
-      return myArray{T}(undef,size(a))
-   end
-end
-
 struct PotentialZero{F} <: AbstractPotential{F}
    f :: F
    V :: AbstractArray
 end
 
-function PotentialZero(f::F) where {F<:AbstractField}
-   V = similar_real(f.ϕ)
+function PotentialZero(f::F) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+   V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
    V .= 0.
    return PotentialZero{F}(f, V)
 end

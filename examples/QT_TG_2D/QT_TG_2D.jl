@@ -8,12 +8,12 @@ xrange = (0, 2*π)
 yrange = (0, 2*π)
 
 # creating a grid
-# grid = Grid((nx,ny), (xrange,yrange), device=GPU())
-grid = Grid((nx,ny), (xrange,yrange), device=CPU())
-println(grid)
+grid = Grid((nx,ny), (xrange,yrange), array_type=Array)
+println_parallel(grid)
+
 # allocating a field
 field = Field(grid, ComplexField())
-println(field)
+println_parallel(field)
 
 # equation
 param = GrossPitaevskiiParameters(
@@ -29,11 +29,10 @@ freqbckp = 10
 
 # initialisation
 init = InitExternalVelocity(field, param.coeffΔ, param.β)
-# init = InitGauss(field, Ω = Ω)
-field.ϕ .= init.(grid.x,grid.y)
+initField!(init)
 
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
-println(nummodel)
+println_parallel(nummodel)
 solve!(nummodel, plot=false)
 
 field_insta = Field(grid, ComplexField())

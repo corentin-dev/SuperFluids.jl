@@ -113,13 +113,15 @@ function write!(w::WriterVTK{F};
    outfiles = vtk_save(vtkfile)
 
    # add to pvd
-   if istep == 0
-      pvd = paraview_collection(w.filename, append=false)
-   else
-      pvd = paraview_collection(w.filename, append=true)
+   if mpi_rank == 1
+      if istep == 0
+         pvd = paraview_collection(w.filename, append=false)
+      else
+         pvd = paraview_collection(w.filename, append=true)
+      end
+      pvd[ Δt * istep] = vtkfile
+      vtk_save(pvd)
    end
-   pvd[ Δt * istep] = vtkfile
-   vtk_save(pvd)
 
    return nothing
 end
@@ -154,13 +156,15 @@ function write!(w::WriterVTK{F};
    outfiles = vtk_save(vtkfile)
 
    # add to pvd
-   if istep == 0
-      pvd = paraview_collection(w.filename, append=false)
-   else
-      pvd = paraview_collection(w.filename, append=true)
+   if mpi_rank == 1
+      if istep == 0
+         pvd = paraview_collection(w.filename, append=false)
+      else
+         pvd = paraview_collection(w.filename, append=true)
+      end
+      pvd[ Δt * istep] = vtkfile
+      vtk_save(pvd)
    end
-   pvd[ Δt * istep] = vtkfile
-   vtk_save(pvd)
 
    return nothing
 end

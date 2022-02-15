@@ -27,7 +27,7 @@ function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField2D}
       return (vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (-2*π*coeffΔ)))
    end
 
-   @. init.f.ϕ = TG(init.f.g.x, init.f.g.y)
+   @. init.f.ϕ = TG(init.f.x, init.f.y)
    return nothing
 end
 
@@ -44,6 +44,6 @@ function initField!(init::InitExternalVelocity{F}) where {F<:AbstractField3D}
       return (vortex1*vortex2*vortex3*vortex4)^Int(floor(1 / (-2*π*coeffΔ)))
    end
 
-   @. init.f.ϕ = TG(init.f.g.x, init.f.g.y, init.f.g.z)
+   @. init.f.ϕ = TG(init.f.x, init.f.y, init.f.z)
    return nothing
 end

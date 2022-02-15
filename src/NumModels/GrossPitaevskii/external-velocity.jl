@@ -42,35 +42,52 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
    ψ₁hat, ϕytmphat = n.plan.ϕy_hat, n.plan.ϕytmp_hat
    Δt, coeffΔ, β = n.Δt, n.param.coeffΔ, n.param.β
    plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
-   V, uadvx, uadvy = n.param.pot.V, n.param.pot.uadvx, n.param.pot.uadvy
+   uadvx, uadvy = n.param.pot.uadvx, n.param.pot.uadvy
+   # parameters
    α = 1.
    γ = 1.
    # create working vectors
-   ψ₁ = copy(ϕ)
-   ψ₁ .= 0.
-   ϕw = similar(ϕ)
-   computeDerivatives!(n.gf, n.plan, ϕ)
-   # function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-
+   ψ₁ = similar(ϕ)
    # compute gradients
+   computeDerivatives!(n.gf, n.plan, ϕ)
+   # compute ψ₁
    @. ψ₁ = ϕ + γ * Δt * (
-                - β * abs2(ϕ) * ϕ
-                + β * ϕ
-                -  (uadvx^2+uadvy^2)/(-4*coeffΔ) * ϕ
-                - im * uadvx * n.gf.dx - im * uadvy * n.gf.dy
-               )
-   # all to frequency domain
+      - β * abs2(ϕ) * ϕ
+      + β * ϕ
+      -  (uadvx^2+uadvy^2)/(-4*coeffΔ) * ϕ
+      - im * uadvx * n.gf.dx - im * uadvy * n.gf.dy
+   )
+# # compute gradients
+# mul!(ϕhat_x, plan_x, ϕ)
+# ∇ϕ_x = plan_x \ (im .* ξx .* ϕhat_x) # we get grad x
+# mul!(ϕhat_y, plan_y, ϕ)
+# ∇ϕ_y = plan_y \ (im .* ξy .* ϕhat_y) # we get grad y
+# # compute ψ₁
+# @. ψ₁ = ϕ + γ * Δt * (
+#              - β * real(ϕ * conj(ϕ)) * ϕ
+#              + β * ϕ
+#              -  (uadvx^2+uadvy^2)/(-4*coeffΔ) * ϕ
+#              - im * uadvx * ∇ϕ_x - im * uadvy * ∇ϕ_y
+#             )
+# all to frequency domain
+# ψ₁hat = plan * ψ₁
+# mul!(ϕhat, plan, ϕ)
+# @. ψ₁hat = ( ψ₁hat + α * Δt * coeffΔ * (ξx^2+ξy^2) * ϕhat / 2 )/(
+#          1 - α * Δt * coeffΔ * (ξx^2+ξy^2) / 2 )
+# ldiv!(ϕ, plan, ψ₁hat)
+
    # ψ₁ ← ( ψ₁ + α Δt /2 (ddx + ddy ) ϕ ) / ()
    # ψ₁hat
    mul!(parent(ϕxhat),plan_x,parent(ψ₁))
    transpose!(ϕytmphat,ϕxhat)
-   mul!(parent(ψ₁hat),plan_x,parent(ϕytmphat))
+   mul!(parent(ψ₁hat),plan_y,parent(ϕytmphat))
    # ϕhat
+   ϕhat = similar(ψ₁hat)
    mul!(parent(ϕxhat),plan_x,parent(ϕ))
    transpose!(ϕytmphat,ϕxhat)
-   ϕhat = plan_y * parent(ϕytmphat)
+   mul!(parent(ϕhat), plan_y, parent(ϕytmphat))
    # compute
-   gridξ = localgrid(n.plan.pen_x, (n.plan.ξx, n.plan.ξy))
+   gridξ = localgrid(n.plan.pen_y, (n.plan.ξx, n.plan.ξy))
    ξx, ξy = gridξ.x, gridξ.y
    @. ψ₁hat = ( ψ₁hat + α * Δt * coeffΔ * (ξx^2+ξy^2) * ϕhat / 2 )/(
             1 - α * Δt * coeffΔ * (ξx^2+ξy^2) / 2 )

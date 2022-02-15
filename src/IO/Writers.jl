@@ -139,8 +139,8 @@ function write!(w::WriterVTK{F};
    mpi_size = MPI.Comm_size(comm)
 
    r_local = range_local(ϕ)
-   r_local = (r_local[1][begin]:r_local[1][end]+1, r_local[2][begin]:r_local[2][end]+1)
-   x, y, z = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]]), A(LinRange(w.f.g.zmin,w.f.g.zmax,w.f.g.nz+1)[r_local[2]])
+   r_local = (r_local[1][begin]:r_local[1][end]+1, r_local[2][begin]:r_local[2][end]+1, r_local[3][begin]:r_local[3][end]+1)
+   x, y, z = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]]), A(LinRange(w.f.g.zmin,w.f.g.zmax,w.f.g.nz+1)[r_local[3]])
    extents = MPI.Allgather(r_local,comm)
 
    tmp = A{FT}(undef, size_local(ϕ))

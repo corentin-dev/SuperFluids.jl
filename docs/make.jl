@@ -16,6 +16,7 @@ makedocs(
         "Library" => [
             "grid.md",
             "field.md",
+            "plan.md",
         ],
         "Plots" => [
             "plots/plots.md",

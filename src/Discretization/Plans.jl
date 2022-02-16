@@ -3,7 +3,9 @@ abstract type PlanType end
 "FFT plan"
 struct FFTPlan <: PlanType end
 "Finite difference plan"
-struct FiniteDifferentePlan <: PlanType end
+struct FiniteDifferencePlan <: PlanType end
+
+export Plan, FFTPlan, FiniteDifferencePlan
 
 "Abstract supertype for plans."
 abstract type AbstractPlan{F} end
@@ -12,58 +14,70 @@ abstract type AbstractFFTPlan{F} end
 "Abstract supertype for Finite Difference plans."
 abstract type AbstractFDPlan{F} end
 
+"""
+    PlanFFT2D{F} <: AbstractFFTPlan{F}
+
+Type representing a 2D FFT plan.
+
+It contains the following informations:
+
+- `f`: reference to a field
+- `pen_x`: pencil (or slab) in the ``x`` direction.
+- `pen_y`: pencil (or slab) in the ``y`` direction.
+- `plan_x`: FFT plan in the ``x`` direction.
+- `plan_y`: FFT plan in the ``y`` direction.
+- `ξx`, `ξy`, `ξz`: frequency (non distributed) along each directions.
+- `ϕx_hat`, `ϕy_hat`, `ϕz_hat`: fields to contain transformed fields distributed along each directions.
+- `ϕxtmp_hat`, `ϕytmp_hat`, `ϕztmp_hat`: temporary fields distributed along each directions.
+"""
 struct PlanFFT2D{F} <: AbstractFFTPlan{F}
-   "field"
    f :: AbstractField2D
    pen_x
    pen_y
-   "plan in x direction only"
    plan_x :: AbstractFFTs.Plan
-   "plan in y direction only"
    plan_y :: AbstractFFTs.Plan
-   "ξx x frequencies"
    ξx :: AbstractArray
-   "ξy y frequencies"
    ξy :: AbstractArray
-   "temporary storage x"
    ϕx_hat :: AbstractArray
-   "temporary storage y"
    ϕy_hat :: AbstractArray
-   "temporary storage x"
    ϕxtmp_hat :: AbstractArray
-   "temporary storage y"
    ϕytmp_hat :: AbstractArray
 end
 
+"""
+    PlanFFT3D{F} <: AbstractFFTPlan{F}
+
+Type representing a 3D FFT plan.
+
+It contains the following informations:
+
+- `f`: reference to a field
+- `pen_x`: pencil (or slab) in the ``x`` direction.
+- `pen_y`: pencil (or slab) in the ``y`` direction.
+- `pen_z`: pencil (or slab) in the ``z`` direction.
+- `plan_x`: FFT plan in the ``x`` direction.
+- `plan_y`: FFT plan in the ``y`` direction.
+- `plan_z`: FFT plan in the ``z`` direction.
+- `ξx`, `ξy`, `ξz`: frequency (non distributed) along each directions.
+- `ϕx_hat`, `ϕy_hat`, `ϕz_hat`: fields to contain transformed fields distributed along each directions.
+- `ϕxtmp_hat`, `ϕytmp_hat`, `ϕztmp_hat`: temporary fields distributed along each directions.
+"""
 struct PlanFFT3D{F} <: AbstractFFTPlan{F}
-   "field"
    f :: AbstractField3D
    pen_x
    pen_y
    pen_z
-   "plan in x direction only"
    plan_x :: AbstractFFTs.Plan
-   "plan in y direction only"
    plan_y :: AbstractFFTs.Plan
-   "plan in z direction only"
    plan_z :: AbstractFFTs.Plan
-   "ξx x frequencies"
    ξx :: AbstractArray
-   "ξy y frequencies"
    ξy :: AbstractArray
-   "ξz z frequencies"
    ξz :: AbstractArray
-   "temporary storage x"
    ϕx_hat :: AbstractArray
-   "temporary storage y"
    ϕy_hat :: AbstractArray
-   "temporary storage z"
    ϕz_hat :: AbstractArray
-   "temporary storage x"
    ϕxtmp_hat :: AbstractArray
-   "temporary storage y"
    ϕytmp_hat :: AbstractArray
-   "temporary storage z"
    ϕztmp_hat :: AbstractArray
 end
 
@@ -76,41 +90,81 @@ function ξsquared(ξx::Real, ξy::Real, ξz::Real)
    end
 end
 
+"""
+   PlanFD2D{F} <: AbstractFFTPlan{F}
+
+Type representing a 2D finite difference plan.
+
+It contains the following informations:
+
+- `f`: reference to a field.
+- `pen_x`: pencil (or slab) in the ``x`` direction.
+- `pen_y`: pencil (or slab) in the ``y`` direction.
+- `Δx`, `Δy`: discretization step.
+- `ϕxtmp`, `ϕytmp`: temporary fields distributed along each directions.
+"""
 struct PlanFD2D{F} <: AbstractFDPlan{F}
-   "field"
    f :: AbstractField2D
    pen_x
    pen_y
-   "x discretization"
    Δx :: Real
-   "y discretization"
    Δy :: Real
-   "temporary storage x"
    ϕxtmp :: AbstractArray
-   "temporary storage y"
    ϕytmp :: AbstractArray
 end
 
+"""
+   PlanFD3D{F} <: AbstractFFTPlan{F}
+
+Type representing a 3D finite difference plan.
+
+It contains the following informations:
+
+- `f`: reference to a field.
+- `pen_x`: pencil (or slab) in the ``x`` direction.
+- `pen_y`: pencil (or slab) in the ``y`` direction.
+- `pen_z`: pencil (or slab) in the ``z`` direction.
+- `Δx`, `Δy`, `Δz`: discretization step.
+- `ϕxtmp`, `ϕytmp`, `ϕztmp`: temporary fields distributed along each directions.
+
+"""
 struct PlanFD3D{F} <: AbstractFDPlan{F}
-   "field"
    f :: AbstractField3D
    pen_x
    pen_y
    pen_z
-   "x discretization"
    Δx :: Real
-   "y discretization"
    Δy :: Real
-   "z discretization"
    Δz :: Real
-   "temporary storage x"
    ϕxtmp :: AbstractArray
-   "temporary storage y"
    ϕytmp :: AbstractArray
-   "temporary storage y"
    ϕztmp :: AbstractArray
 end
 
+"""
+    Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
+
+Returns a 2D plan. By default a FFT plan is returned.
+
+Parameters are:
+
+- `f`: a field
+- `t`: a type of plan (either `FFTPlan()` or `FiniteDifferencePlan()`)
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, RealField());
+julia> plan = Plan(field, t=FFTPlan());
+```
+
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, RealField());
+julia> plan = Plan(field, t=FiniteDifferencePlan());
+```
+"""
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
    # Pencil decompositions
    pen_x = f.decomp.pen_array.pencil
@@ -147,6 +201,30 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}
    end
 end
 
+"""
+    Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
+
+Returns a 3D plan. By default a FFT plan is returned.
+
+Parameters are:
+
+- `f`: a field
+- `t`: a type of plan (either `FFTPlan()` or `FiniteDifferencePlan()`)
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128,128), ((-12,12),(-12,12), (-12,12)));
+julia> field = Field(grid, RealField());
+julia> plan = Plan(field, t=FFTPlan());
+```
+
+```jldoctest
+julia> grid = Grid((128,128,128), ((-12,12),(-12,12), (-12,12)));
+julia> field = Field(grid, RealField());
+julia> plan = Plan(field, t=FiniteDifferencePlan());
+```
+"""
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
    # Pencil decompositions
    pen_x = f.decomp.pen_array.pencil

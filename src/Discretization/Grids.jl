@@ -11,75 +11,62 @@ export Grid
     Grid2D{FT<:Real} <: AbstractGrid2D{FT}
 
 Type representing a 2D grid.
+
+A `Grid2D` contains the following informations:
+
+- `x`, `y`: a vector containing the positions along each direction.
+- `nx`, `ny`: dimension of the grid along each direction.
+- `xmin`, `xmax`, `ymin`, `ymax`: bounds of the grid.
+- `Lx`, `Ly`: physical length along each direction.
+- `Δx`, `Δy`: corresponds to the minimum distance between each point of the grid in each direction.
 """
 struct Grid2D{FT<:Real,A} <: AbstractGrid2D{FT,A}
-   "x range"
    x :: A
-   "y range"
    y :: A
-   "nx size in x direction"
    nx :: Integer
-   "ny size in y direction"
    ny :: Integer
-   "xmin minimum x boundary"
    xmin :: FT
-   "xmax maximum x boundary"
    xmax :: FT
-   "ymin minimum y boundary"
    ymin :: FT
-   "ymax maximum y boundary"
    ymax :: FT
-   "Lx x length"
    Lx :: FT
-   "Ly y length"
    Ly :: FT
-   "Δx x discretization"
    Δx :: FT
-   "Δy y discretization"
    Δy :: FT
 end
 
 """
     Grid3D{FT<:Real} <: AbstractGrid3D{FT}
 
-Type representing a grid.
+Type representing a 2D grid.
+
+A `Grid2D` contains the following informations:
+
+- `x`, `y`, `z`: a vector containing the positions along each direction.
+- `nx`, `ny`, `nz`: dimension of the grid along each direction.
+- `xmin`, `xmax`, `ymin`, `ymax`, `zmin`, `zmax`: bounds of the grid.
+- `Lx`, `Ly`, `Lz`: physical length along each direction.
+- `Δx`, `Δy`, `Δz`: corresponds to the minimum distance between each point of the grid in each direction.
+
 """
 struct Grid3D{FT,A} <: AbstractGrid3D{FT,A}
-   "x range"
    x :: A
-   "y range"
    y :: A
-   "z range"
    z :: A
-   "nx size in x direction"
    nx :: Integer
-   "ny size in y direction"
    ny :: Integer
-   "nz size in z direction"
    nz :: Integer
-   "xmin minimum x boundary"
    xmin :: FT
-   "xmax maximum x boundary"
    xmax :: FT
-   "ymin minimum y boundary"
    ymin :: FT
-   "ymax maximum y boundary"
    ymax :: FT
-   "zmin minimum z boundary"
    zmin :: FT
-   "zmax maximum z boundary"
    zmax :: FT
-   "Lx x length"
    Lx :: FT
-   "Ly y length"
    Ly :: FT
-   "Lz z length"
    Lz :: FT
-   "Δx x discretization"
    Δx :: FT
-   "Δy y discretization"
    Δy :: FT
-   "Δz z discretization"
    Δz :: FT
 end
 

@@ -17,6 +17,7 @@ makedocs(
             "grid.md",
             "field.md",
             "plan.md",
+            "gradientfield.md",
         ],
         "Plots" => [
             "plots/plots.md",

@@ -79,16 +79,16 @@ function write!(w::WriterSave{F};
 end
 
 """
-   write!(w::WriterSave{AbstractField};
+   Base.read!(w::WriterSave{AbstractField};
       prefix="res"::AbstractString,
       istep=0::Integer,
       Δt=1::Real)
 
-Write a given field in a HDF5 format.
+Read a given field in the HDF5 format.
 
 Parameters:
 
-- `w`: a `WriterSave` with a `Field` to save,
+- `w`: a `WriterSave` with a `Field` to read,
 - `prefix`: a string that is put in front of the saved file (default: `"res"`),
 - `istep`: an integer representing the current `istep` value (default: `0`),
 - `Δt` : a real representing the time step value (default: `1.`).

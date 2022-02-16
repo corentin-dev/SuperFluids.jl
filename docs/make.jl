@@ -1,18 +1,14 @@
 using Documenter
 using SuperFluids
 
-
-DocMeta.setdocmeta!(
-     SuperFluids, :DocTestSetup,
-     quote
-        using SuperFluids
-     end;
-     recursive=true,
-    )
+DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
 
 makedocs(
-    sitename = "SuperFluids",
+    authors = "Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
+    repo = "https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl",
+    sitename = "SuperFluids.jl",
     format = Documenter.HTML(),
+    doctest = false,
     modules = [SuperFluids]
 )
 

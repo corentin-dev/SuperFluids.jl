@@ -2,11 +2,10 @@ pages:
   image: registry.plmlab.math.cnrs.fr/docker-images/ubuntu/20.04:base
   stage: deploy
   script:
-    - apt-get update -qq && apt-get install -y git && apt-get install -y julia # install packages
-    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("SuperFluids");' # build package
-    - julia -e 'using Pkg; import SuperFluids; Pkg.add("Documenter")'  # install Documenter
-    - julia --color=yes docs/make.jl  # make documentation
-    - mv docs/build public  # move to the directory picked up by Gitlab pages
+    - apt-get update -qq && apt-get install -y git && apt-get install -y julia
+    - julia --project -e 'using Pkg; import SuperFluids; Pkg.add("Documenter")'
+    - julia --project --color=yes docs/make.jl
+    - mv docs/build public
   artifacts:
     paths:
       - public

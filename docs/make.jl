@@ -16,6 +16,7 @@ makedocs(
         "Library" => [
             "grid.md",
             "field.md",
+            "init.md",
             "plan.md",
             "gradientfield.md",
         ],

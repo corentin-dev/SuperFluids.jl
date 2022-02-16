@@ -236,7 +236,7 @@ function write!(wc::WriterCollection{F};
       istep=0::Integer,
       Δt=1::Real) where F
    for writer in wc.writerList
-      write!(writer,prefix=prefix,icpu=icpu,istep=istep)
+      write!(writer,prefix=prefix,istep=istep)
    end
 end
 
@@ -245,6 +245,6 @@ function Base.read!(wc::WriterCollection{F};
       istep=0::Integer,
       Δt=1::Real) where F
    for writer in wc.writerList
-      read!(writer,prefix=prefix,icpu=icpu,istep=istep,Δt=Δt)
+      read!(writer,prefix=prefix,istep=istep,Δt=Δt)
    end
 end

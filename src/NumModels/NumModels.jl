@@ -25,7 +25,7 @@ function solve!(n::AbstractNumModel;istart=1,plot=false)
    end
    res = Tuple{Int64, Int64, Float64, Float64, Float64, Float64}[]
    nkrylovtotal = 0
-   write!(n.writers,prefix="res",icpu=0,istep=istart,Δt=n.Δt)
+   write!(n.writers,prefix="res",istep=istart,Δt=n.Δt)
    for it = istart:istart+n.niter
       println_parallel("iteration $(it)")
       E = energy(n,true)
@@ -33,7 +33,7 @@ function solve!(n::AbstractNumModel;istart=1,plot=false)
       nkrylovtotal += nkrylov
       push!(res, (nkrylov,nkrylovtotal,E...) )
       if it % n.freqbckp == 0
-         write!(n.writers,prefix="res",icpu=0,istep=it,Δt=n.Δt)
+         write!(n.writers,prefix="res",istep=it,Δt=n.Δt)
       end
       if plot
          updatePlot!(p)

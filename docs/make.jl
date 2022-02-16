@@ -9,7 +9,18 @@ makedocs(
     sitename = "SuperFluids.jl",
     format = Documenter.HTML(),
     doctest = false,
-    modules = [SuperFluids]
+    modules = [SuperFluids],
+    pages = [
+        "Home" => "index.md",
+        "QuickStart" => "quickstart.md",
+        "Library" => [
+            "grid.md",
+            "field.md",
+        ],
+        "Plots" => [
+            "plots/plots.md",
+        ],
+    ],
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.

@@ -4,18 +4,30 @@ This is a package allowing simulation of superfluids. The first intention of thi
 
 In order to be parallel (distributed), this package exploits intensively `PencilArrays`. Most of the package is written using broadcast, and is compatible with both CPU arrays (`Array`) and CUDA arrays (`CuArray`). It was not tested for other array type, yet. Every array creation is inferred from the `Grid` array type.
 
-## Quick start
+This package is authored by Corentin Lothodé, and largely inspired by GPS a Fortran program by Philippe Parnaudeau.
 
-In order to have any simulation, you need to create a `Grid` and a `Field`. Then, you have to create parameters related to the simulation you want to perform, a numerical model which will be able to solve either time dependant or steady problems. You can be helped by initializers, read a field from file or use your custom function.
+## Installation
 
-### Grid
+For the moment, `SuperFluids.jl` is not in the julia registry. You need to get it by yourself:
 
-```@docs
-Grid
+```
+pkg> add https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl
 ```
 
-### Field
+## Get sources
 
-```@docs
-Field
+To get sources, you can clone the project:
+
+```
+git clone git@plmlab.math.cnrs.fr:lmrs/num/SuperFluids.jl.git
+```
+
+Start Julia :
+```
+julia --project=.
+```
+
+Import package :
+```
+using SuperFluids
 ```

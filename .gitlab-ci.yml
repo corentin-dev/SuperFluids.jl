@@ -4,6 +4,7 @@ pages:
   script:
     - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y julia
     - julia --project -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
+    - julia --project -e 'using Pkg; pkg"dev PencilArrays"; pkg"dev WriteVTK"'
     - julia --project -e 'using Pkg; import SuperFluids; Pkg.add("Documenter")'
     - julia --project --color=yes docs/make.jl
     - mv docs/build public

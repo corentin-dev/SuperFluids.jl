@@ -11,7 +11,7 @@ For the moment, there exists two kinds of fields: `Field2D` and `Field3D`.
 ## Constructors
 
 ```@docs
-Grid
+Field
 ```
 
 ## Structures

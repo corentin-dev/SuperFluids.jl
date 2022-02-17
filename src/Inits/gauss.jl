@@ -19,7 +19,7 @@ end
 """
     InitGauss(f :: F; γz :: Real = 1., Ω :: Real = 0.) where {F<:AbstractField}
 
-Returns an `InitGauss3D` initializator object.
+Returns an `InitGauss` initializator object.
 
 Parameters are:
 

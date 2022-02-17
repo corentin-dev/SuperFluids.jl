@@ -5,22 +5,20 @@
 ### Initializer functions
 
 ```@docs
-initField!(::SuperFluids.InitGauss2D{F}) where {F<:SuperFluids.AbstractField2D}
-initField!(::SuperFluids.InitGauss3D{F}) where {F<:SuperFluids.AbstractField3D}
+initField!(::SuperFluids.InitGauss{F}) where {F<:SuperFluids.AbstractField2D}
+initField!(::SuperFluids.InitGauss{F}) where {F<:SuperFluids.AbstractField3D}
 ```
 
 ### Constructors
 
 ```@docs
-InitGauss(:: F; :: Real) where {F<:SuperFluids.AbstractField2D}
-InitGauss(::F; ::Real, :: Real) where {F<:SuperFluids.AbstractField3D}
+InitGauss(::F; ::Real, :: Real) where {F<:SuperFluids.AbstractField}
 ```
 
 ### Structures
 
 ```@docs
-SuperFluids.InitGauss2D
-SuperFluids.InitGauss3D
+SuperFluids.InitGauss
 ```
 
 ## External velocity

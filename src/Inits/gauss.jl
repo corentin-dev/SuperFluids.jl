@@ -39,11 +39,11 @@ end
 Initialize a field using a `InitGauss` initializer for 2D grids.
 
 ```math
-\\phi = (1-\\Omega)\\dfrac{1}{\\sqrt{\\pi}} \\exp(-0.5(x^2+y^2)) + \\Omega \\left(\\dfrac{x+i y}{\\sqrt{\\pi}}\\right)\\exp(-0.5(x^2+y^2))
+ϕ = (1-Ω)\\dfrac{1}{\\sqrt{π}} \\exp(-0.5(x^2+y^2)) + Ω \\left(\\dfrac{x+i y}{\\sqrt{π}}\\right)\\exp(-0.5(x^2+y^2))
 ```
 
 !!! info
-    ``\\phi`` is normalized in order to have ``\\parallel\\phi\\parallel_2 = 1``.
+    ``ϕ`` is normalized in order to have ``∥ϕ∥₂ = 1``.
 """
 function initField!(init::InitGauss{F}) where {F<:AbstractField2D}
    @. init.f.ϕ = (1-init.Ω) * (1/sqrt(π)*exp(-0.5*(init.f.x^2+init.f.y^2))) + init.Ω * (1*(init.f.x+im*init.f.y)/sqrt(π)*exp(-0.5*(init.f.x^2+init.f.y^2)))
@@ -58,11 +58,11 @@ end
 Initialize a field using a `InitGauss` initializer for 3D grids.
 
 ```math
-\\phi = (1-\\Omega)\\dfrac{\\gamma_z^{1/4}}{\\pi^{3/4}} \\exp(-0.5(x^2+y^2+\\gamma_z z^2)) + \\Omega \\left(\\dfrac{(x+i y)(\\gamma_z^{1/4})}{\\pi^{3/4}}\\right)\\exp(-0.5(x^2+y^2+\\gamma_z z^2))
+ϕ = (1-Ω)\\dfrac{γ_z^{1/4}}{π^{3/4}} \\exp(-0.5(x^2+y^2+γ_z z^2)) + Ω \\left(\\dfrac{(x+i y)(γ_z^{1/4})}{π^{3/4}}\\right)\\exp(-0.5(x^2+y^2+γ_z z^2))
 ```
 
 !!! info
-    ``\\phi`` is normalized in order to have ``\\parallel\\phi\\parallel_2 = 1``.
+    ``ϕ`` is normalized in order to have ``∥ϕ∥₂ = 1``.
 """
 function initField!(init::InitGauss{F}) where {F<:AbstractField3D}
    x = init.f.x

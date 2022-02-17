@@ -1,5 +1,26 @@
 # Initialization
 
+## Thomas-Fermi
+
+### Initializer functions
+
+```@docs
+initField!(::SuperFluids.InitThomasFermi{F}) where {F<:SuperFluids.AbstractField2D}
+initField!(::SuperFluids.InitThomasFermi{F}) where {F<:SuperFluids.AbstractField3D}
+```
+
+### Constructors
+
+```@docs
+InitThomasFermi(:: F,:: Real;:: Real, :: Real, :: Real) where {F<:SuperFluids.AbstractField}
+```
+
+### Structures
+
+```@docs
+SuperFluids.InitThomasFermi
+```
+
 ## Gauss
 
 ### Initializer functions

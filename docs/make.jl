@@ -13,6 +13,9 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "QuickStart" => "quickstart.md",
+        "Equations" => [
+            "grosspitaevskii.md",
+        ],
         "Library" => [
             "grid.md",
             "field.md",

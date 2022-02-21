@@ -26,6 +26,7 @@ makedocs(
         "Plots" => [
             "plots/plots.md",
         ],
+        "API" => "api.md",
     ],
 )
 

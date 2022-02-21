@@ -87,6 +87,9 @@ Grid2D
   ├────  grid spacing: 0.1875×0.1875
   └──────────  domain: [-12.0,12.0]×[-12.0,12.0]
 ```
+
+See also [`Field`](@ref).
+
 """
 function Grid(size::Tuple{Integer,Integer},
       bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};

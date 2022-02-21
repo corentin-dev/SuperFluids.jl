@@ -1,6 +1,6 @@
 # Initialization
 
-Initialization is not mandatory as you can use your own function to initialize a field. You can see them as a helper to setup a simulation.
+Initialization is not mandatory as you can use your own function to initialize a [field](@ref Fields). You can see them as a helper to setup a simulation.
 
 If you want to use it, you first need to setup a `Grid` and a `Field`. Once you have it, you can run for example:
 ```julia-repl

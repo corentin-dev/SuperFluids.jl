@@ -1,20 +1,20 @@
-# Field
+# Fields
 
-Field is used to contain the data used by the simulation. It depends on a grid.
+`Field` objects are used to contain the data used by the simulation. It depends on a [Grid](@ref Grids).
 
 !!! info
-    While `Grid` is not distributed, `Field` is distributed.
+    While [`Grid`](@ref Grids) is not distributed, `Field` is distributed.
 
 
-For the moment, there exists two kinds of fields: `Field2D` and `Field3D`.
+For the moment, there exists two kinds of fields: [`SuperFluids.Field2D`](@ref) and [`SuperFluids.Field3D`](@ref).
 
-## Constructors
+## [Constructors](@id field.constructors)
 
 ```@docs
 Field
 ```
 
-## Structures
+## [Structures](@id field.structures)
 
 ```@docs
 SuperFluids.Field2D

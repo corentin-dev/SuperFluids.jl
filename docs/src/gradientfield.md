@@ -1,6 +1,9 @@
 # Gradient Field
 
-Gradient field is used to contain derivatives of a field by the simulation. It depends on a field. It may or may not compute rotation along the ``z`` axis.
+Gradient field is used to contain derivatives of a field by the simulation. It depends on a [field](@ref Fields). It may or may not compute rotation along the ``z`` axis.
+
+!!! info
+    There exists two kinds of `GradientField` classes, with or without rotation.
 
 ## Constructors
 

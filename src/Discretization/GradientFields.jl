@@ -5,10 +5,19 @@ abstract type AbstractGradientField2D{F,A} <: AbstractGradientField{F,A} end
 "Abstract supertype for numerical models."
 abstract type AbstractGradientField3D{F,A} <: AbstractGradientField{F,A} end
 
+export GradientField
+
 """
-    GradientField2D{F<:AbstractGrid,A<:AbstractArrayd} <: AbstractGradientField2D{F,A}
+     GradientField2D{F,A} <: AbstractGradientField2D{F,A}
 
 Type representing a gradient of a 2D field.
+
+It contains the following informations:
+
+- `f`: reference to a field.
+- `dx`, `dy`: first derivatives of the given field.
+- `ddx`, `ddy`: second derivatives of the given field.
+
 """
 mutable struct GradientField2D{F,A} <: AbstractGradientField2D{F,A}
     f :: F
@@ -19,9 +28,17 @@ mutable struct GradientField2D{F,A} <: AbstractGradientField2D{F,A}
 end
 
 """
-    GradientRotField2D{F<:AbstractGrid,A<:AbstractArray} <: AbstractGradientField2D{F,A}
+     GradientRotField2D{F,A} <: AbstractGradientField2D{F,A}
 
 Type representing a gradient of a 2D field with rotation along z axis.
+
+It contains the following informations:
+
+- `f`: reference to a field.
+- `dx`, `dy`: first derivatives of the given field.
+- `ddx`, `ddy`: second derivatives of the given field.
+- `rx`, `ry`: rotation along the `z` axis.
+
 """
 mutable struct GradientRotField2D{F,A} <: AbstractGradientField2D{F,A}
    f :: F
@@ -33,6 +50,63 @@ mutable struct GradientRotField2D{F,A} <: AbstractGradientField2D{F,A}
    ry :: A
 end
 
+"""
+     GradientField3D{F,A} <: AbstractGradientField3D{F,A}
+
+Type representing a gradient of a 3D field.
+
+It contains the following informations:
+
+- `f`: reference to a field.
+- `dx`, `dy`, `dz`: first derivatives of the given field.
+- `ddx`, `ddy`, `ddz`: second derivatives of the given field.
+
+"""
+mutable struct GradientField3D{F,A} <: AbstractGradientField3D{F,A}
+    f :: F
+    dx :: A
+    dy :: A
+    dz :: A
+    ddx :: A
+    ddy :: A
+    ddz :: A
+end
+
+"""
+     GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
+
+Type representing a gradient of a 3D field with rotation along z axis.
+
+It contains the following informations:
+
+- `f`: reference to a field.
+- `dx`, `dy`, `dz`: first derivatives of the given field.
+- `ddx`, `ddy`, `ddz`: second derivatives of the given field.
+- `rx`, `ry`: rotation along the `z` axis.
+
+"""
+mutable struct GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
+    f :: F
+    dx :: A
+    dy :: A
+    dz :: A
+    ddx :: A
+    ddy :: A
+    ddz :: A
+    rx :: A
+    ry :: A
+end
+
+"""
+     GradientField(f::F; rotation::Bool = true) where {F<:AbstractField2D}
+
+Returns a GradientField2D or GradientRotField2D.
+
+Parameters are:
+
+- `f`: a field
+- `rotation`: specify if a rotation should be computed or not.
+"""
 function GradientField(f::F; rotation::Bool = true) where {F<:AbstractField2D}
     dx = similar(f.ϕ)
     dy = similar(f.ϕ)
@@ -48,37 +122,15 @@ function GradientField(f::F; rotation::Bool = true) where {F<:AbstractField2D}
 end
 
 """
-    GradientField3D{F<:AbstractGrid,A<:AbstractArrayd} <: AbstractGradientField3D{F,A}
+     GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
 
-Type representing a gradient of a 3D field.
+Returns a GradientField3D or GradientRotField3D.
+
+Parameters are:
+
+- `f`: a field
+- `rotation`: specify if a rotation should be computed or not.
 """
-mutable struct GradientField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    dx :: A
-    dy :: A
-    dz :: A
-    ddx :: A
-    ddy :: A
-    ddz :: A
-end
-
-"""
-    GradientRotField3D{F<:AbstractGrid,A<:AbstractArrayd} <: AbstractGradientField3D{F,A}
-
-Type representing a gradient of a 3D field.
-"""
-mutable struct GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    dx :: A
-    dy :: A
-    dz :: A
-    ddx :: A
-    ddy :: A
-    ddz :: A
-    rx :: A
-    ry :: A
-end
-
 function GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
     dx = similar(f.ϕ)
     dy = similar(f.ϕ)

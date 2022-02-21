@@ -1,19 +1,33 @@
 using Documenter
 using SuperFluids
 
-
-DocMeta.setdocmeta!(
-     SuperFluids, :DocTestSetup,
-     quote
-        using SuperFluids
-     end;
-     recursive=true,
-    )
+DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
 
 makedocs(
-    sitename = "SuperFluids",
+    authors = "Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
+    repo = "https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl",
+    sitename = "SuperFluids.jl",
     format = Documenter.HTML(),
-    modules = [SuperFluids]
+    doctest = false,
+    modules = [SuperFluids],
+    pages = [
+        "Home" => "index.md",
+        "QuickStart" => "quickstart.md",
+        "Equations" => [
+            "grosspitaevskii.md",
+        ],
+        "Library" => [
+            "grid.md",
+            "field.md",
+            "init.md",
+            "plan.md",
+            "gradientfield.md",
+        ],
+        "Plots" => [
+            "plots/plots.md",
+        ],
+        "API" => "api.md",
+    ],
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.

@@ -1,3 +1,14 @@
+"""
+    lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan}
+
+Returns a field containing the value:
+
+```math
+-\\text{coeff}Δ \\left(\\dfrac{∂²ϕ}{∂x²} + \\dfrac{∂²ϕ}{∂y²} \\right) + i Ω \\left( \\mathcal{L}_z ϕ \\right)
+```
+
+with ``\\mathcal{L}_z = \\begin{pmatrix}y \\dfrac{∂ϕ}{∂x} \\\\ x \\dfrac{∂ϕ}{∂y} \\end{pmatrix}``.
+"""
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan}
    # references
    coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
@@ -9,6 +20,17 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, 
    return tmp
 end
 
+"""
+    lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters, Plan}
+
+Returns a field containing the value:
+
+```math
+-\\text{coeff}Δ \\left(\\dfrac{∂²ϕ}{∂x²} + \\dfrac{∂²ϕ}{∂y²} + \\dfrac{∂²ϕ}{∂z²} \\right) + i Ω \\left( \\mathcal{L}_z ϕ \\right)
+```
+
+with ``\\mathcal{L}_z = \\begin{pmatrix}y \\dfrac{∂ϕ}{∂x} \\\\ x \\dfrac{∂ϕ}{∂y} \\end{pmatrix}``.
+"""
 function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters, Plan}
    # references
    coeffΔ, Ω = n.param.coeffΔ, n.param.Ω
@@ -20,6 +42,20 @@ function lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, 
    return tmp
 end
 
+"""
+    energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan}
+
+Compute some energy related to the Gross-Pitaevskii equation:
+
+- ``E_Ω =  i Ω \\iint \\bar{ϕ} \\mathcal{L}_z ϕ``,
+- ``E_{Δ+\\text{pot}} = -\\text{coeff}Δ \\iint \\left( \\dfrac{∂²ϕ}{∂x²} + \\dfrac{∂²ϕ}{∂y²} \\right) + V(\\boldsymbol{x})_\\text{pot} ∥ϕ∥_2^2``,
+- ``E_β = \\dfrac{1}{2} β \\iint ∥ϕ∥_2^2``,
+- ``E_\\text{total}=-E_Ω+E_{Δ+\\text{pot}}+E_β``.
+
+with ``\\mathcal{L}_z = \\begin{pmatrix}y \\dfrac{∂ϕ}{∂x} \\\\ x \\dfrac{∂ϕ}{∂y} \\end{pmatrix}``.
+
+``E_Ω``, ``E_{Δ+\\text{pot}}``, ``E_β``, ``E_\\text{total}`` are returned together as a Tuple.
+"""
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField2D,P<:GrossPitaevskiiParameters,Plan}
    # references
    ϕ = n.f.ϕ
@@ -51,6 +87,18 @@ function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:Abstr
    return EΩ, EΔ, Eβ, E
 end
 
+"""
+    energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan}
+
+Compute some energy related to the Gross-Pitaevskii equation:
+
+- ``E_Ω =  i Ω \\iiint \\bar{ϕ} \\mathcal{L}_z ϕ``,
+- ``E_{Δ+\\text{pot}} = -\\text{coeff}Δ \\iiint \\left( \\dfrac{∂²ϕ}{∂x²} + \\dfrac{∂²ϕ}{∂y²} + \\dfrac{∂²ϕ}{∂z²} \\right) + V(\\boldsymbol{x})_\\text{pot} ∥ϕ∥_2^2``,
+- ``E_β = \\dfrac{1}{2} β \\iiint ∥ϕ∥_2^2``,
+- ``E_\\text{total}=-E_Ω+E_{Δ+\\text{pot}}+E_β``.
+
+``E_Ω``, ``E_{Δ+\\text{pot}}``, ``E_β``, ``E_\\text{total}`` are returned together as a Tuple.
+"""
 function energy(n::AbstractNumModel{F,P,Plan}, showEnergy=false) where {F<:AbstractField3D,P<:GrossPitaevskiiParameters,Plan}
    # references
    ϕ = n.f.ϕ

@@ -19,6 +19,13 @@ abstract type AbstractField3D{FT,FFT,A,PA,G,D} <: AbstractField{FT,FFT,A,PA,G,D}
     Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
 
 Type representing a 2D field on a 2D grid.
+
+- `decomp`: informations concerning the decomposition.
+- `x`, `y`: local grid (relative to the `ϕ` decomposition).
+- `ndims`: number of dimension (additional) of the field.
+- `g`: reference to the grid.
+- `ϕ`: distributed containing the data.
+
 """
 mutable struct Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
    "decomposition"
@@ -39,6 +46,13 @@ end
     Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
 
 Type representing a 3D field on a 3D grid.
+
+- `decomp`: informations concerning the decomposition.
+- `x`, `y`, `z`: local grid (relative to the `ϕ` decomposition).
+- `ndims`: number of dimension (additional) of the field.
+- `g`: reference to the grid.
+- `ϕ`: distributed containing the data.
+
 """
 mutable struct Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
    "decomposition"

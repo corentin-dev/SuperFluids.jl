@@ -8,25 +8,35 @@ export NavierStokesParameters
     GrossPitaevskiiParameters <: AbstractParameters
 
 Parameters to compute Gross-Pitarvskii equations.
+
+It contains the following informations:
+
+- `coeffΔ`: coefficient in front of Δ term,
+- `β`: interaction coefficient,
+- `pot`: potential,
+- `Ω`: rotation coefficient.
 """
 struct GrossPitaevskiiParameters <: AbstractParameters
-   "coefficient in front of Δ term"
-   coeffΔ :: Real
-   "interaction coefficient"
-   β :: Real
-   "potential"
-   pot :: AbstractPotential
-   "rotation coefficient"
-   Ω :: Real
+    coeffΔ :: Real
+    β :: Real
+    pot :: AbstractPotential
+    Ω :: Real
 end
 
 """
     GrossPitaevskiiParameters(;
       coeffΔ = -0.5 :: Real,
       β = 1. :: Real,
+      pot :: AbstractPotential,
       Ω = 0. :: Real)
 
-Returns a GrossPitaevskiiParameters.
+Returns a `GrossPitaevskiiParameters``.
+
+Parameters are:
+- `coeffΔ`: coefficient in front of the ``Δ`` operator,
+- `β`: interaction coefficient,
+- `pot`: potential (of class `AbstractPotential`),
+- `Ω`: rotation along ``z`` axis.
 
 Example
 =======
@@ -34,7 +44,7 @@ Example
 julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8)
 GrossPitaevskiiParameters
   ├──────  equation solved:
-  ├─────── idϕ/dt = -0.5 Δϕ + 1000 |ϕ|²ϕ  + V(x)ϕ - i Lz 0.8 ϕ
+  ├─────── idϕ/dt = -0.5 Δϕ + 1000 |ϕ|²ϕ  + V(x)ϕ - i 0.8 Lz ϕ
   └──────────────── coeffΔ: -0.5, β: 1000, Ω: 0.8
 ```
 """
@@ -49,14 +59,13 @@ end
 Base.show(io::IO, param::GrossPitaevskiiParameters) =
      print(io, "GrossPitaevskiiParameters\n",
          "  ├──────  equation solved:\n",
-         "  ├─────── idϕ/dt = $(param.coeffΔ) Δϕ + $(param.β) |ϕ|²ϕ  + V(x)ϕ - i Lz $(param.Ω) ϕ \n",
+         "  ├─────── idϕ/dt = $(param.coeffΔ) Δϕ + $(param.β) |ϕ|²ϕ  + V(x)ϕ - i $(param.Ω) Lz ϕ \n",
          "  └──────────────── coeffΔ: $(param.coeffΔ), β: $(param.β), Ω: $(param.Ω)")
-
 
 """
     NavierStokesParameters <: AbstractParameters
 
-Parameters to compute Gross-Pitarvskii equations.
+Parameters to compute Navier-Stokes equations.
 """
 struct NavierStokesParameters <: AbstractParameters
    "viscosity"
@@ -68,7 +77,7 @@ end
 """
     NavierStokesParameters(;
       ν :: Real = 0.001,
-      ρ :: Real = 1)
+      ρ :: Real = 1.)
 
 Returns a NavierStokesParameters.
 
@@ -85,8 +94,8 @@ NavierStokesParameters
 """
 function NavierStokesParameters(;
       ν :: Real = 0.001,
-      ρ :: Real = 1)
-   return NavierStokesParameters(ν,ρ)
+      ρ :: Real = 1.)
+   return NavierStokesParameters(ν, ρ)
 end
 
 Base.show(io::IO, param::NavierStokesParameters) = print(

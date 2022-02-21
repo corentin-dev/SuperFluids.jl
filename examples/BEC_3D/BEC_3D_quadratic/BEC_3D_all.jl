@@ -40,7 +40,7 @@ istart = 0
 
 # initialisation
 init = InitThomasFermi(field, param.β, γx = γx, γy = γy, γz = γz)
-# init = InitGauss(field, Ω = Ω)
+# init = InitGauss(field, Ω = param.Ω)
 initField!(init)
 
 # BackwardEuler (with precond)

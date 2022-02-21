@@ -42,7 +42,7 @@ init = InitThomasFermi(field, param.β, γx = γx, γy = γy)
 initField!(init)
 
 # solver
-nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 500, tolkrylov = 1e-6, plantype=SuperFluids.FiniteDifferentePlan())
+nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 500, tolkrylov = 1e-6, plantype=FiniteDifferencePlan())
 println_parallel(nummodel)
 
 # solving

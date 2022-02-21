@@ -167,7 +167,7 @@ julia> plan = Plan(field, t=FiniteDifferencePlan());
 """
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
    # Pencil decompositions
-   pen_x = f.decomp.pen_array.pencil
+   pen_x = f.pen
    pen_y = Pencil(pen_x, decomp_dims=(1,), permute = Permutation(2, 1) )
    if typeof(t) == FFTPlan
       # frequencies
@@ -227,7 +227,7 @@ julia> plan = Plan(field, t=FiniteDifferencePlan());
 """
 function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
    # Pencil decompositions
-   pen_x = f.decomp.pen_array.pencil
+   pen_x = f.pen
    pen_y = Pencil(pen_x, decomp_dims=(1, 3), permute = Permutation(2, 1, 3) )
    pen_z = Pencil(pen_x, decomp_dims=(1, 2), permute = Permutation(3, 1, 2) )
    if typeof(t) == FFTPlan

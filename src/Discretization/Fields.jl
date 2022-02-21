@@ -11,65 +11,52 @@ export ComplexField, RealField
 export Field
 
 "Abstract supertype for numerical models."
-abstract type AbstractField{FT,FFT,A,PA,G,D} end
+abstract type AbstractField{FT,FFT,A,PA,G,P} end
 "Abstract supertype for numerical models."
-abstract type AbstractField2D{FT,FFT,A,PA,G,D} <: AbstractField{FT,FFT,A,PA,G,D} end
+abstract type AbstractField2D{FT,FFT,A,PA,G,P} <: AbstractField{FT,FFT,A,PA,G,P} end
 "Abstract supertype for numerical models."
-abstract type AbstractField3D{FT,FFT,A,PA,G,D} <: AbstractField{FT,FFT,A,PA,G,D} end
+abstract type AbstractField3D{FT,FFT,A,PA,G,P} <: AbstractField{FT,FFT,A,PA,G,P} end
 
 """
-    Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
+    Field2D{FT,FFT,A,PA,G,P} <: AbstractField2D{FT,FFT,A,PA,G,P}
 
 Type representing a 2D field on a 2D grid.
 
-- `decomp`: informations concerning the decomposition.
+- `pen`: informations concerning the decomposition.
 - `x`, `y`: local grid (relative to the `ϕ` decomposition).
 - `ndims`: number of dimension (additional) of the field.
 - `g`: reference to the grid.
-- `ϕ`: distributed containing the data.
+- `data`: distributed containing the data.
 
 """
-mutable struct Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
-   "decomposition"
-   decomp :: D
-   "local x"
+mutable struct Field2D{FT,FFT,A,PA,G,P} <: AbstractField2D{FT,FFT,A,PA,G,P}
+   pen :: P
    x :: LocalGrids.RectilinearGridComponent
-   "local y"
    y :: LocalGrids.RectilinearGridComponent
-   "number of dimensions"
    ndims :: Integer
-   "g Grid"
    g :: G
-   "ϕ array containing data"
    data :: Vector{PA}
 end
 
 """
-    Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
+    Field3D{FT,FFT,A,PA,G,P} <: AbstractField3D{FT,FFT,A,PA,G,P}
 
 Type representing a 3D field on a 3D grid.
 
-- `decomp`: informations concerning the decomposition.
+- `pen`: informations concerning the decomposition.
 - `x`, `y`, `z`: local grid (relative to the `ϕ` decomposition).
 - `ndims`: number of dimension (additional) of the field.
 - `g`: reference to the grid.
-- `ϕ`: distributed containing the data.
+- `data`: distributed containing the data.
 
 """
-mutable struct Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
-   "decomposition"
-   decomp :: D
-   "local x"
+mutable struct Field3D{FT,FFT,A,PA,G,P} <: AbstractField3D{FT,FFT,A,PA,G,P}
+   pen :: P
    x :: LocalGrids.RectilinearGridComponent
-   "local y"
    y :: LocalGrids.RectilinearGridComponent
-   "local z"
    z :: LocalGrids.RectilinearGridComponent
-   "number of dimensions"
    ndims :: Integer
-   "g Grid"
    g :: G
-   "ϕ array containing data"
    data :: Vector{PA}
 end
 
@@ -107,15 +94,11 @@ function Field(
       myT = Complex{FT}
    end
 
-   if ndims == 1
-      dims = (g.nx,g.ny)
-   else
-      dims = (g.nx,g.ny)
-   end
+   dims = (g.nx,g.ny)
 
-   pen_x = Pencil(A, mpi_topo.topo, dims, (1,))
+   pen_x = Pencil(A, mpi_topo.topo, dims, (2,))
    local_dims = size_local(pen_x)
-   data = []
+   data = PencilArray[]
    for i = 1:ndims
       pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
       push!(data, pen_array)
@@ -127,8 +110,7 @@ function Field(
    grid = localgrid(pen_x, (g.x,g.y))
    x, y = grid.x, grid.y
 
-   decomp = MPIFieldDecomposition(mpi_topo, data[1], r, local_dims)
-   return Field2D{FT,myT,A,typeof(data[1]),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, data)
+   return Field2D{FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, ndims, g, data)
 end
 
 """
@@ -168,7 +150,7 @@ function Field(
    dims = (g.nx,g.ny,g.nz)
    pen_x = Pencil(A, mpi_topo.topo, dims, (2,3))
    local_dims = size_local(pen_x)
-   data = []
+   data = PencilArray[]
    for i = 1:ndims
       pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
       push!(data, pen_array)
@@ -180,8 +162,7 @@ function Field(
    grid = localgrid(pen_x, (g.x,g.y,g.z))
    x, y, z = grid.x, grid.y, grid.z
 
-   decomp = MPIFieldDecomposition(mpi_topo, data[1], r, local_dims)
-   return Field3D{FT,myT,A,typeof(data[1]),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, data)
+   return Field3D{FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, z, ndims, g, data)
 end
 
 function norm(f::Field2D)

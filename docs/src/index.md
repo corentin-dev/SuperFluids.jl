@@ -23,11 +23,18 @@ git clone git@plmlab.math.cnrs.fr:lmrs/num/SuperFluids.jl.git
 ```
 
 Start Julia :
-```
+```bash
 julia --project=.
 ```
 
 Import package :
+```julia-repl
+julia> using SuperFluids
 ```
-using SuperFluids
+
+## Build documentation
+
+Simply run:
+```bash
+julia --project --color=yes docs/make.jl
 ```

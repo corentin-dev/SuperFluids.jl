@@ -1,3 +1,5 @@
+using Base: @propagate_inbounds
+
 "Abstract supertype for field type."
 abstract type FieldType end
 "Complex field"
@@ -39,7 +41,7 @@ mutable struct Field2D{FT,FFT,A,PA,G,D} <: AbstractField2D{FT,FFT,A,PA,G,D}
    "g Grid"
    g :: G
    "ϕ array containing data"
-   ϕ :: PA
+   data :: Vector{PA}
 end
 
 """
@@ -68,7 +70,7 @@ mutable struct Field3D{FT,FFT,A,PA,G,D} <: AbstractField3D{FT,FFT,A,PA,G,D}
    "g Grid"
    g :: G
    "ϕ array containing data"
-   ϕ :: PA
+   data :: Vector{PA}
 end
 
 """
@@ -108,22 +110,25 @@ function Field(
    if ndims == 1
       dims = (g.nx,g.ny)
    else
-      dims = (g.nx,g.ny,ndims)
+      dims = (g.nx,g.ny)
    end
 
-   pen_x = Pencil(A, mpi_topo.topo, dims)
+   pen_x = Pencil(A, mpi_topo.topo, dims, (1,))
    local_dims = size_local(pen_x)
-   pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
-   ϕ = pen_array
+   data = []
+   for i = 1:ndims
+      pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
+      push!(data, pen_array)
+   end
 
-   pen_array_glob = global_view(pen_array)
+   pen_array_glob = global_view(data[1])
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
    grid = localgrid(pen_x, (g.x,g.y))
    x, y = grid.x, grid.y
 
-   decomp = MPIFieldDecomposition(mpi_topo, pen_array, r, local_dims)
-   return Field2D{FT,myT,A,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, ϕ)
+   decomp = MPIFieldDecomposition(mpi_topo, data[1], r, local_dims)
+   return Field2D{FT,myT,A,typeof(data[1]),typeof(g),typeof(decomp)}(decomp, x, y, ndims, g, data)
 end
 
 """
@@ -160,25 +165,23 @@ function Field(
       myT = Complex{FT}
    end
 
-   if ndims == 1
-      dims = (g.nx,g.ny,g.nz)
-   else
-      dims = (g.nx,g.ny,g.nz,ndims)
-   end
-
+   dims = (g.nx,g.ny,g.nz)
    pen_x = Pencil(A, mpi_topo.topo, dims, (2,3))
    local_dims = size_local(pen_x)
-   pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
-   ϕ = pen_array
+   data = []
+   for i = 1:ndims
+      pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
+      push!(data, pen_array)
+   end
 
-   pen_array_glob = global_view(pen_array)
+   pen_array_glob = global_view(data[1])
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
    grid = localgrid(pen_x, (g.x,g.y,g.z))
    x, y, z = grid.x, grid.y, grid.z
 
-   decomp = MPIFieldDecomposition(mpi_topo, pen_array, r, local_dims)
-   return Field3D{FT,myT,A,typeof(ϕ),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, ϕ)
+   decomp = MPIFieldDecomposition(mpi_topo, data[1], r, local_dims)
+   return Field3D{FT,myT,A,typeof(data[1]),typeof(g),typeof(decomp)}(decomp, x, y, z, ndims, g, data)
 end
 
 function norm(f::Field2D)
@@ -213,6 +216,20 @@ function normalize!(f::AbstractField)
    normϕ = norm(f)
    f.ϕ ./= normϕ
    return nothing
+end
+
+@inline function Base.getproperty(f::AbstractField, name::Symbol)
+   if name === :ϕ
+      f.data[1]
+   elseif name === :vx
+      f.data[1]
+   elseif name === :vy
+      f.data[2]
+   elseif name === :vz
+      f.data[3]
+   else
+      getfield(f, name)
+   end
 end
 
 Base.show(io::IO, f::Field2D{FT,FFT}) where {FT,FFT} =

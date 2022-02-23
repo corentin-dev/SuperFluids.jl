@@ -43,7 +43,7 @@ julia> write!(writer)
 function write!(w::WriterSave{F};
    prefix="res"::AbstractString,
    istep=0::Integer,
-   Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A<:Array}
+   Δt=1::Real) where {F<:AbstractField{N,FT,FFT,A}} where {N,FT,FFT,A<:Array}
 
    tmp = w.f.ϕ
 
@@ -61,7 +61,7 @@ end
 function write!(w::WriterSave{F};
       prefix="res"::AbstractString,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField{N,FT,FFT,A}} where {N,FT,FFT,A}
 
    pen = Pencil(size_global(w.f.ϕ), MPI.COMM_WORLD)
    tmp = PencilArray{FFT}(undef, pen)
@@ -136,7 +136,7 @@ end
 function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField2D{N,FT,FFT,A}} where {N,FT,FFT,A}
 
    ϕ = w.f.ϕ
    comm = ϕ.pencil.topology.comm
@@ -177,7 +177,7 @@ end
 function write!(w::WriterVTK{F};
       prefix="res"::AbstractString,
       istep=0::Integer,
-      Δt=1::Real) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
+      Δt=1::Real) where {F<:AbstractField3D{N,FT,FFT,A}} where {N,FT,FFT,A}
 
 
    ϕ = w.f.ϕ

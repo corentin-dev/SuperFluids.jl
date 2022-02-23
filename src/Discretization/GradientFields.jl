@@ -188,49 +188,48 @@ function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vor
     end
 end
 
-@inline function Base.getproperty(gf::AbstractGradientField, name::Symbol)
-    f = getfield(gf, :f)
-    ndims = f.ndims
-    if ndims == 1
-        if name === :dx
-            return gf.∇data[1]
-        elseif name === :dy
-            return gf.∇data[2]
-        elseif name === :dz
-            return gf.∇data[3]
-        elseif name === :ddx
-            return gf.Δdata[1]
-        elseif name === :ddy
-            return gf.Δdata[2]
-        elseif name === :ddz
-            return gf.Δdata[3]
-        elseif name === :rx
-            return gf.rdata[1]
-        elseif name === :ry
-            return gf.rdata[2]
-        elseif name === :ω
-            return gf.ω[1]
-        end
-    else
-        if name === :dx
-            return gf.∇data[1:ndims]
-        elseif name === :dy
-            return gf.∇data[1+ndims:2*ndims]
-        elseif name === :dz
-            return gf.∇data[1+2*ndims:3*ndims]
-        elseif name === :ddx
-            return gf.Δdata[1:ndims]
-        elseif name === :ddy
-            return gf.Δdata[1+ndims:2*ndims]
-        elseif name === :ddz
-            return gf.Δdata[1+2*ndims:3*ndims]
-        elseif name === :rx
-            return gf.rdata[1]
-        elseif name === :ry
-            return gf.rdata[2]
-        elseif name === :ω
-            gf.ω[1]
-        end
+@inline function Base.getproperty(gf::AbstractGradientField{F}, name::Symbol) where {F<:AbstractField{1}}
+    if name === :dx
+        return gf.∇data[1]
+    elseif name === :dy
+        return gf.∇data[2]
+    elseif name === :dz
+        return gf.∇data[3]
+    elseif name === :ddx
+        return gf.Δdata[1]
+    elseif name === :ddy
+        return gf.Δdata[2]
+    elseif name === :ddz
+        return gf.Δdata[3]
+    elseif name === :rx
+        return gf.rdata[1]
+    elseif name === :ry
+        return gf.rdata[2]
+    elseif name === :ω
+        return gf.ω[1]
+    end
+    return getfield(gf, name)
+ end
+
+ @inline function Base.getproperty(gf::AbstractGradientField{F}, name::Symbol) where {F<:AbstractField{N}} where N
+    if name === :dx
+        return gf.∇data[1:N]
+    elseif name === :dy
+        return gf.∇data[1+N:2*N]
+    elseif name === :dz
+        return gf.∇data[1+2*N:3*N]
+    elseif name === :ddx
+        return gf.Δdata[1:N]
+    elseif name === :ddy
+        return gf.Δdata[1+N:2*N]
+    elseif name === :ddz
+        return gf.Δdata[1+2*N:3*N]
+    elseif name === :rx
+        return gf.rdata[1]
+    elseif name === :ry
+        return gf.rdata[2]
+    elseif name === :ω
+        gf.ω[1]
     end
     return getfield(gf, name)
  end

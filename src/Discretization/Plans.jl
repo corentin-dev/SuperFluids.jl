@@ -142,7 +142,7 @@ struct PlanFD3D{F} <: AbstractFDPlan{F}
 end
 
 """
-    Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
+    Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{N,FT,FFT,A}} where {N,FT,FFT,A}
 
 Returns a 2D plan. By default a FFT plan is returned.
 
@@ -165,7 +165,7 @@ julia> field = Field(grid, RealField());
 julia> plan = Plan(field, t=FiniteDifferencePlan());
 ```
 """
-function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}} where {FT,FFT,A}
+function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{N,FT,FFT,A}} where {N,FT,FFT,A}
    # Pencil decompositions
    pen_x = f.pen
    pen_y = Pencil(pen_x, decomp_dims=(1,), permute = Permutation(2, 1) )
@@ -202,7 +202,7 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{FT,FFT,A}
 end
 
 """
-    Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
+    Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{N,FT,FFT,A}} where {N,FT,FFT,A}
 
 Returns a 3D plan. By default a FFT plan is returned.
 
@@ -225,7 +225,7 @@ julia> field = Field(grid, RealField());
 julia> plan = Plan(field, t=FiniteDifferencePlan());
 ```
 """
-function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{FT,FFT,A}} where {FT,FFT,A}
+function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{N,FT,FFT,A}} where {N,FT,FFT,A}
    # Pencil decompositions
    pen_x = f.pen
    pen_y = Pencil(pen_x, decomp_dims=(1, 3), permute = Permutation(2, 1, 3) )

@@ -11,35 +11,33 @@ export ComplexField, RealField
 export Field
 
 "Abstract supertype for numerical models."
-abstract type AbstractField{FT,FFT,A,PA,G,P} end
+abstract type AbstractField{N,FT,FFT,A,PA,G,P} end
 "Abstract supertype for numerical models."
-abstract type AbstractField2D{FT,FFT,A,PA,G,P} <: AbstractField{FT,FFT,A,PA,G,P} end
+abstract type AbstractField2D{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P} end
 "Abstract supertype for numerical models."
-abstract type AbstractField3D{FT,FFT,A,PA,G,P} <: AbstractField{FT,FFT,A,PA,G,P} end
+abstract type AbstractField3D{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P} end
 
 """
-    Field2D{FT,FFT,A,PA,G,P} <: AbstractField2D{FT,FFT,A,PA,G,P}
+    Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
 
 Type representing a 2D field on a 2D grid.
 
 - `pen`: informations concerning the decomposition.
 - `x`, `y`: local grid (relative to the `ϕ` decomposition).
-- `ndims`: number of dimension (additional) of the field.
 - `g`: reference to the grid.
 - `data`: distributed containing the data.
 
 """
-mutable struct Field2D{FT,FFT,A,PA,G,P} <: AbstractField2D{FT,FFT,A,PA,G,P}
+mutable struct Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
    pen :: P
    x :: LocalGrids.RectilinearGridComponent
    y :: LocalGrids.RectilinearGridComponent
-   ndims :: Integer
    g :: G
    data :: Vector{PA}
 end
 
 """
-    Field3D{FT,FFT,A,PA,G,P} <: AbstractField3D{FT,FFT,A,PA,G,P}
+    Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
 
 Type representing a 3D field on a 3D grid.
 
@@ -50,18 +48,20 @@ Type representing a 3D field on a 3D grid.
 - `data`: distributed containing the data.
 
 """
-mutable struct Field3D{FT,FFT,A,PA,G,P} <: AbstractField3D{FT,FFT,A,PA,G,P}
+mutable struct Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
    pen :: P
    x :: LocalGrids.RectilinearGridComponent
    y :: LocalGrids.RectilinearGridComponent
    z :: LocalGrids.RectilinearGridComponent
-   ndims :: Integer
    g :: G
    data :: Vector{PA}
 end
 
 """
-    Field(g::AbstractGrid2D{FT,A,D},::RealField) where {FT<:Real,A<:Array,D}
+    Field(
+         g::AbstractGrid2D{FT,A}, t::FieldType;
+         ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo1D()
+      ) where {FT<:Real, A}
 
 Returns a 2D field.
 
@@ -109,11 +109,14 @@ function Field(
    grid = localgrid(pen_x, (g.x,g.y))
    x, y = grid.x, grid.y
 
-   return Field2D{FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, ndims, g, data)
+   return Field2D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, g, data)
 end
 
 """
-    Field(g::AbstractGrid3D{FT,A,D},t::FieldType;ndims::Integer=1) where {FT<:Real,A,D}
+    Field(
+         g::AbstractGrid3D{FT,A}, t::FieldType;
+         ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo2D()
+      ) where {FT<:Real, A}
 
 Returns a 3D field.
 
@@ -160,7 +163,7 @@ function Field(
    grid = localgrid(pen_x, (g.x,g.y,g.z))
    x, y, z = grid.x, grid.y, grid.z
 
-   return Field3D{FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, z, ndims, g, data)
+   return Field3D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, z, g, data)
 end
 
 function norm(f::Field2D)
@@ -219,12 +222,12 @@ function similar_data(data::Vector{A}) where A
    return newdata
 end
 
-Base.show(io::IO, f::Field2D{FT,FFT}) where {FT,FFT} =
+Base.show(io::IO, f::Field2D{N,FT,FFT}) where {N,FT,FFT} =
       print(io, "Field2D\n",
          "  ├──────  Array type: $(FFT)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 
-Base.show(io::IO, f::Field3D{FT,FFT}) where {FT,FFT} =
+Base.show(io::IO, f::Field3D{N,FT,FFT}) where {N,FT,FFT} =
       print(io, "Field3D\n",
          "  ├───────  FloatType: $(FFT)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ.data)/1024^2) MB")

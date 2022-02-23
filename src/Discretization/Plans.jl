@@ -8,14 +8,14 @@ struct FiniteDifferencePlan <: PlanType end
 export Plan, FFTPlan, FiniteDifferencePlan
 
 "Abstract supertype for plans."
-abstract type AbstractPlan{F} end
+abstract type AbstractPlan{N} end
 "Abstract supertype for FFT plans."
-abstract type AbstractFFTPlan{F} end
+abstract type AbstractFFTPlan{N} end
 "Abstract supertype for Finite Difference plans."
-abstract type AbstractFDPlan{F} end
+abstract type AbstractFDPlan{N} end
 
 """
-    PlanFFT2D{F} <: AbstractFFTPlan{F}
+    PlanFFT2D{N} <: AbstractFFTPlan{N}
 
 Type representing a 2D FFT plan.
 
@@ -30,7 +30,7 @@ It contains the following informations:
 - `ϕx_hat`, `ϕy_hat`, `ϕz_hat`: fields to contain transformed fields distributed along each directions.
 - `ϕxtmp_hat`, `ϕytmp_hat`, `ϕztmp_hat`: temporary fields distributed along each directions.
 """
-struct PlanFFT2D{F} <: AbstractFFTPlan{F}
+struct PlanFFT2D{N} <: AbstractFFTPlan{N}
    f :: AbstractField2D
    pen_x
    pen_y
@@ -38,14 +38,12 @@ struct PlanFFT2D{F} <: AbstractFFTPlan{F}
    plan_y :: AbstractFFTs.Plan
    ξx :: AbstractArray
    ξy :: AbstractArray
-   ϕx_hat :: AbstractArray
-   ϕy_hat :: AbstractArray
-   ϕxtmp_hat :: AbstractArray
-   ϕytmp_hat :: AbstractArray
+   datax :: Vector{AbstractArray}
+   datay :: Vector{AbstractArray}
 end
 
 """
-    PlanFFT3D{F} <: AbstractFFTPlan{F}
+    PlanFFT3D{N} <: AbstractFFTPlan{N}
 
 Type representing a 3D FFT plan.
 
@@ -62,7 +60,7 @@ It contains the following informations:
 - `ϕx_hat`, `ϕy_hat`, `ϕz_hat`: fields to contain transformed fields distributed along each directions.
 - `ϕxtmp_hat`, `ϕytmp_hat`, `ϕztmp_hat`: temporary fields distributed along each directions.
 """
-struct PlanFFT3D{F} <: AbstractFFTPlan{F}
+struct PlanFFT3D{N} <: AbstractFFTPlan{N}
    f :: AbstractField3D
    pen_x
    pen_y
@@ -73,12 +71,9 @@ struct PlanFFT3D{F} <: AbstractFFTPlan{F}
    ξx :: AbstractArray
    ξy :: AbstractArray
    ξz :: AbstractArray
-   ϕx_hat :: AbstractArray
-   ϕy_hat :: AbstractArray
-   ϕz_hat :: AbstractArray
-   ϕxtmp_hat :: AbstractArray
-   ϕytmp_hat :: AbstractArray
-   ϕztmp_hat :: AbstractArray
+   datax :: Vector{AbstractArray}
+   datay :: Vector{AbstractArray}
+   dataz :: Vector{AbstractArray}
 end
 
 function ξsquared(ξx::Real, ξy::Real, ξz::Real)
@@ -91,7 +86,7 @@ function ξsquared(ξx::Real, ξy::Real, ξz::Real)
 end
 
 """
-   PlanFD2D{F} <: AbstractFFTPlan{F}
+   PlanFD2D{N} <: AbstractFFTPlan{N}
 
 Type representing a 2D finite difference plan.
 
@@ -103,7 +98,7 @@ It contains the following informations:
 - `Δx`, `Δy`: discretization step.
 - `ϕxtmp`, `ϕytmp`: temporary fields distributed along each directions.
 """
-struct PlanFD2D{F} <: AbstractFDPlan{F}
+struct PlanFD2D{N} <: AbstractFDPlan{N}
    f :: AbstractField2D
    pen_x
    pen_y
@@ -114,7 +109,7 @@ struct PlanFD2D{F} <: AbstractFDPlan{F}
 end
 
 """
-   PlanFD3D{F} <: AbstractFFTPlan{F}
+   PlanFD3D{N} <: AbstractFFTPlan{N}
 
 Type representing a 3D finite difference plan.
 
@@ -128,7 +123,7 @@ It contains the following informations:
 - `ϕxtmp`, `ϕytmp`, `ϕztmp`: temporary fields distributed along each directions.
 
 """
-struct PlanFD3D{F} <: AbstractFDPlan{F}
+struct PlanFD3D{N} <: AbstractFDPlan{N}
    f :: AbstractField3D
    pen_x
    pen_y
@@ -175,29 +170,30 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{N,FT,FFT,
       ξy = A(fftfreq(f.g.ny, 2π/f.g.Δy))
 
       # create arrays for FFT
-      ϕx_hat = PencilArray{FFT}(undef, pen_x)
-      ϕy_hat = PencilArray{FFT}(undef, pen_y)
-
-      # temporary arrays
-      ϕxtmp_hat = PencilArray{FFT}(undef, pen_x)
-      ϕytmp_hat = PencilArray{FFT}(undef, pen_y)
+      datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      datay = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      for i = 1:N-1
+         push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datay, PencilArray{FFT}(undef, pen_y))
+         push!(datay, PencilArray{FFT}(undef, pen_y))
+      end
 
       # create plans
-      plan_x = plan_fft(parent(ϕx_hat),1)
-      plan_y = plan_fft(parent(ϕy_hat),1)
+      plan_x = plan_fft(parent(datax[1]),1)
+      plan_y = plan_fft(parent(datay[1]),1)
 
-      return PlanFFT2D{FT}(
+      return PlanFFT2D{N}(
                      f,
                      pen_x, pen_y,
                      plan_x, plan_y,
                      ξx, ξy,
-                     ϕx_hat, ϕy_hat,
-                     ϕxtmp_hat, ϕytmp_hat)
+                     datax, datay)
    else
-      # create arrays for FFT
+      # create arrays for Finite Difference
       ϕxtmp = PencilArray{FFT}(undef, pen_x)
       ϕytmp = PencilArray{FFT}(undef, pen_y)
-      return PlanFD2D{F}(f, pen_x, pen_y, f.g.Δx, f.g.Δy, ϕxtmp, ϕytmp)
+      return PlanFD2D{N}(f, pen_x, pen_y, f.g.Δx, f.g.Δy, ϕxtmp, ϕytmp)
    end
 end
 
@@ -237,32 +233,70 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{N,FT,FFT,
       ξz = A(fftfreq(f.g.nz, 2π/f.g.Δz))
 
       # create arrays for FFT
-      ϕx_hat = PencilArray{FFT}(undef, pen_x)
-      ϕy_hat = PencilArray{FFT}(undef, pen_y)
-      ϕz_hat = PencilArray{FFT}(undef, pen_z)
-
-      # temporary arrays
-      ϕxtmp_hat = PencilArray{FFT}(undef, pen_x)
-      ϕytmp_hat = PencilArray{FFT}(undef, pen_y)
-      ϕztmp_hat = PencilArray{FFT}(undef, pen_z)
+      datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      datay = [PencilArray{FFT}(undef, pen_y), PencilArray{FFT}(undef, pen_y)]
+      dataz = [PencilArray{FFT}(undef, pen_z), PencilArray{FFT}(undef, pen_z)]
+      for i = 1:N-1
+         push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datay, PencilArray{FFT}(undef, pen_y))
+         push!(datay, PencilArray{FFT}(undef, pen_y))
+         push!(dataz, PencilArray{FFT}(undef, pen_z))
+         push!(dataz, PencilArray{FFT}(undef, pen_z))
+      end
 
       # create plans
-      plan_x = plan_fft(parent(ϕx_hat),1)
-      plan_y = plan_fft(parent(ϕy_hat),1)
-      plan_z = plan_fft(parent(ϕz_hat),1)
+      plan_x = plan_fft(parent(datax[1]),1)
+      plan_y = plan_fft(parent(datay[1]),1)
+      plan_z = plan_fft(parent(dataz[1]),1)
 
-      return PlanFFT3D{FT}(
+      return PlanFFT3D{N}(
                      f,
                      pen_x, pen_y, pen_z,
                      plan_x, plan_y, plan_z,
                      ξx, ξy, ξz,
-                     ϕx_hat, ϕy_hat, ϕz_hat,
-                     ϕxtmp_hat, ϕytmp_hat, ϕztmp_hat)
+                     datax, datay, dataz)
    else
       # create arrays for FFT
       ϕxtmp = PencilArray{FFT}(undef, pen_x)
       ϕytmp = PencilArray{FFT}(undef, pen_y)
       ϕztmp = PencilArray{FFT}(undef, pen_y)
-      return PlanFD3D{F}(f, pen_x, pen_y, pen_z, f.g.Δx, f.g.Δy, f.g.Δz, ϕxtmp, ϕytmp, ϕztmp)
+      return PlanFD3D{N}(f, pen_x, pen_y, pen_z, f.g.Δx, f.g.Δy, f.g.Δz, ϕxtmp, ϕytmp, ϕztmp)
+   end
+end
+
+@inline function Base.getproperty(plan::AbstractFFTPlan{1}, name::Symbol)
+   if name === :ϕx_hat
+      return plan.datax[1]
+   elseif name === :ϕy_hat
+      return plan.datay[1]
+   elseif name === :ϕz_hat
+      return plan.dataz[1]
+   elseif name === :ϕxtmp_hat
+      return plan.datax[2]
+   elseif name === :ϕytmp_hat
+      return plan.datay[2]
+   elseif name === :ϕztmp_hat
+      return plan.dataz[2]
+   else
+      return getfield(plan, name)
+   end
+end
+
+@inline function Base.getproperty(plan::AbstractFFTPlan{N}, name::Symbol) where N
+   if name === :ϕx_hat
+      return plan.datax[1:N]
+   elseif name === :ϕy_hat
+      return plan.datay[1:N]
+   elseif name === :ϕz_hat
+      return plan.dataz[1:N]
+   elseif name === :ϕxtmp_hat
+      return plan.datax[N+1:2*N]
+   elseif name === :ϕytmp_hat
+      return plan.datay[N+1:2*N]
+   elseif name === :ϕztmp_hat
+      return plan.dataz[N+1:2*N]
+   else
+      return getfield(plan, name)
    end
 end

@@ -28,8 +28,6 @@ println(field)
 nummodel = NumModelForwardEuler(field, param, Δt, niter, freqbckp)
 println(nummodel)
 # initialisation
-taylor_green!(field.ϕ, grid.x, grid.y, grid.z)
-mul!(nummodel.ϕ_hat, nummodel.plan.plan, field.ϕ)
-
+taylor_green!(field, grid.x, grid.y, grid.z)
 # solving
 solve!(nummodel, plot=false)

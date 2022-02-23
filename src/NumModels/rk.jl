@@ -1,11 +1,11 @@
 mutable struct NumModelForwardEuler{F,P,Plan} <: AbstractNumModel{F,P,Plan}
    f :: F
+   gf :: AbstractGradientField
    param :: P
    Δt :: Real
    niter :: Integer
    freqbckp :: Integer
    plan :: Plan
-   ϕ_hat
    writers :: AbstractWriterCollection{F}
 end
 
@@ -28,16 +28,15 @@ Backward Euler
 ```
 """
 function NumModelForwardEuler(f::AbstractField, param::AbstractParameters,
-      Δt::Real, niter::Integer, freqbckp::Integer;
-      nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+      Δt::Real, niter::Integer, freqbckp::Integer)
+   gf = GradientField(f,rotation=false,laplacian=false,vorticity=true)
    plan = Plan(f)
    writer = WriterVTK(f)
    saver = WriterSave(f)
    writers = WriterCollection([writer,saver])
-   ϕ_hat = similar(f.ϕ)
-   return NumModelForwardEuler{typeof(f),typeof(param),typeof(plan)}(f, param,
+   return NumModelForwardEuler{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
          Δt, niter, freqbckp,
-         plan, ϕ_hat,
+         plan,
          writers
       )
 end
@@ -48,7 +47,9 @@ Base.show(io::IO, n::NumModelForwardEuler) = print(io,
          "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 
 function timeStep!(n::NumModelForwardEuler{F}) where {F<:AbstractField3D}
-   n.ϕ_hat .+= rhs(n) * n.Δt
-   ldiv!(n.f.ϕ, n.plan.plan, n.ϕ_hat)
+   du = rhs(n)
+   for i = 1:3
+      @. n.f.u[i] = du[i] * n.Δt
+   end
    return 1
 end

@@ -226,79 +226,39 @@ end
 
 function computeDerivatives!(gf :: GradientCurlField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
    # temporary fields
-   ∇xthat = p.ϕx_hat
-   ∇ythat = p.ϕy_hat
-   ∇zthat = p.ϕz_hat
-   xtmphat = p.ϕxtmp_hat
-   ytmphat = p.ϕytmp_hat
-   ztmphat = p.ϕztmp_hat
+   xtmphat = p.ϕx_hat
+   ytmphat = p.ϕy_hat
+   ztmphat = p.ϕz_hat
+   xtmp2hat = p.ϕxtmp_hat
+   ytmp2hat = p.ϕytmp_hat
+   ztmp2hat = p.ϕztmp_hat
    # plans
    plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # frequencies
-   gridξx = localgrid(p.pen_x, (p.ξx, p.ξy, p.ξz))
-   gridξy = localgrid(p.pen_y, (p.ξx, p.ξy, p.ξz))
-   gridξz = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
-   # FFT x
+   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
+   # FFT x/y/z
+   # get ̂u
    for i = 1:3
-      println("$(typeof(ϕt[i]))")
       mul!(parent(xtmphat[i]), plan_x, parent(ϕt[i]))
-      # compute dvᵢ/dx
-      ∇xthat[i] .= im .* gridξx.x .* xtmphat[i]
-      ldiv!(parent(gf.dx[i]), plan_x, parent(∇xthat[i]))
+      transpose!(ytmp2hat[i], xtmphat[i])
+      mul!(parent(ytmphat[i]), plan_y, parent(ytmp2hat[i]))
+      transpose!(ztmp2hat[i], ytmphat[i])
+      mul!(parent(ztmphat[i]), plan_z, parent(ztmp2hat[i]))
    end
-   # FFT y
-   tmpy = similar(∇ythat[1])
-   for i = 1:3
-      transpose!(tmpy, ϕt[i]) # pen_x -> pen_y
-      mul!(parent(∇ythat[i]), plan_y, parent(tmpy))
-      tmpy .= ∇ythat[i]
-      # compute dvᵢ/dy
-      ∇ythat[i] .= im .* gridξy.y .* tmpy
-      ldiv!(parent(tmpy), plan_y, parent(∇ythat[i]))
-      transpose!(gf.dy[i],tmpy) # pen_y -> pen_x
-      # whole FFT
-      transpose!(tmpy,xtmphat[i])
-      mul!(parent(ytmphat[i]),plan_y,parent(tmpy))
-   end
-   # FFT Z
-   tmpz = similar(∇zthat[1])
-   for i = 1:3
-      transpose!(tmpy, ϕt[i]) # pen_x -> pen_y
-      transpose!(tmpz, tmpy) # pen_y -> pen_z
-      mul!(parent(∇zthat[i]), plan_z, parent(tmpz))
-      tmpz .= ∇zthat[i]
-      # compute dvᵢ/dz
-      ∇zthat[i] .= im .* gridξz.z .* tmpz
-      ldiv!(parent(tmpz), plan_z, parent(∇zthat[i]))
-      transpose!(tmpy,tmpz) # pen_z -> pen_y
-      transpose!(gf.dz[i],tmpy) # pen_y -> pen_x
-      # whole FFT
-      transpose!(tmpz,ytmphat[i])
-      mul!(parent(ztmphat[i]),plan_z,parent(tmpz))
-   end
-   # ω = ∇ × uhat
-   @. ∇zthat[1] = im * (gridξz.y * ztmphat[3] - gridξz.z * ztmphat[2])
-   @. ∇zthat[2] = im * (gridξz.z * ztmphat[1] - gridξz.x * ztmphat[3])
-   @. ∇zthat[3] = im * (gridξz.x * ztmphat[2] - gridξz.y * ztmphat[1])
+   # ̂ω  = ∇ × ̂u
+   @. ztmp2hat[1] = im * (gridξ.y * ztmphat[3] - gridξ.z * ztmphat[2])
+   @. ztmp2hat[2] = im * (gridξ.z * ztmphat[1] - gridξ.x * ztmphat[3])
+   @. ztmp2hat[3] = im * (gridξ.x * ztmphat[2] - gridξ.y * ztmphat[1])
+   # ifft
    for i in 1:3
-      ldiv!(parent(ztmphat[i]), plan_z, parent(∇zthat[i]))
-      transpose!(∇ythat[i],ztmphat[i])
-      ldiv!(parent(ytmphat[i]), plan_y, parent(∇ythat[i]))
-      transpose!(∇xthat[i],ytmphat[i])
-      ldiv!(parent(gf.ω[i]), plan_x, parent(∇xthat[i]))
+      ldiv!(parent(ztmphat[i]), plan_z, parent(ztmp2hat[i]))
+      transpose!(ytmp2hat[i],ztmphat[i])
+      ldiv!(parent(ytmphat[i]), plan_y, parent(ytmp2hat[i]))
+      transpose!(xtmp2hat[i],ytmphat[i])
+      ldiv!(parent(gf.ω[i]), plan_x, parent(xtmp2hat[i]))
    end
-   tmpy = nothing
-   tmpz = nothing
    return nothing
 end
-
-# function curl_hat(v_hat, ξx, ξy, ξz)
-#    v_curl_hat = similar(v_hat)
-#    @. v_curl_hat[:,:,:,1] = im * (ξy * v_hat[:,:,:,3] - ξz * v_hat[:,:,:,2])
-#    @. v_curl_hat[:,:,:,2] = im * (ξz * v_hat[:,:,:,1] - ξx * v_hat[:,:,:,3])
-#    @. v_curl_hat[:,:,:,3] = im * (ξx * v_hat[:,:,:,2] - ξy * v_hat[:,:,:,1])
-#    return v_curl_hat
-# end
 
 # Finite Difference
 

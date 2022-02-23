@@ -60,7 +60,6 @@ It contains the following informations:
 """
 mutable struct GradientCurlField3D{F,A} <: AbstractGradientField3D{F,A}
     f :: F
-    ∇data :: A
     ωdata :: A
 end
 
@@ -166,10 +165,12 @@ Parameters are:
 - `vorticity`: specify if a rotation should be computed or not.
 """
 function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vorticity::Bool = false) where {F<:AbstractField3D}
-    ∇data = similar_data(f.data) # dx
-    push!(∇data, similar_data(f.data)...) # dy
-    push!(∇data, similar_data(f.data)...) # dz
     if laplacian
+        # grad
+        ∇data = similar_data(f.data) # dx
+        push!(∇data, similar_data(f.data)...) # dy
+        push!(∇data, similar_data(f.data)...) # dz
+        # lap
         Δdata = similar_data(f.data) # dx
         push!(Δdata, similar_data(f.data)...) # ddx
         push!(Δdata, similar_data(f.data)...) # ddz
@@ -184,7 +185,7 @@ function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vor
         ωdata = [similar(f.data[1])] # ωx
         push!(ωdata, similar_data(f.data)...) # ωy
         push!(ωdata, similar_data(f.data)...) # ωz
-        return GradientCurlField3D{typeof(f),typeof(∇data)}(f, ∇data, ωdata)
+        return GradientCurlField3D{typeof(f),typeof(ωdata)}(f, ωdata)
     else
         return nothing
     end

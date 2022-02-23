@@ -30,8 +30,7 @@ Type representing a 2D field on a 2D grid.
 """
 mutable struct Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
    pen :: P
-   x :: LocalGrids.RectilinearGridComponent
-   y :: LocalGrids.RectilinearGridComponent
+   grid :: LocalGrids.AbstractLocalGrid
    g :: G
    data :: Vector{PA}
 end
@@ -50,9 +49,7 @@ Type representing a 3D field on a 3D grid.
 """
 mutable struct Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
    pen :: P
-   x :: LocalGrids.RectilinearGridComponent
-   y :: LocalGrids.RectilinearGridComponent
-   z :: LocalGrids.RectilinearGridComponent
+   grid :: LocalGrids.AbstractLocalGrid
    g :: G
    data :: Vector{PA}
 end
@@ -107,9 +104,8 @@ function Field(
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
    grid = localgrid(pen_x, (g.x,g.y))
-   x, y = grid.x, grid.y
 
-   return Field2D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, g, data)
+   return Field2D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, grid, g, data)
 end
 
 """
@@ -161,9 +157,8 @@ function Field(
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
    grid = localgrid(pen_x, (g.x,g.y,g.z))
-   x, y, z = grid.x, grid.y, grid.z
 
-   return Field3D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, z, g, data)
+   return Field3D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, grid, g, data)
 end
 
 function norm(f::Field2D)
@@ -209,6 +204,12 @@ end
       f.data[2]
    elseif name === :vz
       f.data[3]
+   elseif name === :x
+      f.grid.x
+   elseif name === :y
+      f.grid.y
+   elseif name === :z
+      f.grid.z
    else
       getfield(f, name)
    end

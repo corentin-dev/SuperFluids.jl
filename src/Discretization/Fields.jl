@@ -198,11 +198,13 @@ end
 @inline function Base.getproperty(f::AbstractField, name::Symbol)
    if name === :ϕ
       f.data[1]
-   elseif name === :vx
+   elseif name === :u
+      f.data
+   elseif name === :ux
       f.data[1]
-   elseif name === :vy
+   elseif name === :uy
       f.data[2]
-   elseif name === :vz
+   elseif name === :uz
       f.data[3]
    elseif name === :x
       f.grid.x

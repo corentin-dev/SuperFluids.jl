@@ -98,10 +98,9 @@ function Field(
 
    pen_x = Pencil(A, mpi_topo.topo, dims, (2,))
    local_dims = size_local(pen_x)
-   data = PencilArray[]
-   for i = 1:ndims
-      pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
-      push!(data, pen_array)
+   data = [PencilArray(pen_x, A{myT}(undef, local_dims))]
+   for i = 1:ndims-1
+      push!(data, PencilArray(pen_x, A{myT}(undef, local_dims)))
    end
 
    pen_array_glob = global_view(data[1])
@@ -150,10 +149,9 @@ function Field(
    dims = (g.nx,g.ny,g.nz)
    pen_x = Pencil(A, mpi_topo.topo, dims, (2,3))
    local_dims = size_local(pen_x)
-   data = PencilArray[]
-   for i = 1:ndims
-      pen_array = PencilArray(pen_x, A{myT}(undef, local_dims))
-      push!(data, pen_array)
+   data = [PencilArray(pen_x, A{myT}(undef, local_dims))]
+   for i = 1:ndims-1
+      push!(data, PencilArray(pen_x, A{myT}(undef, local_dims)))
    end
 
    pen_array_glob = global_view(data[1])
@@ -211,6 +209,14 @@ end
    else
       getfield(f, name)
    end
+end
+
+function similar_data(data::Vector{A}) where A
+   newdata = [similar(data[1])]
+   for i = 1:length(data)-1
+      push!(newdata, similar(data[1]))
+   end
+   return newdata
 end
 
 Base.show(io::IO, f::Field2D{FT,FFT}) where {FT,FFT} =

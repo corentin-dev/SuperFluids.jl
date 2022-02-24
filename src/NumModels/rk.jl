@@ -49,7 +49,7 @@ Base.show(io::IO, n::NumModelForwardEuler) = print(io,
 function timeStep!(n::NumModelForwardEuler{F}) where {F<:AbstractField3D}
    du = rhs(n)
    for i = 1:3
-      @. n.f.u[i] = du[i] * n.Δt
+      @. n.f.u[i] += du[i] * n.Δt
    end
    return 1
 end

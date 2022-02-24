@@ -226,12 +226,15 @@ end
 
 function computeDerivatives!(gf :: GradientCurlField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
    # temporary fields
-   xtmphat = p.ϕx_hat
-   ytmphat = p.ϕy_hat
-   ztmphat = p.ϕz_hat
-   xtmp2hat = p.ϕxtmp_hat
-   ytmp2hat = p.ϕytmp_hat
-   ztmp2hat = p.ϕztmp_hat
+   uxhat = p.ux_hat
+   uyhat = p.uy_hat
+   uzhat = p.uz_hat
+   uxtmphat = p.uxtmp_hat
+   uytmphat = p.uytmp_hat
+   uztmphat = p.uztmp_hat
+   uxtmp2hat = p.uxtmp2_hat
+   uytmp2hat = p.uytmp2_hat
+   uztmp2hat = p.uztmp2_hat
    # plans
    plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # frequencies
@@ -239,23 +242,24 @@ function computeDerivatives!(gf :: GradientCurlField3D, p :: AbstractFFTPlan, ϕ
    # FFT x/y/z
    # get ̂u
    for i = 1:3
-      mul!(parent(xtmphat[i]), plan_x, parent(ϕt[i]))
-      transpose!(ytmp2hat[i], xtmphat[i])
-      mul!(parent(ytmphat[i]), plan_y, parent(ytmp2hat[i]))
-      transpose!(ztmp2hat[i], ytmphat[i])
-      mul!(parent(ztmphat[i]), plan_z, parent(ztmp2hat[i]))
+      mul!(parent(uxtmphat[i]), plan_x, parent(ϕt[i]))
+      transpose!(uytmp2hat[i], uxtmphat[i])
+      mul!(parent(uytmphat[i]), plan_y, parent(uytmp2hat[i]))
+      transpose!(uztmp2hat[i], uytmphat[i])
+      mul!(parent(uztmphat[i]), plan_z, parent(uztmp2hat[i]))
+      uzhat[i] .= uztmphat[i]
    end
    # ̂ω  = ∇ × ̂u
-   @. ztmp2hat[1] = im * (gridξ.y * ztmphat[3] - gridξ.z * ztmphat[2])
-   @. ztmp2hat[2] = im * (gridξ.z * ztmphat[1] - gridξ.x * ztmphat[3])
-   @. ztmp2hat[3] = im * (gridξ.x * ztmphat[2] - gridξ.y * ztmphat[1])
+   @. uztmp2hat[1] = im * (gridξ.y * uztmphat[3] - gridξ.z * uztmphat[2])
+   @. uztmp2hat[2] = im * (gridξ.z * uztmphat[1] - gridξ.x * uztmphat[3])
+   @. uztmp2hat[3] = im * (gridξ.x * uztmphat[2] - gridξ.y * uztmphat[1])
    # ifft
    for i in 1:3
-      ldiv!(parent(ztmphat[i]), plan_z, parent(ztmp2hat[i]))
-      transpose!(ytmp2hat[i],ztmphat[i])
-      ldiv!(parent(ytmphat[i]), plan_y, parent(ytmp2hat[i]))
-      transpose!(xtmp2hat[i],ytmphat[i])
-      ldiv!(parent(gf.ω[i]), plan_x, parent(xtmp2hat[i]))
+      ldiv!(parent(uztmphat[i]), plan_z, parent(uztmp2hat[i]))
+      transpose!(uytmp2hat[i],uztmphat[i])
+      ldiv!(parent(uytmphat[i]), plan_y, parent(uytmp2hat[i]))
+      transpose!(uxtmp2hat[i],uytmphat[i])
+      ldiv!(parent(gf.ω[i]), plan_x, parent(uxtmp2hat[i]))
    end
    return nothing
 end

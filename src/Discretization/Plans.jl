@@ -170,11 +170,13 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{N,FT,FFT,
       ξy = A(fftfreq(f.g.ny, 2π/f.g.Δy))
 
       # create arrays for FFT
-      datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
-      datay = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      datay = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
       for i = 1:N-1
          push!(datax, PencilArray{FFT}(undef, pen_x))
          push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datay, PencilArray{FFT}(undef, pen_y))
          push!(datay, PencilArray{FFT}(undef, pen_y))
          push!(datay, PencilArray{FFT}(undef, pen_y))
       end
@@ -233,14 +235,17 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{N,FT,FFT,
       ξz = A(fftfreq(f.g.nz, 2π/f.g.Δz))
 
       # create arrays for FFT
-      datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
-      datay = [PencilArray{FFT}(undef, pen_y), PencilArray{FFT}(undef, pen_y)]
-      dataz = [PencilArray{FFT}(undef, pen_z), PencilArray{FFT}(undef, pen_z)]
+      datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      datay = [PencilArray{FFT}(undef, pen_y), PencilArray{FFT}(undef, pen_y), PencilArray{FFT}(undef, pen_y)]
+      dataz = [PencilArray{FFT}(undef, pen_z), PencilArray{FFT}(undef, pen_z), PencilArray{FFT}(undef, pen_z)]
       for i = 1:N-1
          push!(datax, PencilArray{FFT}(undef, pen_x))
          push!(datax, PencilArray{FFT}(undef, pen_x))
+         push!(datax, PencilArray{FFT}(undef, pen_x))
          push!(datay, PencilArray{FFT}(undef, pen_y))
          push!(datay, PencilArray{FFT}(undef, pen_y))
+         push!(datay, PencilArray{FFT}(undef, pen_y))
+         push!(dataz, PencilArray{FFT}(undef, pen_z))
          push!(dataz, PencilArray{FFT}(undef, pen_z))
          push!(dataz, PencilArray{FFT}(undef, pen_z))
       end
@@ -276,26 +281,38 @@ end
       return plan.datax[2]
    elseif name === :ϕytmp_hat
       return plan.datay[2]
-   elseif name === :ϕztmp_hat
+   elseif name === :ϕztmp2_hat
       return plan.dataz[2]
+   elseif name === :ϕxtmp2_hat
+      return plan.datax[3]
+   elseif name === :ϕytmp2_hat
+      return plan.datay[3]
+   elseif name === :ϕztmp2_hat
+      return plan.dataz[3]
    else
       return getfield(plan, name)
    end
 end
 
 @inline function Base.getproperty(plan::AbstractFFTPlan{N}, name::Symbol) where N
-   if name === :ϕx_hat
+   if name === :ux_hat
       return plan.datax[1:N]
-   elseif name === :ϕy_hat
+   elseif name === :uy_hat
       return plan.datay[1:N]
-   elseif name === :ϕz_hat
+   elseif name === :uz_hat
       return plan.dataz[1:N]
-   elseif name === :ϕxtmp_hat
+   elseif name === :uxtmp_hat
       return plan.datax[N+1:2*N]
-   elseif name === :ϕytmp_hat
+   elseif name === :uytmp_hat
       return plan.datay[N+1:2*N]
-   elseif name === :ϕztmp_hat
+   elseif name === :uztmp_hat
       return plan.dataz[N+1:2*N]
+   elseif name === :uxtmp2_hat
+      return plan.datax[2*N+1:3*N]
+   elseif name === :uytmp2_hat
+      return plan.datay[2*N+1:3*N]
+   elseif name === :uztmp2_hat
+      return plan.dataz[2*N+1:3*N]
    else
       return getfield(plan, name)
    end

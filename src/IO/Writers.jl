@@ -43,16 +43,23 @@ julia> write!(writer)
 function write!(w::WriterSave{F};
    prefix="res"::AbstractString,
    istep=0::Integer,
-   Δt=1::Real) where {F<:AbstractField{N,FT,FFT,A}} where {N,FT,FFT,A<:Array}
+   Δt=1::Real) where {F<:AbstractField{1,FT,FFT,A}} where {N,FT,FFT,A<:Array}
 
-   tmp = w.f.ϕ
+   tmp = w.f.data
 
    open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5", tmp.pencil.topology.comm, write=true) do h5file
-      tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp)))
-      @. tmpr = real(tmp)
-      h5file["re"] = tmpr
-      @. tmpr = imag(tmp)
-      h5file["im"] = tmpr
+      tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp[1])))
+      if N == 1
+         @. tmpr = real(tmp[1])
+         h5file["re"] = tmpr
+         @. tmpr = imag(tmp[1])
+         h5file["im"] = tmpr
+      else
+         for i = 1:N
+            @. tmpr = real(tmp[i])
+            h5file["U$(i)"] = tmpr
+         end
+      end
    end
 
    return nothing
@@ -65,14 +72,22 @@ function write!(w::WriterSave{F};
 
    pen = Pencil(size_global(w.f.ϕ), MPI.COMM_WORLD)
    tmp = PencilArray{FFT}(undef, pen)
-   copyto!(parent(tmp),parent(w.f.ϕ))
 
    open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5", tmp.pencil.topology.comm, write=true) do h5file
       tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp)))
-      @. tmpr = real(tmp)
-      h5file["re"] = tmpr
-      @. tmpr = imag(tmp)
-      h5file["im"] = tmpr
+      if N == 1
+         copyto!(parent(tmp),parent(w.f.ϕ))
+         @. tmpr = real(tmp[1])
+         h5file["re"] = tmpr
+         @. tmpr = imag(tmp[1])
+         h5file["im"] = tmpr
+      else
+         for i = 1:N
+            copyto!(parent(tmp),parent(w.f.data[i]))
+            @. tmpr = real(tmp)
+            h5file["U$(i)"] = tmpr
+         end
+      end
    end
 
    return nothing
@@ -148,14 +163,21 @@ function write!(w::WriterVTK{F};
    x, y = A(LinRange(w.f.g.xmin,w.f.g.xmax,w.f.g.nx+1)[r_local[1]]), A(LinRange(w.f.g.ymin,w.f.g.ymax,w.f.g.ny+1)[r_local[2]])
    extents = MPI.Allgather(r_local,comm)
 
-   tmp = A{FT}(undef, size_local(ϕ))
    vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y, extents = extents, part = mpi_rank, nparts = mpi_size)
-   tmp .= real.(parent(ϕ))
-   vtkfile["re", VTKCellData()] = tmp
-   tmp .= imag.(parent(ϕ))
-   vtkfile["im", VTKCellData()] = tmp
-   tmp .= sqrt.(abs2.(parent(ϕ)))
-   vtkfile["module", VTKCellData()] = tmp
+   if N == 1
+      tmp = A{FT}(undef, size_local(ϕ))
+      tmp .= real.(parent(ϕ))
+      vtkfile["re", VTKCellData()] = tmp
+      tmp .= imag.(parent(ϕ))
+      vtkfile["im", VTKCellData()] = tmp
+      tmp .= sqrt.(abs2.(parent(ϕ)))
+      vtkfile["module", VTKCellData()] = tmp
+   else
+      tmp = A{FT}(undef, (2, size_local(ϕ)...))
+      tmp[1] .= real.(parent(w.f.ux))
+      tmp[2] .= real.(parent(w.f.uy))
+      vtkfile["U", VTKCellData()] = tmp
+   end
 
    # write to file
    outfiles = vtk_save(vtkfile)
@@ -192,12 +214,20 @@ function write!(w::WriterVTK{F};
 
    tmp = A{FT}(undef, size_local(ϕ))
    vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y, z, extents = extents, part = mpi_rank, nparts = mpi_size)
-   tmp .= real.(parent(ϕ))
-   vtkfile["re", VTKCellData()] = tmp
-   tmp .= imag.(parent(ϕ))
-   vtkfile["im", VTKCellData()] = tmp
-   tmp .= sqrt.(abs2.(parent(ϕ)))
-   vtkfile["module", VTKCellData()] = tmp
+   if N == 1
+      tmp .= real.(parent(ϕ))
+      vtkfile["re", VTKCellData()] = tmp
+      tmp .= imag.(parent(ϕ))
+      vtkfile["im", VTKCellData()] = tmp
+      tmp .= sqrt.(abs2.(parent(ϕ)))
+      vtkfile["module", VTKCellData()] = tmp
+   else
+      tmp = A{FT}(undef, (3, size_local(ϕ)...))
+      tmp[1,:,:,:] .= real.(parent(w.f.ux))
+      tmp[2,:,:,:] .= real.(parent(w.f.uy))
+      tmp[3,:,:,:] .= real.(parent(w.f.uz))
+      vtkfile["U", VTKCellData()] = tmp
+   end
 
    # write to file
    outfiles = vtk_save(vtkfile)

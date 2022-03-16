@@ -7,16 +7,16 @@ function taylor_green!(f,x,y,z;θ::Real=0)
    return nothing
 end
 
-function rhs(n :: AbstractNumModel{F,P}) where {F<:AbstractField3D, P<:NavierStokesParameters}
+function rhs(n :: AbstractNumModel{F,P}, u; lap_explicit::Bool = false) where {F<:AbstractField3D, P<:NavierStokesParameters}
    # references
    ξx = n.plan.ξx
    ξy = n.plan.ξy
    ξz = n.plan.ξz
    gridξ = localgrid(n.plan.pen_z, (ξx, ξy, ξz))
    # compute ω
-   computeDerivatives!(n.gf, n.plan, n.f.u)
+   computeDerivatives!(n.gf, n.plan, u)
    # dU = u ∧ ω
-   dU = cross(n.f.u, n.gf.ω)
+   dU = cross(u, n.gf.ω)
    # dU_hat = F(u ∧ ω)
    uhat = n.plan.uz_hat
    uxtmphat = n.plan.uxtmp_hat
@@ -34,32 +34,19 @@ function rhs(n :: AbstractNumModel{F,P}) where {F<:AbstractField3D, P<:NavierSto
    end
    #dealias dU_hat
    dealias!(dU_hat, ξx, ξy, ξz)
-   # P_hat = ∇ ⋅ dU / Δ
-   # P_hat = - im * (
-   #          ξx .* dU_hat[:,:,:,1] .+
-   #          ξy .* dU_hat[:,:,:,2] .+
-   #          ξz .* dU_hat[:,:,:,3]) ./ ξsquared.(ξx, ξy, ξz)
-   # dU = (u∧ω) - νΔu - ∇P
+   # compute ∇⋅(u∧ω)
    @. uztmphat[1] = gridξ.x * dU_hat[1] + gridξ.y * dU_hat[2] + gridξ.z * dU_hat[3]
+   # dU = (u∧ω) - P(u∧ω)
    for i = 1:3
       @. dU_hat[i] = dU_hat[i] - gridξ[i] * uztmphat[1] / ξsquared(gridξ.x, gridξ.y, gridξ.z)
    end
-   # dU_hat[:,:,:,1] .-= im .* ξx .* P_hat
-   # dU_hat[:,:,:,2] .-= im .* ξy .* P_hat
-   # dU_hat[:,:,:,2] .-= im .* ξz .* P_hat
-   # dU = (u∧ω) - νΔu
-   for i = 1:3
-      @. dU_hat[i] -= n.param.ν * (gridξ.x^2 + gridξ.y^2 + gridξ.z^2) * uhat[i]
+   # dU -= νΔu
+   if lap_explicit
+      for i = 1:3
+         @. dU_hat[i] -= n.param.ν * (gridξ.x^2 + gridξ.y^2 + gridξ.z^2) * uhat[i]
+      end
    end
-   # FFT inv
-   for i = 1:3
-      ldiv!(parent(uztmp2hat[i]), n.plan.plan_z, parent(dU_hat[i]))
-      transpose!(uytmphat[i],uztmp2hat[i])
-      ldiv!(parent(uytmp2hat[i]), n.plan.plan_y, parent(uytmphat[i]))
-      transpose!(uxtmphat[i],uytmp2hat[i])
-      ldiv!(parent(dU[i]), n.plan.plan_x, parent(uxtmphat[i]))
-   end
-   return dU
+   return dU_hat
 end
 
 function energy(n::AbstractNumModel{F,P}, showEnergy=false) where {F<:AbstractField2D, P<:NavierStokesParameters}

@@ -1,5 +1,4 @@
 include("domain_topology.jl")
-include("domain_decomposition.jl")
 
 "Global variable for print"
 global _rank = -1

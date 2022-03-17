@@ -12,53 +12,38 @@ export Field
 
 "Abstract supertype for numerical models."
 abstract type AbstractField{N,FT,FFT,A,PA,G,P} end
-"Abstract supertype for numerical models."
-abstract type AbstractField2D{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P} end
-"Abstract supertype for numerical models."
-abstract type AbstractField3D{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P} end
 
 """
     Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
 
-Type representing a 2D field on a 2D grid.
+Type representing a field on a grid.
 
 - `pen`: informations concerning the decomposition.
-- `x`, `y`: local grid (relative to the `ϕ` decomposition).
+- `grid`: stores `x`, `y`, `z` local grid (relative to the `ϕ` decomposition).
 - `g`: reference to the grid.
 - `data`: distributed containing the data.
 
+- `N`: number of dimensions,
+- `FT`: floating type (`Float32`, `Float64`),
+- `FFT`: field floating type (`Complex` or not),
+- `A`: array type (`Array` or `CuArray`),
+- `PA`: `PencilArray` type,
+- `G`: `Grid` type,
+- `P`: `Pencil` type.
+
+- ``
+
+
 """
-mutable struct Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
+mutable struct Field{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P}
    pen :: P
-   grid :: LocalGrids.AbstractLocalGrid
+   grid :: Vector
    g :: G
    data :: Vector{PA}
 end
 
 """
-    Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
-
-Type representing a 3D field on a 3D grid.
-
-- `pen`: informations concerning the decomposition.
-- `x`, `y`, `z`: local grid (relative to the `ϕ` decomposition).
-- `ndims`: number of dimension (additional) of the field.
-- `g`: reference to the grid.
-- `data`: distributed containing the data.
-
-"""
-mutable struct Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
-   pen :: P
-   grid :: LocalGrids.AbstractLocalGrid
-   g :: G
-   data :: Vector{PA}
-end
-
-"""
-    Field(
-         g::AbstractGrid2D{FT,A}, t::FieldType;
-         ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo1D()
-      ) where {FT<:Real, A}
+    Field(g::AbstractGrid2D{FT,A,D},::RealField) where {FT<:Real,A<:Array,D}
 
 Returns a 2D field.
 
@@ -104,15 +89,13 @@ function Field(
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
    grid = localgrid(pen_x, (g.x,g.y))
+   x, y = grid.x, grid.y
 
-   return Field2D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, grid, g, data)
+   return Field{2,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, [x, y], ndims, g, data)
 end
 
 """
-    Field(
-         g::AbstractGrid3D{FT,A}, t::FieldType;
-         ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo2D()
-      ) where {FT<:Real, A}
+    Field(g::AbstractGrid3D{FT,A,D},t::FieldType;ndims::Integer=1) where {FT<:Real,A,D}
 
 Returns a 3D field.
 
@@ -157,18 +140,18 @@ function Field(
    r = Tuple([ minimum(a):maximum(a) for a in axes(pen_array_glob) ])
 
    grid = localgrid(pen_x, (g.x,g.y,g.z))
+   x, y, z = grid.x, grid.y, grid.z
 
-   return Field3D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, grid, g, data)
+   return Field3D{FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, x, y, z, ndims, g, data)
 end
 
-function norm(f::Field2D)
+function norm(f::Field{N}) where {N}
    normϕ = sum(abs2.(f.ϕ))
-   normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy)
-end
-
-function norm(f::Field3D)
-   normϕ = sum(abs2.(f.ϕ))
-   normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy*f.g.Δz)
+   if N == 2
+      normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy)
+   else
+      normϕ = sqrt(normϕ) * sqrt(f.g.Δx*f.g.Δy*f.g.Δz)
+   end
 end
 
 """
@@ -198,20 +181,18 @@ end
 @inline function Base.getproperty(f::AbstractField, name::Symbol)
    if name === :ϕ
       f.data[1]
-   elseif name === :u
-      f.data
-   elseif name === :ux
+   elseif name === :vx
       f.data[1]
-   elseif name === :uy
+   elseif name === :vy
       f.data[2]
-   elseif name === :uz
+   elseif name === :vz
       f.data[3]
    elseif name === :x
-      f.grid.x
+      f.grid[1]
    elseif name === :y
-      f.grid.y
+      f.grid[2]
    elseif name === :z
-      f.grid.z
+      f.grid[3]
    else
       getfield(f, name)
    end
@@ -225,12 +206,7 @@ function similar_data(data::Vector{A}) where A
    return newdata
 end
 
-Base.show(io::IO, f::Field2D{N,FT,FFT}) where {N,FT,FFT} =
-      print(io, "Field2D\n",
+Base.show(io::IO, f::Field{N,FT,FFT}) where {N,FT,FFT} =
+      print(io, "Field $(N)D\n",
          "  ├──────  Array type: $(FFT)", '\n',
          "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
-
-Base.show(io::IO, f::Field3D{N,FT,FFT}) where {N,FT,FFT} =
-      print(io, "Field3D\n",
-         "  ├───────  FloatType: $(FFT)", '\n',
-         "  └──────────  memory: $(sizeof(f.ϕ.data)/1024^2) MB")

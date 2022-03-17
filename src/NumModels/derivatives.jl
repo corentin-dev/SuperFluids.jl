@@ -224,6 +224,46 @@ function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt
    return nothing
 end
 
+function computeDerivatives!(gf :: GradientCurlField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
+   # temporary fields
+   uxhat = p.ux_hat
+   uyhat = p.uy_hat
+   uzhat = p.uz_hat
+   uxtmphat = p.uxtmp_hat
+   uytmphat = p.uytmp_hat
+   uztmphat = p.uztmp_hat
+   uxtmp2hat = p.uxtmp2_hat
+   uytmp2hat = p.uytmp2_hat
+   uztmp2hat = p.uztmp2_hat
+   # plans
+   plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
+   # frequencies
+   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
+   # FFT x/y/z
+   # get ̂u
+   for i = 1:3
+      mul!(parent(uxtmphat[i]), plan_x, parent(ϕt[i]))
+      transpose!(uytmp2hat[i], uxtmphat[i])
+      mul!(parent(uytmphat[i]), plan_y, parent(uytmp2hat[i]))
+      transpose!(uztmp2hat[i], uytmphat[i])
+      mul!(parent(uztmphat[i]), plan_z, parent(uztmp2hat[i]))
+      uzhat[i] .= uztmphat[i]
+   end
+   # ̂ω  = ∇ × ̂u
+   @. uztmp2hat[1] = im * (gridξ.y * uztmphat[3] - gridξ.z * uztmphat[2])
+   @. uztmp2hat[2] = im * (gridξ.z * uztmphat[1] - gridξ.x * uztmphat[3])
+   @. uztmp2hat[3] = im * (gridξ.x * uztmphat[2] - gridξ.y * uztmphat[1])
+   # ifft
+   for i in 1:3
+      ldiv!(parent(uztmphat[i]), plan_z, parent(uztmp2hat[i]))
+      transpose!(uytmp2hat[i],uztmphat[i])
+      ldiv!(parent(uytmphat[i]), plan_y, parent(uytmp2hat[i]))
+      transpose!(uxtmp2hat[i],uytmphat[i])
+      ldiv!(parent(gf.ω[i]), plan_x, parent(uxtmp2hat[i]))
+   end
+   return nothing
+end
+
 # Finite Difference
 
 ## 2D

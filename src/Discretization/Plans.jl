@@ -281,13 +281,11 @@ end
       return plan.datax[2]
    elseif name === :ϕytmp_hat
       return plan.datay[2]
-   elseif name === :ϕztmp2_hat
+   elseif name === :ϕztmp_hat
       return plan.dataz[2]
-   elseif name === :ϕxtmp2_hat
-      return plan.datax[3]
-   elseif name === :ϕytmp2_hat
+   elseif name === :a_tmpy
       return plan.datay[3]
-   elseif name === :ϕztmp2_hat
+   elseif name === :a_tmpz
       return plan.dataz[3]
    else
       return getfield(plan, name)
@@ -307,13 +305,131 @@ end
       return plan.datay[N+1:2*N]
    elseif name === :uztmp_hat
       return plan.dataz[N+1:2*N]
-   elseif name === :uxtmp2_hat
-      return plan.datax[2*N+1:3*N]
-   elseif name === :uytmp2_hat
-      return plan.datay[2*N+1:3*N]
-   elseif name === :uztmp2_hat
-      return plan.dataz[2*N+1:3*N]
+   elseif name === :a_tmpy
+      return plan.datay[2*N+1]
+   elseif name === :a_tmpz
+      return plan.dataz[2*N+1]
    else
       return getfield(plan, name)
    end
+end
+
+function mul_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+    mul!(parent(a_out), plan.plan_x, parent(a_in))
+    return nothing
+end
+
+function mul_x!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+    for i = 1:N
+        mul_x!(u_out[i], plan, u_in[i])
+    end
+    return nothing
+end
+
+function mul_y!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+    a_in_y = plan.a_tmpy
+    transpose!(a_in_y, a_in)
+    mul!(parent(a_out), plan.plan_y, parent(a_in_y))
+    return nothing
+end
+
+function mul_y!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+    for i = 1:N
+        mul_y!(u_out[i], plan, u_in[i])
+    end
+    return nothing
+end
+
+function mul_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+   a_in_y = plan.a_tmpy
+   a_in_z = plan.a_tmpz
+   transpose!(a_in_y, a_in)
+   transpose!(a_in_z, a_in_y)
+   mul!(parent(a_out), plan.plan_z, parent(a_in_z))
+end
+
+function mul_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+   for i = 1:N
+       mul_z!(u_out[i], plan, u_in[i])
+   end
+end
+
+function ldiv_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+    ldiv!(parent(a_out), plan.plan_x, parent(a_in))
+    return nothing
+end
+
+function ldiv_x!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+    for i = 1:N
+        ldiv_x!(u_out[i], plan.plan_x, u_in[i])
+    end
+    return nothing
+end
+
+function ldiv_y!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+    a_out_y = plan.a_tmpy
+    ldiv!(parent(a_out_y), plan.plan_y, parent(a_in))
+    transpose!(a_out, a_out_y)
+    return nothing
+end
+
+function ldiv_y!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+    for i = 1:N
+        ldiv_y!(u_out[i], plan, u_in[i])
+    end
+    return nothing
+end
+
+function ldiv_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+    a_out_y = plan.a_tmpy
+    a_out_z = plan.a_tmpz
+    ldiv!(parent(a_out_z), plan.plan_z, parent(a_in))
+    transpose!(a_out_y, a_out_z)
+    transpose!(a_out, a_out_y)
+end
+
+function ldiv_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+    for i = 1:N
+        ldiv_z!(u_out[i], plan.plan_x, u_in[i])
+    end
+end
+
+function grid_x(plan::PlanFFT2D)
+   grid = localgrid(plan.pen_x, (plan.f.g.x, plan.f.g.y))
+   x, y = grid.x, grid.y
+   gridξ = localgrid(plan.pen_x, (plan.ξx, plan.ξy))
+   ξx, ξy = gridξ.x, gridξ.y
+   return x, y, ξx, ξy
+end
+
+function grid_y(plan::PlanFFT2D)
+   grid = localgrid(plan.pen_y, (plan.f.g.x, plan.f.g.y))
+   x, y = grid.x, grid.y
+   gridξ = localgrid(plan.pen_y, (plan.ξx, plan.ξy))
+   ξx, ξy = gridξ.x, gridξ.y
+   return x, y, ξx, ξy
+end
+
+function grid_x(plan::PlanFFT3D)
+   grid = localgrid(plan.pen_x, (plan.f.g.x, plan.f.g.y, plan.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(plan.pen_x, (plan.ξx, plan.ξy, plan.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
+   return x, y, z, ξx, ξy, ξz
+end
+
+function grid_y(plan::PlanFFT3D)
+   grid = localgrid(plan.pen_y, (plan.f.g.x, plan.f.g.y, plan.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(plan.pen_y, (plan.ξx, plan.ξy, plan.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
+   return x, y, z, ξx, ξy, ξz
+end
+
+function grid_z(plan::PlanFFT3D)
+   grid = localgrid(plan.pen_z, (plan.f.g.x, plan.f.g.y, plan.f.g.z))
+   x, y, z = grid.x, grid.y, grid.z
+   gridξ = localgrid(plan.pen_z, (plan.ξx, plan.ξy, plan.ξz))
+   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
+   return x, y, z, ξx, ξy, ξz
 end

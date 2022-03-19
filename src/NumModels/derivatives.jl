@@ -2,225 +2,126 @@
 
 ## 2D
 function computeDerivatives!(gf :: GradientField2D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # temporary fields
-   ϕxthat = p.ϕx_hat
-   ϕythat = p.ϕy_hat
-   ϕxtmphat = p.ϕxtmp_hat
-   ϕytmphat = p.ϕytmp_hat
-   # plans
-   plan_x, plan_y = p.plan_x, p.plan_y
    # FFT x
    # frequencies
-   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
-   x, y = grid.x, grid.y
-   gridξ = localgrid(p.pen_x, (p.ξx, p.ξy))
-   ξx, ξy = gridξ.x, gridξ.y
-   mul!(parent(ϕxthat), plan_x, parent(ϕt))
+   x, y, ξx, ξy = grid_x(p)
+   mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   ϕxtmphat .= im .* ξx .* ϕxthat
-   ldiv!(parent(gf.dx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
    # compute ddx
-   ϕxtmphat .= - ξx.^2 .* ϕxthat
-   ldiv!(parent(gf.ddx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
    # FFT y
-   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y))
-   x, y = grid.x, grid.y
-   gridξ = localgrid(p.pen_y, (p.ξx, p.ξy))
-   ξx, ξy = gridξ.x, gridξ.y
-   tmp_y = similar(ϕythat)
-   transpose!(tmp_y, ϕt)
-   mul!(parent(ϕythat), plan_y, parent(tmp_y))
+   x, y, ξx, ξy = grid_y(p)
+   mul_y!(p.ϕy_hat, plan, ϕt)
    # compute dy
-   ϕytmphat .= im .* ξy .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.dy,tmp_y)
+   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
    # compute ddy
-   ϕytmphat .= - ξy.^2 .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.ddy,tmp_y)
-   tmp_y = nothing
+   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
    return nothing
 end
 
 function computeDerivatives!(gf :: GradientRotField2D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # temporary fields
-   ϕxthat = p.ϕx_hat
-   ϕythat = p.ϕy_hat
-   ϕxtmphat = p.ϕxtmp_hat
-   ϕytmphat = p.ϕytmp_hat
-   # plans
-   plan_x, plan_y = p.plan_x, p.plan_y
    # FFT x
    # frequencies
-   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
-   x, y = grid.x, grid.y
-   gridξ = localgrid(p.pen_x, (p.ξx, p.ξy))
-   ξx, ξy = gridξ.x, gridξ.y
-   mul!(parent(ϕxthat), plan_x, parent(ϕt))
+   x, y, ξx, ξy = grid_x(p)
+   mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   ϕxtmphat .= im .* ξx .* ϕxthat
-   ldiv!(parent(gf.dx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
    # compute rx
-   ϕxtmphat .= im .* y .* ξx .* ϕxthat
-   ldiv!(parent(gf.rx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= im .* y .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.rx, p, p.ϕxtmp_hat)
    # compute ddx
-   ϕxtmphat .= - ξx.^2 .* ϕxthat
-   ldiv!(parent(gf.ddx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
    # FFT y
-   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y))
-   x, y = grid.x, grid.y
-   gridξ = localgrid(p.pen_y, (p.ξx, p.ξy))
-   ξx, ξy = gridξ.x, gridξ.y
-   tmp_y = similar(ϕythat)
-   transpose!(tmp_y, ϕt)
-   mul!(parent(ϕythat), plan_y, parent(tmp_y))
+   x, y, ξx, ξy = grid_y(p)
+   mul_y!(p.ϕy_hat, p, ϕt)
    # compute dy
-   ϕytmphat .= im .* ξy .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.dy,tmp_y)
+   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
    # compute ry
-   ϕytmphat .= -im .* x .* ξy .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.ry, tmp_y)
+   p.ϕytmp_hat .= -im .* x .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.ry, p, p.ϕytmp_hat)
    # compute ddy
-   ϕytmphat .= - ξy.^2 .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.ddy,tmp_y)
-   tmp_y = nothing
+   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
    return nothing
 end
 
 ## 3D
 
 function computeDerivatives!(gf :: GradientField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # temporary fields
-   ϕxthat = p.ϕx_hat
-   ϕythat = p.ϕy_hat
-   ϕzthat = p.ϕz_hat
-   ϕxtmphat = p.ϕxtmp_hat
-   ϕytmphat = p.ϕytmp_hat
-   ϕztmphat = p.ϕztmp_hat
-   # plans
-   plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # FFT x
    # frequencies
-   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(p.pen_x, (p.ξx, p.ξy, p.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   tmp_in = similar(ϕxthat)
-   mul!(parent(ϕxthat), plan_x, parent(ϕt))
+   x, y, z, ξx, ξy, ξz = grid_x(p)
+   mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   ϕxtmphat .= im .* ξx .* ϕxthat
-   ldiv!(parent(tmp_in), plan_x, parent(ϕxtmphat))
-   transpose!(gf.dx,tmp_in)
+   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
    # compute ddx
-   ϕxtmphat .= - ξx.^2 .* ϕxthat
-   ldiv!(parent(tmp_in), plan_x, parent(ϕxtmphat))
-   transpose!(gf.ddx,tmp_in)
+   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
    # FFT y
-   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(p.pen_y, (p.ξx, p.ξy, p.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   tmp_in = similar(ϕythat)
-   transpose!(tmp_in, ϕt)
-   mul!(parent(ϕythat), plan_y, parent(tmp_in))
+   x, y, z, ξx, ξy, ξz = grid_y(p)
+   mul_y!(p.ϕy_hat, p, ϕt)
    # compute dy
-   ϕytmphat .= im .* ξy .* ϕythat
-   ldiv!(parent(tmp_in), plan_y, parent(ϕytmphat))
-   transpose!(gf.dy,tmp_in)
+   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
    # compute ddy
-   ϕytmphat .= - ξy.^2 .* ϕythat
-   ldiv!(parent(tmp_in), plan_y, parent(ϕytmphat))
-   transpose!(gf.ddy,tmp_in)
+   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
    # FFT z
-   grid = localgrid(p.pen_z, (p.f.g.x, p.f.g.y, p.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   tmp_in = similar(ϕzthat)
-   transpose!(tmp_in,ϕt)
-   mul!(parent(ϕzthat), plan_z, parent(tmp_in))
+   x, y, z, ξx, ξy, ξz = grid_z(p)
+   mul_z!(p.ϕz_hat, p, ϕt)
    # compute dz
-   ϕztmphat .= im .* ξz .* ϕzthat
-   ldiv!(parent(tmp_in), plan_z, parent(ϕztmphat))
-   transpose!(gf.dz,tmp_in)
+   p.ϕztmp_hat .= im .* ξz .* p.ϕz_hat
+   ldiv_z!(gf.dz, p, p.ϕztmp_hat)
    # compute ddz
-   ϕztmphat .= - ξz.^2 .* ϕzthat
-   ldiv!(parent(tmp_in), plan_z, parent(ϕztmphat))
-   transpose!(gf.ddz, tmp_in)
-   tmp_in = nothing
+   p.ϕztmp_hat .= - ξy.^2 .* p.ϕz_hat
+   ldiv_y!(gf.ddz, p, p.ϕztmp_hat)
    return nothing
 end
 
 function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # temporary fields
-   ϕxthat = p.ϕx_hat
-   ϕythat = p.ϕy_hat
-   ϕzthat = p.ϕz_hat
-   ϕxtmphat = p.ϕxtmp_hat
-   ϕytmphat = p.ϕytmp_hat
-   ϕztmphat = p.ϕztmp_hat
-   # plans
-   plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
    # FFT x
    # frequencies
-   grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(p.pen_x, (p.ξx, p.ξy, p.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   mul!(parent(ϕxthat), plan_x, parent(ϕt))
+   x, y, z, ξx, ξy, ξz = grid_x(p)
+   mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   ϕxtmphat .= im .* ξx .* ϕxthat
-   ldiv!(parent(gf.dx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
    # compute rx
-   ϕxtmphat .= im .* y .* ξx .* ϕxthat
-   ldiv!(parent(gf.rx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= im .* y .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.rx, p, p.ϕxtmp_hat)
    # compute ddx
-   ϕxtmphat .= - ξx.^2 .* ϕxthat
-   ldiv!(parent(gf.ddx), plan_x, parent(ϕxtmphat))
+   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
    # FFT y
-   grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(p.pen_y, (p.ξx, p.ξy, p.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   tmp_y = similar(ϕythat)
-   transpose!(tmp_y, ϕt)
-   mul!(parent(ϕythat), plan_y, parent(tmp_y))
+   x, y, z, ξx, ξy, ξz = grid_y(p)
+   mul_y!(p.ϕy_hat, p, ϕt)
    # compute dy
-   ϕytmphat .= im .* ξy .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.dy,tmp_y)
+   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
    # compute ry
-   ϕytmphat .= -im .* x .* ξy .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.ry, tmp_y)
+   p.ϕytmp_hat .= -im .* x .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.ry, p, p.ϕytmp_hat)
    # compute ddy
-   ϕytmphat .= - ξy.^2 .* ϕythat
-   ldiv!(parent(tmp_y), plan_y, parent(ϕytmphat))
-   transpose!(gf.ddy,tmp_y)
+   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
    # FFT z
-   grid = localgrid(p.pen_z, (p.f.g.x, p.f.g.y, p.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   tmp_z = similar(ϕzthat)
-   transpose!(tmp_y,ϕt)
-   transpose!(tmp_z,tmp_y)
-   mul!(parent(ϕzthat), plan_z, parent(tmp_z))
+   x, y, z, ξx, ξy, ξz = grid_z(p)
+   mul_z!(p.ϕz_hat, p, ϕt)
    # compute dz
-   ϕztmphat .= im .* ξz .* ϕzthat
-   ldiv!(parent(tmp_z), plan_z, parent(ϕztmphat))
-   transpose!(tmp_y,tmp_z)
-   transpose!(gf.dz,tmp_y)
+   p.ϕztmp_hat .= im .* ξz .* p.ϕz_hat
+   ldiv_z!(gf.dz, p, p.ϕztmp_hat)
    # compute ddz
-   ϕztmphat .= - ξz.^2 .* ϕzthat
-   ldiv!(parent(tmp_z), plan_z, parent(ϕztmphat))
-   transpose!(tmp_y,tmp_z)
-   transpose!(gf.ddz, tmp_y)
-   tmp_y = nothing
-   tmp_z = nothing
+   p.ϕztmp_hat .= - ξy.^2 .* p.ϕz_hat
+   ldiv_y!(gf.ddz, p, p.ϕztmp_hat)
    return nothing
 end
 

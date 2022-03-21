@@ -120,8 +120,8 @@ function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt
    p.a_tmp2z .= im .* ξz .* p.ϕz_hat
    ldiv_z!(gf.dz, p, p.a_tmp2z)
    # compute ddz
-   p.a_tmp2z .= - ξy.^2 .* p.ϕz_hat
-   ldiv_y!(gf.ddz, p, p.a_tmp2z)
+   p.a_tmp2z .= - ξz.^2 .* p.ϕz_hat
+   ldiv_z!(gf.ddz, p, p.a_tmp2z)
    return nothing
 end
 
@@ -143,7 +143,6 @@ end
 # Finite Difference
 
 ## 2D
-
 function computeDerivatives!(gf :: GradientField2D, p :: AbstractFDPlan, ϕt :: AbstractArray)
    # x direction
    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx, order=6)

@@ -30,26 +30,26 @@ function computeDerivatives!(gf :: GradientRotField2D, p :: AbstractFFTPlan, ϕt
    x, y, ξx, ξy = grid_x(p)
    mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
-   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.a_tmp2x)
    # compute rx
-   p.ϕxtmp_hat .= im .* y .* ξx .* p.ϕx_hat
-   ldiv_x!(gf.rx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= im .* y .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.rx, p, p.a_tmp2x)
    # compute ddx
-   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
-   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.a_tmp2x)
    # FFT y
    x, y, ξx, ξy = grid_y(p)
    mul_y!(p.ϕy_hat, p, ϕt)
    # compute dy
-   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
-   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
+   p.a_tmp2y .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.a_tmp2y)
    # compute ry
-   p.ϕytmp_hat .= -im .* x .* ξy .* p.ϕy_hat
-   ldiv_y!(gf.ry, p, p.ϕytmp_hat)
+   p.a_tmp2y .= -im .* x .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.ry, p, p.a_tmp2y)
    # compute ddy
-   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
-   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
+   p.a_tmp2y .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.a_tmp2y)
    return nothing
 end
 
@@ -61,20 +61,20 @@ function computeDerivatives!(gf :: GradientField3D, p :: AbstractFFTPlan, ϕt ::
    x, y, z, ξx, ξy, ξz = grid_x(p)
    mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
-   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.a_tmp2x)
    # compute ddx
-   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
-   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.a_tmp2x)
    # FFT y
    x, y, z, ξx, ξy, ξz = grid_y(p)
    mul_y!(p.ϕy_hat, p, ϕt)
    # compute dy
-   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
-   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
+   p.a_tmp2y .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.a_tmp2y)
    # compute ddy
-   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
-   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
+   p.a_tmp2y .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.a_tmp2y)
    # FFT z
    x, y, z, ξx, ξy, ξz = grid_z(p)
    mul_z!(p.ϕz_hat, p, ϕt)
@@ -82,8 +82,8 @@ function computeDerivatives!(gf :: GradientField3D, p :: AbstractFFTPlan, ϕt ::
    p.ϕztmp_hat .= im .* ξz .* p.ϕz_hat
    ldiv_z!(gf.dz, p, p.ϕztmp_hat)
    # compute ddz
-   p.ϕztmp_hat .= - ξy.^2 .* p.ϕz_hat
-   ldiv_y!(gf.ddz, p, p.ϕztmp_hat)
+   p.a_tmp2z .= - ξy.^2 .* p.ϕz_hat
+   ldiv_y!(gf.ddz, p, p.a_tmp2z)
    return nothing
 end
 
@@ -93,75 +93,50 @@ function computeDerivatives!(gf :: GradientRotField3D, p :: AbstractFFTPlan, ϕt
    x, y, z, ξx, ξy, ξz = grid_x(p)
    mul_x!(p.ϕx_hat, p, ϕt)
    # compute dx
-   p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
-   ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= im .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.dx, p, p.a_tmp2x)
    # compute rx
-   p.ϕxtmp_hat .= im .* y .* ξx .* p.ϕx_hat
-   ldiv_x!(gf.rx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= im .* y .* ξx .* p.ϕx_hat
+   ldiv_x!(gf.rx, p, p.a_tmp2x)
    # compute ddx
-   p.ϕxtmp_hat .= - ξx.^2 .* p.ϕx_hat
-   ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
+   p.a_tmp2x .= - ξx.^2 .* p.ϕx_hat
+   ldiv_x!(gf.ddx, p, p.a_tmp2x)
    # FFT y
    x, y, z, ξx, ξy, ξz = grid_y(p)
    mul_y!(p.ϕy_hat, p, ϕt)
    # compute dy
-   p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
-   ldiv_y!(gf.dy, p, p.ϕytmp_hat)
+   p.a_tmp2y .= im .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.dy, p, p.a_tmp2y)
    # compute ry
-   p.ϕytmp_hat .= -im .* x .* ξy .* p.ϕy_hat
-   ldiv_y!(gf.ry, p, p.ϕytmp_hat)
+   p.a_tmp2y .= -im .* x .* ξy .* p.ϕy_hat
+   ldiv_y!(gf.ry, p, p.a_tmp2y)
    # compute ddy
-   p.ϕytmp_hat .= - ξy.^2 .* p.ϕy_hat
-   ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
+   p.a_tmp2y .= - ξy.^2 .* p.ϕy_hat
+   ldiv_y!(gf.ddy, p, p.a_tmp2y)
    # FFT z
    x, y, z, ξx, ξy, ξz = grid_z(p)
    mul_z!(p.ϕz_hat, p, ϕt)
    # compute dz
-   p.ϕztmp_hat .= im .* ξz .* p.ϕz_hat
-   ldiv_z!(gf.dz, p, p.ϕztmp_hat)
+   p.a_tmp2z .= im .* ξz .* p.ϕz_hat
+   ldiv_z!(gf.dz, p, p.a_tmp2z)
    # compute ddz
-   p.ϕztmp_hat .= - ξy.^2 .* p.ϕz_hat
-   ldiv_y!(gf.ddz, p, p.ϕztmp_hat)
+   p.a_tmp2z .= - ξy.^2 .* p.ϕz_hat
+   ldiv_y!(gf.ddz, p, p.a_tmp2z)
    return nothing
 end
 
-function computeDerivatives!(gf :: GradientCurlField3D, p :: AbstractFFTPlan, ϕt :: AbstractArray)
-   # temporary fields
-   uxhat = p.ux_hat
-   uyhat = p.uy_hat
-   uzhat = p.uz_hat
-   uxtmphat = p.uxtmp_hat
-   uytmphat = p.uytmp_hat
-   uztmphat = p.uztmp_hat
-   uxtmp2hat = p.uxtmp2_hat
-   uytmp2hat = p.uytmp2_hat
-   uztmp2hat = p.uztmp2_hat
-   # plans
-   plan_x, plan_y, plan_z = p.plan_x, p.plan_y, p.plan_z
-   # frequencies
-   gridξ = localgrid(p.pen_z, (p.ξx, p.ξy, p.ξz))
-   # FFT x/y/z
+function computeDerivatives!(gf :: GradientCurlField3D, p :: AbstractFFTPlan, ut :: AbstractArray)
    # get ̂u
-   for i = 1:3
-      mul!(parent(uxtmphat[i]), plan_x, parent(ϕt[i]))
-      transpose!(uytmp2hat[i], uxtmphat[i])
-      mul!(parent(uytmphat[i]), plan_y, parent(uytmp2hat[i]))
-      transpose!(uztmp2hat[i], uytmphat[i])
-      mul!(parent(uztmphat[i]), plan_z, parent(uztmp2hat[i]))
-      uzhat[i] .= uztmphat[i]
-   end
+   mul_all!(p.uz_hat, p, ut)
+   # new field for ̂ω
+   ω_hat = similar_data(p.uz_hat)
+   x, y, z, ξx, ξy, ξz = grid_z(p)
    # ̂ω  = ∇ × ̂u
-   @. uztmp2hat[1] = im * (gridξ.y * uztmphat[3] - gridξ.z * uztmphat[2])
-   @. uztmp2hat[2] = im * (gridξ.z * uztmphat[1] - gridξ.x * uztmphat[3])
-   @. uztmp2hat[3] = im * (gridξ.x * uztmphat[2] - gridξ.y * uztmphat[1])
-   # ifft
-   for i in 1:3
-      ldiv!(parent(uztmphat[i]), plan_z, parent(uztmp2hat[i]))
-      transpose!(uytmp2hat[i],uztmphat[i])
-      ldiv!(parent(uytmphat[i]), plan_y, parent(uytmp2hat[i]))
-      transpose!(uxtmp2hat[i],uytmphat[i])
-      ldiv!(parent(gf.ω[i]), plan_x, parent(uxtmp2hat[i]))
-   end
+   @. ω_hat[1] = im * (ξy * uz_hat[3] - ξz * uz_hat[2])
+   @. ω_hat[2] = im * (ξz * uz_hat[1] - ξx * uz_hat[3])
+   @. ω_hat[3] = im * (ξx * uz_hat[2] - ξy * uz_hat[1])
+   # get ω with iFFT
+   ldiv_all!(gf.ω, p, ω_hat)
    return nothing
 end
 

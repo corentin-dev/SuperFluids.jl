@@ -271,21 +271,23 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField3D{N,FT,FFT,
 end
 
 @inline function Base.getproperty(plan::AbstractFFTPlan{1}, name::Symbol)
-   if name === :ϕx_hat
+   if     name === :ϕx_hat
       return plan.datax[1]
    elseif name === :ϕy_hat
       return plan.datay[1]
    elseif name === :ϕz_hat
       return plan.dataz[1]
-   elseif name === :ϕxtmp_hat
+   elseif name === :a_tmpx
       return plan.datax[2]
-   elseif name === :ϕytmp_hat
-      return plan.datay[2]
-   elseif name === :ϕztmp_hat
-      return plan.dataz[2]
    elseif name === :a_tmpy
-      return plan.datay[3]
+      return plan.datay[2]
    elseif name === :a_tmpz
+      return plan.dataz[2]
+   elseif name === :a_tmp2x
+      return plan.datax[3]
+   elseif name === :a_tmp2y
+      return plan.datay[3]
+   elseif name === :a_tmp2z
       return plan.dataz[3]
    else
       return getfield(plan, name)
@@ -293,7 +295,7 @@ end
 end
 
 @inline function Base.getproperty(plan::AbstractFFTPlan{N}, name::Symbol) where N
-   if name === :ux_hat
+   if     name === :ux_hat
       return plan.datax[1:N]
    elseif name === :uy_hat
       return plan.datay[1:N]
@@ -305,39 +307,47 @@ end
       return plan.datay[N+1:2*N]
    elseif name === :uztmp_hat
       return plan.dataz[N+1:2*N]
+   elseif name === :a_tmpx
+      return plan.datay[2*N+1]
    elseif name === :a_tmpy
       return plan.datay[2*N+1]
    elseif name === :a_tmpz
       return plan.dataz[2*N+1]
+   elseif name === :a_tmp2x
+      return plan.datay[2*N+2]
+   elseif name === :a_tmp2y
+      return plan.datay[2*N+2]
+   elseif name === :a_tmp2z
+      return plan.dataz[2*N+2]
    else
       return getfield(plan, name)
    end
 end
 
 function mul_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
-    mul!(parent(a_out), plan.plan_x, parent(a_in))
-    return nothing
+   mul!(parent(a_out), plan.plan_x, parent(a_in))
+   return nothing
 end
 
 function mul_x!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
-    for i = 1:N
-        mul_x!(u_out[i], plan, u_in[i])
-    end
-    return nothing
+   for i = 1:N
+      mul_x!(u_out[i], plan, u_in[i])
+   end
+   return nothing
 end
 
 function mul_y!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
-    a_in_y = plan.a_tmpy
-    transpose!(a_in_y, a_in)
-    mul!(parent(a_out), plan.plan_y, parent(a_in_y))
-    return nothing
+   a_in_y = plan.a_tmpy
+   transpose!(a_in_y, a_in)
+   mul!(parent(a_out), plan.plan_y, parent(a_in_y))
+   return nothing
 end
 
 function mul_y!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
-    for i = 1:N
-        mul_y!(u_out[i], plan, u_in[i])
-    end
-    return nothing
+   for i = 1:N
+      mul_y!(u_out[i], plan, u_in[i])
+   end
+   return nothing
 end
 
 function mul_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
@@ -350,48 +360,84 @@ end
 
 function mul_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
    for i = 1:N
-       mul_z!(u_out[i], plan, u_in[i])
+      mul_z!(u_out[i], plan, u_in[i])
+   end
+end
+
+function mul_all!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+   a_out_x = plan.a_tmpx
+   a_out_y = plan.a_tmpy
+   a_out_y2 = plan.a_tmp2y
+   a_out_z = plan.a_tmpz
+   mul!(parent(a_out_x), plan.plan_x, parent(a_in))
+   transpose!(a_out_y, a_out_x)
+   mul!(parent(a_out_y2), plan.plan_y, parent(a_out_y))
+   transpose!(a_out_z, a_out_y2)
+   mul!(parent(a_out), plan.plan_z, parent(a_out_z))
+end
+
+function mul_all!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+   for i = 1:N
+      mul_all!(u_out[i], plan, u_in[i])
    end
 end
 
 function ldiv_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
-    ldiv!(parent(a_out), plan.plan_x, parent(a_in))
-    return nothing
+   ldiv!(parent(a_out), plan.plan_x, parent(a_in))
+   return nothing
 end
 
 function ldiv_x!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
-    for i = 1:N
-        ldiv_x!(u_out[i], plan.plan_x, u_in[i])
-    end
-    return nothing
+   for i = 1:N
+      ldiv_x!(u_out[i], plan.plan_x, u_in[i])
+   end
+   return nothing
 end
 
 function ldiv_y!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
-    a_out_y = plan.a_tmpy
-    ldiv!(parent(a_out_y), plan.plan_y, parent(a_in))
-    transpose!(a_out, a_out_y)
-    return nothing
+   a_out_y = plan.a_tmpy
+   ldiv!(parent(a_out_y), plan.plan_y, parent(a_in))
+   transpose!(a_out, a_out_y)
+   return nothing
 end
 
 function ldiv_y!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
-    for i = 1:N
-        ldiv_y!(u_out[i], plan, u_in[i])
-    end
-    return nothing
+   for i = 1:N
+      ldiv_y!(u_out[i], plan, u_in[i])
+   end
+   return nothing
 end
 
 function ldiv_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
-    a_out_y = plan.a_tmpy
-    a_out_z = plan.a_tmpz
-    ldiv!(parent(a_out_z), plan.plan_z, parent(a_in))
-    transpose!(a_out_y, a_out_z)
-    transpose!(a_out, a_out_y)
+   a_out_y = plan.a_tmpy
+   a_out_z = plan.a_tmpz
+   ldiv!(parent(a_out_z), plan.plan_z, parent(a_in))
+   transpose!(a_out_y, a_out_z)
+   transpose!(a_out, a_out_y)
 end
 
 function ldiv_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
-    for i = 1:N
-        ldiv_z!(u_out[i], plan.plan_x, u_in[i])
-    end
+   for i = 1:N
+      ldiv_z!(u_out[i], plan.plan_x, u_in[i])
+   end
+end
+
+function ldiv_all!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+   a_out_x = plan.a_tmpx
+   a_out_y = plan.a_tmpy
+   a_out_y2 = plan.a_tmp2y
+   a_out_z = plan.a_tmpz
+   ldiv!(parent(a_out_z), plan.plan_z, parent(a_in))
+   transpose!(a_out_y, a_out_z)
+   ldiv!(parent(a_out_y2), plan.plan_y, parent(a_out_y))
+   transpose!(a_out_x, a_out_y2)
+   mul!(parent(a_out), plan.plan_x, parent(a_out_x))
+end
+
+function ldiv_all!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
+   for i = 1:N
+      ldiv_all!(u_out[i], plan, u_in[i])
+   end
 end
 
 function grid_x(plan::PlanFFT2D)

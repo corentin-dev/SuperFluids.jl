@@ -356,15 +356,26 @@ function mul_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
    transpose!(a_in_y, a_in)
    transpose!(a_in_z, a_in_y)
    mul!(parent(a_out), plan.plan_z, parent(a_in_z))
+   return nothing
 end
 
 function mul_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
    for i = 1:N
       mul_z!(u_out[i], plan, u_in[i])
    end
+   return nothing
 end
 
-function mul_all!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+function mul_all!(a_out::PencilArray, plan::PlanFFT2D, a_in::PencilArray)
+   a_out_x = plan.a_tmpx
+   a_out_y = plan.a_tmpy
+   mul!(parent(a_out_x), plan.plan_x, parent(a_in))
+   transpose!(a_out_y, a_out_x)
+   mul!(parent(a_out), plan.plan_y, parent(a_out_y))
+   return nothing
+end
+
+function mul_all!(a_out::PencilArray, plan::PlanFFT3D, a_in::PencilArray)
    a_out_x = plan.a_tmpx
    a_out_y = plan.a_tmpy
    a_out_y2 = plan.a_tmp2y
@@ -374,12 +385,14 @@ function mul_all!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
    mul!(parent(a_out_y2), plan.plan_y, parent(a_out_y))
    transpose!(a_out_z, a_out_y2)
    mul!(parent(a_out), plan.plan_z, parent(a_out_z))
+   return nothing
 end
 
 function mul_all!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
    for i = 1:N
       mul_all!(u_out[i], plan, u_in[i])
    end
+   return nothing
 end
 
 function ldiv_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
@@ -414,15 +427,26 @@ function ldiv_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
    ldiv!(parent(a_out_z), plan.plan_z, parent(a_in))
    transpose!(a_out_y, a_out_z)
    transpose!(a_out, a_out_y)
+   return nothing
 end
 
 function ldiv_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
    for i = 1:N
       ldiv_z!(u_out[i], plan.plan_x, u_in[i])
    end
+   return nothing
 end
 
-function ldiv_all!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
+function ldiv_all!(a_out::PencilArray, plan::PlanFFT2D, a_in::PencilArray)
+   a_out_x = plan.a_tmpx
+   a_out_y = plan.a_tmpy
+   ldiv!(parent(a_out_y), plan.plan_y, parent(a_in))
+   transpose!(a_out_x, a_out_y)
+   ldiv!(parent(a_out), plan.plan_x, parent(a_out_x))
+   return nothing
+end
+
+function ldiv_all!(a_out::PencilArray, plan::PlanFFT3D, a_in::PencilArray)
    a_out_x = plan.a_tmpx
    a_out_y = plan.a_tmpy
    a_out_y2 = plan.a_tmp2y
@@ -431,13 +455,15 @@ function ldiv_all!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
    transpose!(a_out_y, a_out_z)
    ldiv!(parent(a_out_y2), plan.plan_y, parent(a_out_y))
    transpose!(a_out_x, a_out_y2)
-   mul!(parent(a_out), plan.plan_x, parent(a_out_x))
+   ldiv!(parent(a_out), plan.plan_x, parent(a_out_x))
+   return nothing
 end
 
 function ldiv_all!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N}, u_in::Vector{AbstractArray}) where N
    for i = 1:N
       ldiv_all!(u_out[i], plan, u_in[i])
    end
+   return nothing
 end
 
 function grid_x(plan::PlanFFT2D)

@@ -171,7 +171,7 @@ function Plan(f::F; t::PlanType = FFTPlan()) where {F<:AbstractField2D{N,FT,FFT,
 
       # create arrays for FFT
       datax = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
-      datay = [PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x), PencilArray{FFT}(undef, pen_x)]
+      datay = [PencilArray{FFT}(undef, pen_y), PencilArray{FFT}(undef, pen_y), PencilArray{FFT}(undef, pen_y)]
       for i = 1:N-1
          push!(datax, PencilArray{FFT}(undef, pen_x))
          push!(datax, PencilArray{FFT}(undef, pen_x))

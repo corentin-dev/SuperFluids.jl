@@ -56,14 +56,13 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
       -  (uadvx^2+uadvy^2)/(-4*coeffΔ) * ϕ
       - im * uadvx * n.gf.dx - im * uadvy * n.gf.dy
    )
-
-   # ψ₁ ← ( ψ₁ + α Δt /2 (ddx + ddy ) ϕ ) / ()
    # ψ₁hat
    mul_all!(ψ₁hat, n.plan, ψ₁)
    # ϕhat
    mul_all!(ϕhat, n.plan, ϕ)
    # compute
    x, y, ξx, ξy = grid_y(n.plan)
+   # ψ₁ ← ( ψ₁ + α Δt /2 (ddx + ddy ) ϕ ) / ()
    @. ψ₁hat = ( ψ₁hat + α * Δt * coeffΔ * (ξx^2+ξy^2) * ϕhat / 2 )/(
             1 - α * Δt * coeffΔ * (ξx^2+ξy^2) / 2 )
    # back to physical

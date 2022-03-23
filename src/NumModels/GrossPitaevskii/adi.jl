@@ -107,7 +107,7 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
    x, y, z, ξx, ξy, ξz = grid_x(n.plan)
    mul_x!(ϕxthat, n.plan, ϕ)
    @. ϕxthat = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕxthat
-   ldiv!(ϕ, n.plan, ϕxthat)
+   ldiv_x!(ϕ, n.plan, ϕxthat)
    # FFT y
    x, y, z, ξx, ξy, ξz = grid_y(n.plan)
    mul_y!(ϕythat, n.plan, ϕ)

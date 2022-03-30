@@ -1,7 +1,24 @@
 using Documenter
+using Literate
 using SuperFluids
+using MPI
+# import Plots: gr, contour, plot
+# import DisplayAs
 
-DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
+MPI.Init()
+# gr()
+
+# ENV["JULIA_DEBUG"]="Literate"
+
+# DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
+
+examples = [
+    joinpath("examples/QT_TG_2D/QT_TG_2D.jl"),
+]
+
+for example in examples
+    Literate.markdown(example, "docs/src/generated"; flavor = Literate.DocumenterFlavor())
+end
 
 makedocs(
     authors = "Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
@@ -9,6 +26,8 @@ makedocs(
     sitename = "SuperFluids.jl",
     format = Documenter.HTML(),
     doctest = false,
+    strict = false,
+    clean = true,
     modules = [SuperFluids],
     pages = [
         "Home" => "index.md",
@@ -23,10 +42,13 @@ makedocs(
             "plan.md",
             "gradientfield.md",
         ],
+        "Examples" => [
+           "generated/QT_TG_2D.md",
+        ],
         "Plots" => [
             "plots/plots.md",
         ],
-        "API" => "api.md",
+        #"API" => "api.md",
     ],
 )
 

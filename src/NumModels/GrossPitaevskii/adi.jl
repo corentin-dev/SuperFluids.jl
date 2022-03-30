@@ -81,28 +81,16 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
    # temporary fields
    ϕxthat = n.plan.ϕx_hat
    ϕythat = n.plan.ϕy_hat
-   ϕxtmphat = n.plan.ϕxtmp_hat
-   ϕytmphat = n.plan.ϕytmp_hat
-   # plans
-   plan_x, plan_y = n.plan.plan_x, n.plan.plan_y
    # FFT x
-   grid = localgrid(n.plan.pen_x, (n.f.g.x, n.f.g.y))
-   x, y = grid.x, grid.y
-   gridξ = localgrid(n.plan.pen_x, (n.plan.ξx, n.plan.ξy))
-   ξx, ξy = gridξ.x, gridξ.y
-   mul!(parent(ϕxthat), plan_x, parent(ϕ))
+   x, y, ξx, ξy = grid_x(n.plan)
+   mul_x!(ϕxthat, n.plan, ϕ)
    @. ϕxthat = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕxthat
-   ldiv!(parent(ϕ), plan_x, parent(ϕxthat))
+   ldiv_x!(ϕ, n.plan, ϕxthat)
    # FFT y
-   grid = localgrid(n.plan.pen_y, (n.f.g.x, n.f.g.y))
-   x, y = grid.x, grid.y
-   gridξ = localgrid(n.plan.pen_y, (n.plan.ξx, n.plan.ξy))
-   ξx, ξy = gridξ.x, gridξ.y
-   transpose!(ϕytmphat, ϕ)
-   mul!(parent(ϕythat), plan_y, parent(ϕytmphat))
+   x, y, ξx, ξy = grid_y(n.plan)
+   mul_y!(ϕythat, n.plan, ϕ)
    @. ϕythat = exp(im*(coeffΔ*ξy^2+Ω*x*ξy)*Δtl) * ϕythat
-   ldiv!(parent(ϕytmphat), plan_y, parent(ϕythat))
-   transpose!(ϕ, ϕytmphat)
+   ldiv_y!(ϕ, n.plan, ϕythat)
    return nothing
  end
 
@@ -115,41 +103,21 @@ function solveLapRot!(n::AbstractNumModel{F}, Δtl) where {F<:AbstractField2D}
    ϕxthat = n.plan.ϕx_hat
    ϕythat = n.plan.ϕy_hat
    ϕzthat = n.plan.ϕz_hat
-   ϕxtmphat = n.plan.ϕxtmp_hat
-   ϕytmphat = n.plan.ϕytmp_hat
-   ϕztmphat = n.plan.ϕztmp_hat
-   # plans
-   plan_x, plan_y, plan_z = n.plan.plan_x, n.plan.plan_y, n.plan.plan_z
    # FFT x
-   grid = localgrid(n.plan.pen_x, (n.f.g.x, n.f.g.y, n.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(n.plan.pen_x, (n.plan.ξx, n.plan.ξy, n.plan.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   mul!(parent(ϕxthat), plan_x, parent(ϕ))
+   x, y, z, ξx, ξy, ξz = grid_x(n.plan)
+   mul_x!(ϕxthat, n.plan, ϕ)
    @. ϕxthat = exp(im*(coeffΔ*ξx^2-Ω*y*ξx)*Δtl) * ϕxthat
-   ldiv!(parent(ϕ), plan_x, parent(ϕxthat))
+   ldiv_x!(ϕ, n.plan, ϕxthat)
    # FFT y
-   grid = localgrid(n.plan.pen_y, (n.f.g.x, n.f.g.y, n.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(n.plan.pen_y, (n.plan.ξx, n.plan.ξy, n.plan.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   transpose!(ϕytmphat, ϕ)
-   mul!(parent(ϕythat), plan_y, parent(ϕytmphat))
+   x, y, z, ξx, ξy, ξz = grid_y(n.plan)
+   mul_y!(ϕythat, n.plan, ϕ)
    @. ϕythat = exp(im*(coeffΔ*ξy^2+Ω*x*ξy)*Δtl) * ϕythat
-   ldiv!(parent(ϕytmphat), plan_y, parent(ϕythat))
-   transpose!(ϕ, ϕytmphat)
+   ldiv_y!(ϕ, n.plan, ϕythat)
    # FFT z
-   grid = localgrid(n.plan.pen_z, (n.f.g.x, n.f.g.y, n.f.g.z))
-   x, y, z = grid.x, grid.y, grid.z
-   gridξ = localgrid(n.plan.pen_z, (n.plan.ξx, n.plan.ξy, n.plan.ξz))
-   ξx, ξy, ξz = gridξ.x, gridξ.y, gridξ.z
-   transpose!(ϕytmphat, ϕ)
-   transpose!(ϕztmphat, ϕytmphat)
-   mul!(parent(ϕzthat), plan_z, parent(ϕztmphat))
+   x, y, z, ξx, ξy, ξz = grid_z(n.plan)
+   mul_z!(ϕzthat, n.plan, ϕ)
    @. ϕzthat = exp(im*(coeffΔ*ξz^2)*Δtl) * ϕzthat
-   ldiv!(parent(ϕztmphat), plan_z, parent(ϕzthat))
-   transpose!(ϕztmphat, ϕytmphat)
-   transpose!(ϕ, ϕytmphat)
+   ldiv_z!(ϕ, n.plan, ϕzthat)
    return nothing
  end
 

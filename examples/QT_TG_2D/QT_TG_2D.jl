@@ -39,8 +39,8 @@ field_insta = Field(grid, ComplexField())
 field_insta.ϕ .= field.ϕ
 
 param_insta = GrossPitaevskiiParameters(
-    coeffΔ = -0.05,
-    β = 40,
+    coeffΔ = param.coeffΔ,
+    β = param.coeffΔ,
     pot = PotentialZero(field_insta)
     )
 

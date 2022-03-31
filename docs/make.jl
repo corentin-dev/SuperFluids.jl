@@ -2,13 +2,8 @@ using Documenter
 using Literate
 using SuperFluids
 using MPI
-# import Plots: gr, contour, plot
-# import DisplayAs
 
 MPI.Init()
-# gr()
-
-# ENV["JULIA_DEBUG"]="Literate"
 
 # DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
 
@@ -48,7 +43,7 @@ makedocs(
         "Plots" => [
             "plots/plots.md",
         ],
-        #"API" => "api.md",
+        "API" => "api.md",
     ],
 )
 

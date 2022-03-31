@@ -101,7 +101,7 @@ res = solve!(nummodel, plot=false)
 # Convergence of energy
 
 if mpi_topo.rank == 0 # hide
-plot( [ l[2] for l in res ], [ l[6] for l in res ] )
+lines( [ l[2] for l in res ], [ l[6] for l in res ] )
 end # hide
 
 # Plot the solution
@@ -141,7 +141,7 @@ res_insta = solve!(nummodel_insta, istart=niter, plot=false)
 # Total energy should be (almost) constant in this case:
 
 if mpi_topo.rank == 0 # hide
-plot( [ l[2] for l in res_insta ], [ l[6] for l in res_insta ] )
+lines( [ l[2] for l in res_insta ], [ l[6] for l in res_insta ] )
 end # hide
 
 # Plot the solution.

@@ -1,4 +1,4 @@
-# # Quantum Turbulence with SuperFluids
+# # 2D Quantum Turbulence with SuperFluids
 #
 # ## Introduction
 #
@@ -107,7 +107,7 @@ end # hide
 # Plot the solution
 
 if mpi_topo.size == 1 # hide
-contour(grid.x,grid.y,abs2.(field.ϕ))
+surface(grid.x,grid.y,abs2.(field.ϕ))
 end # hide
 
 # ## Second step: unstationary restart

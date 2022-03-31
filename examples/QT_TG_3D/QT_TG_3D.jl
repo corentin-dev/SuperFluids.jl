@@ -1,4 +1,4 @@
-# # Quantum Turbulence with SuperFluids
+# # 3D Quantum Turbulence with SuperFluids
 #
 # ## Introduction
 #
@@ -6,15 +6,6 @@
 # We first load the package, in order to have all the constructors and functions available.
 
 using SuperFluids
-
-# We use `Makie` for plots:
-if mpi_topo.size == 1 # hide
-using WGLMakie
-WGLMakie.activate!()
-end # hide
-
-using JSServe # hide
-Page(exportable=true, offline=true) # hide
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 4 julia --project example/QT_TG_3D/QT_TG_3D.jl`
@@ -25,6 +16,16 @@ Page(exportable=true, offline=true) # hide
 # (FFT, finite differences, etc).
 
 mpi_topo = SuperFluids.MPITopo2D();
+
+# We use `Makie` for plots:
+
+if mpi_topo.size == 1 # hide
+using WGLMakie
+WGLMakie.activate!()
+end # hide
+
+using JSServe # hide
+Page(exportable=true, offline=true) # hide
 
 # We setup the wanted discretization. We want $n_x \times n_y \times n_z = 128\times 128\times 128$.
 # The domain bounds are set to $[0,2\pi]\times[0,2\pi]\times[0,2\pi]$.

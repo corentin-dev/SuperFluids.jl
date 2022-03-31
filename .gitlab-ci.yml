@@ -21,6 +21,8 @@ pages:
     - julia --project -e 'ENV["JULIA_MPI_BINARY"]="system"; ENV["JULIA_HDF5_PATH"]="/usr"; using Pkg; Pkg.activate("."); Pkg.instantiate()'
     - echo "build documentation"
     - julia --project --color=yes docs/make.jl
+    - echo "clean directory"
+    - rm -rv docs/build/generated/res-* docs/build/generated/GPS.pvd
     - echo "move to public website"
     - mv docs/build public
   artifacts:

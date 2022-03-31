@@ -9,6 +9,7 @@ MPI.Init()
 
 examples = [
     joinpath("examples/QT_TG_2D/QT_TG_2D.jl"),
+    joinpath("examples/QT_TG_3D/QT_TG_3D.jl"),
 ]
 
 for example in examples
@@ -39,6 +40,7 @@ makedocs(
         ],
         "Examples" => [
            "generated/QT_TG_2D.md",
+           "generated/QT_TG_3D.md",
         ],
         "Plots" => [
             "plots/plots.md",

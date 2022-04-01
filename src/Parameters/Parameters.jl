@@ -16,7 +16,7 @@ It contains the following informations:
 - `pot`: potential,
 - `Ω`: rotation coefficient.
 """
-struct GrossPitaevskiiParameters <: AbstractParameters
+mutable struct GrossPitaevskiiParameters <: AbstractParameters
     coeffΔ :: Real
     β :: Real
     pot :: AbstractPotential
@@ -67,7 +67,7 @@ Base.show(io::IO, param::GrossPitaevskiiParameters) =
 
 Parameters to compute Navier-Stokes equations.
 """
-struct NavierStokesParameters <: AbstractParameters
+mutable struct NavierStokesParameters <: AbstractParameters
    "viscosity"
    ν :: Real
    "volumic mass"

@@ -102,7 +102,8 @@ nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 
 # Solve the problem:
 
-solve!(nummodel, plot=false)
+res = solve!(nummodel, plot=false);
+res[end]
 
 # Plot the solution
 
@@ -121,7 +122,7 @@ end # hide
 # We start by duplicating the field:
 
 field_insta = Field(grid, ComplexField())
-field_insta.ϕ .= field.ϕ
+field_insta.ϕ .= field.ϕ;
 
 # The parameters are similar to the previous stationary simulation, but
 # the potential is different (``V=0``)
@@ -142,7 +143,8 @@ nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta, 
 
 # And we start the solver.
 
-solve!(nummodel_insta, istart=niter, plot=false)
+res_insta = solve!(nummodel_insta, istart=niter, plot=false);
+res_insta[end]
 
 # Plot the solution.
 

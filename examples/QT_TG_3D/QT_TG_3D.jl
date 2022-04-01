@@ -1,4 +1,4 @@
-# # 3D Quantum Turbulence with SuperFluids
+# # 3D Quantum Turbulence
 #
 # ## Introduction
 #
@@ -15,9 +15,12 @@ using SuperFluids
 # decomposed (if $n_\text{proc}$ is not prime). The pencil is transposed for some operations
 # (FFT, finite differences, etc).
 
-mpi_topo = SuperFluids.MPITopo2D();
+mpi_topo = SuperFluids.MPITopo2D()
 
-# We use `Makie` for plots:
+# We use `Makie` for plots. For documentation purpose, we use `WGLMakie`
+# that allows interactive javascript plots using WebGL, but you can also
+# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
+# for static image plots.
 
 if mpi_topo.size == 1 # hide
 using WGLMakie
@@ -45,7 +48,7 @@ grid = Grid((nx,ny,nz), (xrange,yrange,zrange), array_type=Array)
 # A field, containing the simulation informations, is setup. The field
 # is decomposed, hence the information of `mpi_topo` (which is not mandatory).
 # In this specific simulation, for the Gross-Pitaevskii equation, we need
-# a complex field `\phi`, and we specify it through the singleton `ComplexField()`.
+# a complex field ``ϕ``, and we specify it through the singleton `ComplexField()`.
 
 field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
 
@@ -98,8 +101,8 @@ freqbckp = 100
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 
 # Solve the problem:
-solve!(nummodel, plot=false)
 
+solve!(nummodel, plot=false)
 
 # Plot the solution
 
@@ -144,11 +147,11 @@ solve!(nummodel_insta, istart=niter, plot=false)
 # Plot the solution.
 
 if mpi_topo.size == 1 # hide
-volume(grid.x, grid.y, grid.z, abs2.(field.ϕ), algorithm=:iso, isovalue = 0.4, isorange = 0.2)
+volume(grid.x, grid.y, grid.z, abs2.(field_insta.ϕ), algorithm=:iso, isovalue = 0.4, isorange = 0.2)
 end # hide
 
 # Cut at ``z = π``:
 
 if mpi_topo.size == 1 # hide
-surface(grid.x,grid.y,abs2.(field.ϕ[:,:,nz ÷ 2]))
+surface(grid.x,grid.y,abs2.(field_insta.ϕ[:,:,nz ÷ 2]))
 end # hide

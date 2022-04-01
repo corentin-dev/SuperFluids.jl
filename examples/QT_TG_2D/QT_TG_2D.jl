@@ -1,4 +1,4 @@
-# # 2D Quantum Turbulence with SuperFluids
+# # 2D Quantum Turbulence
 #
 # ## Introduction
 #

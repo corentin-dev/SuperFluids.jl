@@ -8,6 +8,7 @@ MPI.Init()
 # DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
 
 examples = [
+    joinpath("examples/BEC_2D/BEC_2D_quadratic/BEC_2D.jl"),
     joinpath("examples/QT_TG_2D/QT_TG_2D.jl"),
     joinpath("examples/QT_TG_3D/QT_TG_3D.jl"),
 ]
@@ -39,6 +40,7 @@ makedocs(
             "gradientfield.md",
         ],
         "Examples" => [
+           "generated/BEC_2D.md",
            "generated/QT_TG_2D.md",
            "generated/QT_TG_3D.md",
         ],

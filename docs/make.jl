@@ -29,13 +29,17 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "QuickStart" => "quickstart.md",
-        "Equations" => [
-            "grosspitaevskii.md",
+        "Physic models" => [
+            "Gross-Pitaevskii" => [
+                "grosspitaevskii/grosspitaevskii.md",
+                "grosspitaevskii/init.md",
+                "grosspitaevskii/potential.md",
+                "grosspitaevskii/nummodel.md",
+            ]
         ],
         "Library" => [
             "grid.md",
             "field.md",
-            "init.md",
             "plan.md",
             "gradientfield.md",
         ],

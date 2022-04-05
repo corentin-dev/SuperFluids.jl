@@ -1,3 +1,6 @@
+use_saves = true # hide
+#if you want to re-run the page, change to false # hide
+
 # # 3D Quantum Turbulence
 #
 # ## Introduction
@@ -59,7 +62,7 @@ field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
 # i \dfrac{dϕ}{dt} = -0.05 Δϕ + 40 |ϕ|²ϕ  + V(x)ϕ
 # ```
 #
-# Here, `V` is a `PotentialTaylorGreen`. It contains the following informations:
+# Here, `V` is a [`PotentialExternalVelocity`](@ref). It contains the following informations:
 #
 # - $u_{\text{adv}_x} =  \sin(x)\cos(y)\cos(z)$
 # - $u_{\text{adv}_y} = -\cos(x)\sin(y)\cos(z)$
@@ -70,7 +73,7 @@ field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
 param = GrossPitaevskiiParameters(
     coeffΔ = -0.075,
     β = 27,
-    pot = PotentialTaylorGreen(field, α=4*27*0.075)
+    pot = PotentialExternalVelocity(field, α=4*27*0.075)
     )
 
 # initialisation
@@ -102,7 +105,14 @@ nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 
 # Solve the problem:
 
+if isfile("../../save/QT_TG_3D-490.h5") && use_saves # hide
+read!(nummodel.writers.writerList[2], prefix="../../save/QT_TG_3D", istep=490) # hide
+nummodel.niter = 10 # hide
+res = solve!(nummodel, istart=490, plot=false) # hide
+nummodel.niter = 500 # hide
+else # hide
 res = solve!(nummodel, plot=false);
+end # hide
 res[end]
 
 # Plot the solution
@@ -143,7 +153,14 @@ nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta, 
 
 # And we start the solver.
 
+if isfile("../../save/QT_TG_3D-1490.h5") && use_saves # hide
+read!(nummodel_insta.writers.writerList[2], prefix="../../save/QT_TG_3D", istep=1490) # hide
+nummodel_insta.niter = 10 # hide
+res_insta = solve!(nummodel_insta, istart=1490, plot=false) # hide
+nummodel_insta.niter = 1000 # hide
+else # hide
 res_insta = solve!(nummodel_insta, istart=niter, plot=false);
+end # hide
 res_insta[end]
 
 # Plot the solution.

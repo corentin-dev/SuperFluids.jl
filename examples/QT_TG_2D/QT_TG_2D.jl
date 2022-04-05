@@ -1,3 +1,6 @@
+use_saves = true # hide
+#if you want to re-run the page, change to false # hide
+
 # # 2D Quantum Turbulence
 #
 # ## Introduction
@@ -55,7 +58,7 @@ field = Field(grid, ComplexField())
 # i \dfrac{dϕ}{dt} = -0.05 Δϕ + 40 |ϕ|²ϕ  + V(x)ϕ
 # ```
 #
-# Here, `V` is a `PotentialTaylorGreen`. It contains the following informations:
+# Here, `V` is a [`PotentialExternalVelocity`](@ref). It contains the following informations:
 #
 # - ``u_{\text{adv}_x} =  \sin(x)\cos(y)``
 # - ``u_{\text{adv}_y} = -\cos(x)\sin(y)``
@@ -65,7 +68,7 @@ field = Field(grid, ComplexField())
 param = GrossPitaevskiiParameters(
     coeffΔ = -0.05,
     β = 40,
-    pot = PotentialTaylorGreen(field, α=4*40*0.05)
+    pot = PotentialExternalVelocity(field, α=4*40*0.05)
     )
 
 # initialisation

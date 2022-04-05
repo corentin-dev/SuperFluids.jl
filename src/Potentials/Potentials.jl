@@ -1,4 +1,4 @@
-export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic, PotentialTaylorGreen
+export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic, PotentialExternalVelocity
 
 """
     AbstractPotential

@@ -18,43 +18,50 @@ Example
 julia> grid = Grid((128,128), ((-12,12), (-12,12)));
 julia> field = Field(grid, ComplexField());
 julia> β = 40.; coeffΔ = -0.05;
-julia> PotentialTaylorGreen(field, α=-4*coeffΔ*β)
+julia> PotentialExternalVelocity(field, α=-4*coeffΔ*β)
 TaylorGreen Potential
 ```
 """
-struct PotentialTaylorGreen{F} <: AbstractPotential{F}
+struct PotentialExternalVelocity{F} <: AbstractPotential{F}
    f :: F
    V :: AbstractArray
    uadvx :: AbstractArray
    uadvy :: AbstractArray
    uadvz :: AbstractArray
 
-   function PotentialTaylorGreen(f::F; α :: Real = 1) where {F<:AbstractField2D}
+   function PotentialExternalVelocity(f::F;
+      uadv_function = uadv_function_taylorgreen2D,
+      α :: Real = 1) where {F<:AbstractField2D}
       V = real.(similar(f.ϕ))
       uadvx = similar(V)
       uadvy = similar(V)
       uadvz = []
       # velocity field
-      @. uadvx =  sin(f.x)*cos(f.y)
-      @. uadvy = -cos(f.x)*sin(f.y)
+      @. uadvx =  uadv_function[1].(f.x, f.y)
+      @. uadvy =  uadv_function[2].(f.x, f.y)
       # potential
       @. V = ( uadvx^2 + uadvy^2 ) / α
       new{F}(f, V, uadvx, uadvy, uadvz)
    end
 
-   function PotentialTaylorGreen(f::F; α :: Real = 1) where {F<:AbstractField3D}
+   function PotentialExternalVelocity(f::F;
+      uadv_function = uadv_function_taylorgreen3D,
+      α :: Real = 1) where {F<:AbstractField3D}
       V = real.(similar(f.ϕ))
       uadvx = similar(V)
       uadvy = similar(V)
       uadvz = similar(V)
       # velocity field
-      @. uadvx =  sin(f.x)*cos(f.y)*cos(f.z)
-      @. uadvy = -cos(f.x)*sin(f.y)*cos(f.z)
-      @. uadvz = 0.
+      @. uadvx =  uadv_function[1].(f.x, f.y, f.z)
+      @. uadvy =  uadv_function[2].(f.x, f.y, f.z)
+      @. uadvz =  uadv_function[3].(f.x, f.y, f.z)
       # potential
       @. V = ( uadvx^2 + uadvy^2 + uadvz^2 ) / α
       new{F}(f, V, uadvx, uadvy, uadvz)
    end
 end
 
-Base.show(io::IO, p::PotentialTaylorGreen) = print(io, "TaylorGreen Potential")
+uadv_function_taylorgreen2D = ((x,y)->sin(x)*cos(y), (x,y)->-cos(x)*sin(y))
+uadv_function_taylorgreen3D = ((x,y,z)->sin(x)*cos(y)*cos(z), (x,y,z)->-cos(x)*sin(y)*cos(z), (x,y,z)->0.)
+
+Base.show(io::IO, p::PotentialExternalVelocity) = print(io, "TaylorGreen Potential")

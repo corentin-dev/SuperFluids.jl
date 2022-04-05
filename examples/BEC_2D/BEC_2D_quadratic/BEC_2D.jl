@@ -1,3 +1,6 @@
+use_saves = true # hide
+#if you want to re-run the page, change to false # hide
+
 # # 2D Bose-Einstein Condensate
 
 # We want to simulate a [Bose-Einstein Condensate](https://en.wikipedia.org/wiki/Bose%E2%80%93Einstein_condensate)
@@ -91,7 +94,7 @@ initField!(init)
 
 # We plot the initial solution:
 
-surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # src
+#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. )
 
 # The solver use implicit [`NumModelBackwardEuler`](@ref) scheme:
@@ -106,7 +109,14 @@ nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 5
 
 # Launch the solver with [`solve!`](@ref):
 
+if isfile("../../save/BEC_2D_quad-990.h5") && use_saves # hide
+read!(nummodel.writers.writerList[2], prefix="../../save/BEC_2D_quad", istep=990) # hide
+nummodel.niter = 10 # hide
+res = solve!(nummodel, istart=990, plot=false) # hide
+nummodel.niter = 1000 # hide
+else # hide
 res = solve!(nummodel, plot=false)
+end # hide
 res[end]
 
 # We plot the convergence:
@@ -130,7 +140,7 @@ end # hide
 
 # We plot the solution:
 
-surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # src
+#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. ) # hide
 
 #using CSV # hide
@@ -145,15 +155,21 @@ surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. ) # hide
 # ```
 # where ``r=x²+y²``.
 
-param.Ω = 3.2
-param.pot = PotentialQuarticQuadratic(field, γx = 1., γy = 1., κ4 = 0.5)
+param.pot = PotentialQuarticQuadratic(field, γx = 0.0, γy = 0.0, κ4 = 0.01)
 
 # Again, we solve the problem using ['solve!`](@ref):
 
+if isfile("../../save/BEC_2D_quart-990.h5") && use_saves # hide
+read!(nummodel.writers.writerList[2], prefix="../../save/BEC_2D_quart", istep=990) # hide
+nummodel.niter = 10 # hide
+res_quad = solve!(nummodel, istart=990, plot=false) # hide
+nummodel.niter = 1000 # hide
+else # hide
 res_quad = solve!(nummodel, plot=false)
+end # hide
 res_quad[end]
 
 # We plot the solution:
 
 #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
-surface(grid.x, grid.y, abs2.(field.ϕ) * 100. )
+surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. )

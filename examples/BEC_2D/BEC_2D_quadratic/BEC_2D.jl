@@ -1,6 +1,3 @@
-use_saves = true # hide
-#if you want to re-run the page, change to false # hide
-
 # # 2D Bose-Einstein Condensate
 
 # We want to simulate a [Bose-Einstein Condensate](https://en.wikipedia.org/wiki/Bose%E2%80%93Einstein_condensate)
@@ -29,13 +26,32 @@ mpi_topo = SuperFluids.MPITopo1D()
 # use `GLMakie` for interactive plots on your computer, or `CairoMakie`
 # for static image plots.
 
+# You can change those values if you want PNG or GL plots
+
+makie_style = "WGLMakie"
+#makie_style = "GLMakie"
+#makie_style = "CairoMakie"
+
 if mpi_topo.size == 1 # hide
-using WGLMakie
-WGLMakie.activate!()
+    use_plots = true # hide
+else # hide
+    use_plots = false # hide
 end # hide
 
-using JSServe # hide
-Page(exportable=true, offline=true) # hide
+if use_plots # hide
+if makie_style == "WGLMakie"
+    using WGLMakie
+    WGLMakie.activate!()
+    using JSServe # hide
+    Page(exportable=true, offline=true) # hide
+elseif makie_style == "GLMakie"
+    using GLMakie
+    GLMakie.activate!()
+elseif makie_style == "CairoMakie"
+    using CairoMakie
+    CairoMakie.activate!()
+end
+end # hide
 
 # We setup the wanted discretization. We want $n_x \times n_y = 128\times 128$.
 # The domain bounds are set to $[-12,12]\times[-12,12]$.
@@ -94,8 +110,10 @@ initField!(init)
 
 # We plot the initial solution:
 
+if use_plots # hide
 #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. )
+end # hide
 
 # The solver use implicit [`NumModelBackwardEuler`](@ref) scheme:
 
@@ -108,20 +126,12 @@ nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp, nkrylov = 5
 # how to use them.
 
 # Launch the solver with [`solve!`](@ref):
-
-if isfile("../../save/BEC_2D_quad-990.h5") && use_saves # hide
-read!(nummodel.writers.writerList[2], prefix="../../save/BEC_2D_quad", istep=990) # hide
-nummodel.niter = 10 # hide
-res = solve!(nummodel, istart=990, plot=false) # hide
-nummodel.niter = 1000 # hide
-else # hide
 res = solve!(nummodel, plot=false)
-end # hide
 res[end]
 
 # We plot the convergence:
 
-if mpi_topo.rank == 0 # hide
+if use_plots && mpi_topo.rank == 0 # hide
 lines(  1:length(res), [ l[6] for l in res ], label="Total energy")
 lines!( 1:length(res), [ l[3] for l in res ], label="Rotational energy")
 lines!( 1:length(res), [ l[4] for l in res ], label="Potential+kinetic energy")
@@ -132,7 +142,7 @@ end # hide
 
 # Number of Krylov iteration per imaginary time step:
 
-if mpi_topo.rank == 0 # hide
+if use_plots && mpi_topo.rank == 0 # hide
 lines( 1:length(res), [ l[1] for l in res ], label="Number of Krylov iterations")
 axislegend()
 current_figure()
@@ -140,11 +150,10 @@ end # hide
 
 # We plot the solution:
 
+if use_plots # hide
 #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
-surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. ) # hide
-
-#using CSV # hide
-#CSV.write("energy-noprecond-$(Δt).csv",DataFrame(res),delim=" ",header=false) # hide
+surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. )
+end # hide
 
 # ## Quartic potential
 
@@ -159,17 +168,12 @@ param.pot = PotentialQuarticQuadratic(field, γx = 0.0, γy = 0.0, κ4 = 0.01)
 
 # Again, we solve the problem using ['solve!`](@ref):
 
-if isfile("../../save/BEC_2D_quart-990.h5") && use_saves # hide
-read!(nummodel.writers.writerList[2], prefix="../../save/BEC_2D_quart", istep=990) # hide
-nummodel.niter = 10 # hide
-res_quad = solve!(nummodel, istart=990, plot=false) # hide
-nummodel.niter = 1000 # hide
-else # hide
-res_quad = solve!(nummodel, plot=false)
-end # hide
+res_quad = solve!(nummodel, istart=niter, plot=false)
 res_quad[end]
 
 # We plot the solution:
 
+if use_plots # hide
 #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000. )
+end # hide

@@ -1,6 +1,3 @@
-use_saves = true # hide
-#if you want to re-run the page, change to false # hide
-
 # # 2D Quantum Turbulence
 #
 # ## Introduction
@@ -22,25 +19,51 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use `Makie` for plots:
+# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
+# that allows interactive javascript plots using WebGL, but you can also
+# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
+# for static image plots.
+
+# You can change those values if you want PNG or GL plots
+
+makie_style = "WGLMakie"
+#makie_style = "GLMakie"
+#makie_style = "CairoMakie"
+
 if mpi_topo.size == 1 # hide
-using WGLMakie
-WGLMakie.activate!()
+    use_plots = true # hide
+else # hide
+    use_plots = false # hide
 end # hide
 
-using JSServe # hide
-Page(exportable=true, offline=true) # hide
+use_saves = true # hide
+#if you want to re-run the page, change to false # hide
+
+if use_plots # hide
+if makie_style == "WGLMakie"
+    using WGLMakie
+    WGLMakie.activate!()
+    using JSServe # hide
+    Page(exportable=true, offline=true) # hide
+elseif makie_style == "GLMakie"
+    using GLMakie
+    GLMakie.activate!()
+elseif makie_style == "CairoMakie"
+    using CairoMakie
+    CairoMakie.activate!()
+end
+end # hide
 
 # We setup the wanted discretization. We want ``n_x \times n_y = 128\times 128``.
 # The domain bounds are set to ``[0,2\pi]\times[0,2\pi]``.
+
+# With those informations, we can create `Grid`, using the constructor:
 
 nx = 128
 ny = 128
 
 xrange = (0, 2*π)
 yrange = (0, 2*π)
-
-# With those informations, we can create `Grid`, using the constructor:
 
 grid = Grid((nx,ny), (xrange,yrange), array_type=Array)
 
@@ -79,13 +102,7 @@ if mpi_topo.size == 1 # hide
 surface(grid.x,grid.y,abs2.(field.ϕ))
 end # hide
 
-# We setup the solver for the stationary, using:
-
-Δt = 0.005
-niter = 500
-freqbckp = 100
-
-# The solver uses the `NumModelExternalVelocity` `struct`.
+# The solver uses [`NumModelExternalVelocity`](@ref).
 # It uses the following scheme:
 # ```math
 # \dfrac{ϕ^{(n+1)}-ϕ^{(n)}}{Δt} = \dfrac{α}{2} Δϕ^{(n+1)} +
@@ -94,6 +111,13 @@ freqbckp = 100
 #    + β - β |ϕ^{(n)}|²
 # \right) ϕ^{(n)}
 # ```
+
+# We setup the solver for the stationary, using:
+
+Δt = 0.005
+niter = 500
+freqbckp = 100
+
 
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 

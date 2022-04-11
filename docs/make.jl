@@ -11,6 +11,7 @@ examples = [
     joinpath("examples/BEC_2D/BEC_2D_quadratic/BEC_2D.jl"),
     joinpath("examples/QT_TG_2D/QT_TG_2D.jl"),
     joinpath("examples/QT_TG_3D/QT_TG_3D.jl"),
+    joinpath("examples/VR/VR_2D.jl"),
 ]
 
 for example in examples
@@ -45,6 +46,7 @@ makedocs(
         ],
         "Examples" => [
            "generated/BEC_2D.md",
+           "generated/VR_2D.md",
            "generated/QT_TG_2D.md",
            "generated/QT_TG_3D.md",
         ],

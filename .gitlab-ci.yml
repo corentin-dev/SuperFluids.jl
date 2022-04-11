@@ -3,6 +3,8 @@ pages:
   stage: deploy
   script:
     - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y node-katex && apt-get install -y wget libhdf5-openmpi-dev
+    - echo "configure git"
+    - git config --global --add safe.directory /builds/lmrs/num/SuperFluids.jl
     - echo "download julia 1.7.2"
     - wget https://julialang-s3.julialang.org/bin/linux/x64/1.7/julia-1.7.2-linux-x86_64.tar.gz
     - echo "untar archive"

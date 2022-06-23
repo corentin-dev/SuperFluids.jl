@@ -17,10 +17,10 @@ It contains the following informations:
 - `Ω`: rotation coefficient.
 """
 mutable struct GrossPitaevskiiParameters <: AbstractParameters
-    coeffΔ :: Real
-    β :: Real
-    pot :: AbstractPotential
-    Ω :: Real
+    coeffΔ::Real
+    β::Real
+    pot::AbstractPotential
+    Ω::Real
 end
 
 """
@@ -49,18 +49,19 @@ GrossPitaevskiiParameters
 ```
 """
 function GrossPitaevskiiParameters(;
-      coeffΔ :: Real = -0.5,
-      β :: Real = 1.,
-      pot :: AbstractPotential,
-      Ω :: Real = 0.)
-   return GrossPitaevskiiParameters(coeffΔ, β, pot, Ω)
+                                   coeffΔ::Real=-0.5,
+                                   β::Real=1.0,
+                                   pot::AbstractPotential,
+                                   Ω::Real=0.0)
+    return GrossPitaevskiiParameters(coeffΔ, β, pot, Ω)
 end
 
-Base.show(io::IO, param::GrossPitaevskiiParameters) =
-     print(io, "GrossPitaevskiiParameters\n",
-         "  ├──────  equation solved:\n",
-         "  ├─────── idϕ/dt = $(param.coeffΔ) Δϕ + $(param.β) |ϕ|²ϕ  + V(x)ϕ - i $(param.Ω) Lz ϕ \n",
-         "  └──────────────── coeffΔ: $(param.coeffΔ), β: $(param.β), Ω: $(param.Ω)")
+function Base.show(io::IO, param::GrossPitaevskiiParameters)
+    return print(io, "GrossPitaevskiiParameters\n",
+                 "  ├──────  equation solved:\n",
+                 "  ├─────── idϕ/dt = $(param.coeffΔ) Δϕ + $(param.β) |ϕ|²ϕ  + V(x)ϕ - i $(param.Ω) Lz ϕ \n",
+                 "  └──────────────── coeffΔ: $(param.coeffΔ), β: $(param.β), Ω: $(param.Ω)")
+end
 
 """
     NavierStokesParameters <: AbstractParameters
@@ -68,10 +69,10 @@ Base.show(io::IO, param::GrossPitaevskiiParameters) =
 Parameters to compute Navier-Stokes equations.
 """
 mutable struct NavierStokesParameters <: AbstractParameters
-   "viscosity"
-   ν :: Real
-   "volumic mass"
-   ρ :: Real
+    "viscosity"
+    ν::Real
+    "volumic mass"
+    ρ::Real
 end
 
 """
@@ -93,15 +94,15 @@ NavierStokesParameters
 ```
 """
 function NavierStokesParameters(;
-      ν :: Real = 0.001,
-      ρ :: Real = 1.)
-   return NavierStokesParameters(ν, ρ)
+                                ν::Real=0.001,
+                                ρ::Real=1.0)
+    return NavierStokesParameters(ν, ρ)
 end
 
-Base.show(io::IO, param::NavierStokesParameters) = print(
-    io, "NavierStokesParameters\n",
-    "  ├──────  equation solved:\n",
-    "  ├─────── du/dt + ∇⋅(uu) = -1/ρ ∇p + ν Δu\n",
-    "  ├─────── ∇⋅u = 0\n",
-    "  └─────── ν: $(param.ν) ρ: $(param.ρ)"
-    )
+function Base.show(io::IO, param::NavierStokesParameters)
+    return print(io, "NavierStokesParameters\n",
+                 "  ├──────  equation solved:\n",
+                 "  ├─────── du/dt + ∇⋅(uu) = -1/ρ ∇p + ν Δu\n",
+                 "  ├─────── ∇⋅u = 0\n",
+                 "  └─────── ν: $(param.ν) ρ: $(param.ρ)")
+end

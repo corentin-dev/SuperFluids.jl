@@ -11,11 +11,11 @@ It contains the following informations:
 
 """
 struct InitThomasFermi{F} <: AbstractInit{F}
-   f :: F
-   β :: Real
-   γx :: Real
-   γy :: Real
-   γz :: Real
+    f::F
+    β::Real
+    γx::Real
+    γy::Real
+    γz::Real
 end
 
 """
@@ -30,8 +30,9 @@ Parameters are:
 - `γx`, `γy`, `γz`: quadratic trapping potential coefficients.
 
 """
-function InitThomasFermi(f :: F, β :: Real; γx :: Real = 1., γy :: Real = 1., γz :: Real = 1.) where {F<:AbstractField}
-   return InitThomasFermi{F}(f, β, γx, γy, γz)
+function InitThomasFermi(f::F, β::Real; γx::Real=1.0, γy::Real=1.0,
+                         γz::Real=1.0) where {F<:AbstractField}
+    return InitThomasFermi{F}(f, β, γx, γy, γz)
 end
 
 """
@@ -55,19 +56,19 @@ with ``ρ_0 = √( 4β √(γ_x γ_y) / π )``
     ``ϕ`` is normalized in order to have ``∥ϕ∥_2 = 1``.
 """
 function initField!(init::InitThomasFermi{F}) where {F<:AbstractField2D}
-   x = init.f.x
-   y = init.f.y
-   ρ0 = √( 4* init.β * √(init.γx * init.γy) / π )
-   function TF(x,y)
-      if x^2 + y^2 > ρ0
-         return 0
-      else
-         return ρ0 .- (x^2 + y^2 )
-      end
-   end
-   @. init.f.ϕ = TF(x,y)
-   normalize!(init.f)
-   return nothing
+    x = init.f.x
+    y = init.f.y
+    ρ0 = √(4 * init.β * √(init.γx * init.γy) / π)
+    function TF(x, y)
+        if x^2 + y^2 > ρ0
+            return 0
+        else
+            return ρ0 .- (x^2 + y^2)
+        end
+    end
+    @. init.f.ϕ = TF(x, y)
+    normalize!(init.f)
+    return nothing
 end
 
 """
@@ -91,30 +92,32 @@ with ``ρ_0 = (30 β √(γ_x γ_y γ_z) / (8π))^{2/5}``
     ``ϕ`` is normalized in order to have ``∥ϕ∥₂ = 1``.
 """
 function initField!(init::InitThomasFermi{F}) where {F<:AbstractField3D}
-   x = init.f.x
-   y = init.f.y
-   z = init.f.z
-   ρ0 = ( 30 * init.β * √(init.γx * init.γy * init.γz) / ( 8 * π ) )^(2/5)
-   function TF(x,y,z)
-      if x^2 + y^2 + z^2 > ρ0
-         return 0
-      else
-         return ρ0 .- (x^2 + y^2 + z^2)
-      end
-   end
-   @. init.f.ϕ = TF(x,y,z)
-   normalize!(init.f)
-   return nothing
+    x = init.f.x
+    y = init.f.y
+    z = init.f.z
+    ρ0 = (30 * init.β * √(init.γx * init.γy * init.γz) / (8 * π))^(2 / 5)
+    function TF(x, y, z)
+        if x^2 + y^2 + z^2 > ρ0
+            return 0
+        else
+            return ρ0 .- (x^2 + y^2 + z^2)
+        end
+    end
+    @. init.f.ϕ = TF(x, y, z)
+    normalize!(init.f)
+    return nothing
 end
 
-Base.show(io::IO, init::InitThomasFermi{F}) where {F<:AbstractField3D} =
-      print(io, "InitThomasFermi\n",
-         "  ├──────  parameters: γx $(init.γx) γy $(init.γy) γz $(init.γz) β $(init.β)\n",
-         "  ├──────────────  μ = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+z²))\n",
-         "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+function Base.show(io::IO, init::InitThomasFermi{F}) where {F<:AbstractField3D}
+    return print(io, "InitThomasFermi\n",
+                 "  ├──────  parameters: γx $(init.γx) γy $(init.γy) γz $(init.γz) β $(init.β)\n",
+                 "  ├──────────────  μ = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+z²))\n",
+                 "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+end
 
-Base.show(io::IO, init::InitThomasFermi{F}) where {F<:AbstractField2D} =
-      print(io, "InitThomasFermi\n",
-         "  ├──────  parameters: γx $(init.γx) γy $(init.γy) β $(init.β)\n",
-         "  ├──────────────  μ = √(β γx γy)\n",
-         "  └──────────────  ϕ = √( √μ - V )")
+function Base.show(io::IO, init::InitThomasFermi{F}) where {F<:AbstractField2D}
+    return print(io, "InitThomasFermi\n",
+                 "  ├──────  parameters: γx $(init.γx) γy $(init.γy) β $(init.β)\n",
+                 "  ├──────────────  μ = √(β γx γy)\n",
+                 "  └──────────────  ϕ = √( √μ - V )")
+end

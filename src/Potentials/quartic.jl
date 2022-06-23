@@ -32,37 +32,44 @@ Quartic-Quadratic Potential for 2D fields
 ```
 """
 struct PotentialQuarticQuadratic{F} <: AbstractPotential{F}
-   f :: F
-   V :: AbstractArray
-   α :: Real
-   γx :: Real
-   γy :: Real
-   γz :: Real
-   κ4 :: Real
+    f::F
+    V::AbstractArray
+    α::Real
+    γx::Real
+    γy::Real
+    γz::Real
+    κ4::Real
 
-   function PotentialQuarticQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, γz::Real = 1, κ4::Real = 1) where {F<:AbstractField{1,FT,FFT,A}} where {FT,FFT,A}
-      V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
+    function PotentialQuarticQuadratic(f::F; α::Real=0, γx::Real=1, γy::Real=1, γz::Real=1,
+                                       κ4::Real=1) where {F<:AbstractField{1,FT,FFT,A}} where {FT,
+                                                                                               FFT,
+                                                                                               A}
+        V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
 
-      p = new{F}(f, V, α, γx, γy, γz, κ4)
-      compute!(p)
-      return p
-   end
+        p = new{F}(f, V, α, γx, γy, γz, κ4)
+        compute!(p)
+        return p
+    end
 end
 
 function compute!(p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D}
-   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.x^2+p.γy*p.f.y^2) + 0.5*p.κ4 * (p.f.x^2 + p.f.y^2)^2
+    @. p.V = 0.5 * (1 - p.α) * (p.γx * p.f.x^2 + p.γy * p.f.y^2) +
+             0.5 * p.κ4 * (p.f.x^2 + p.f.y^2)^2
 end
 
 function compute!(p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D}
-   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.x^2+p.γy*p.f.y^2+p.γz*p.f.z^2) + 0.5*p.κ4 * (p.f.x^2 + p.f.y^2)^2
+    @. p.V = 0.5 * (1 - p.α) * (p.γx * p.f.x^2 + p.γy * p.f.y^2 + p.γz * p.f.z^2) +
+             0.5 * p.κ4 * (p.f.x^2 + p.f.y^2)^2
 end
 
-Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D} =
-     print(io, "Quartic-Quadratic Potential for 2D fields\n",
-         "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
-         "  └──────────────  V = (1-α)/2 × (γx x² + γy y²) + κ₄/2 r⁴")
+function Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D}
+    return print(io, "Quartic-Quadratic Potential for 2D fields\n",
+                 "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
+                 "  └──────────────  V = (1-α)/2 × (γx x² + γy y²) + κ₄/2 r⁴")
+end
 
-Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D} =
-     print(io, "Quartic-Quadratic Potential for 3D fields\n",
-         "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
-         "  └──────────────  V = (1-α)/2 × (γx x² + γy y² + γz z²) + κ₄/2 r⁴")
+function Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D}
+    return print(io, "Quartic-Quadratic Potential for 3D fields\n",
+                 "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
+                 "  └──────────────  V = (1-α)/2 × (γx x² + γy y² + γz z²) + κ₄/2 r⁴")
+end

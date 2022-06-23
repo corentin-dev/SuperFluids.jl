@@ -20,9 +20,9 @@ It contains the following informations:
 
 """
 mutable struct GradientField2D{F,A} <: AbstractGradientField2D{F,A}
-    f :: F
-    ∇data :: A
-    Δdata :: A
+    f::F
+    ∇data::A
+    Δdata::A
 end
 
 """
@@ -39,10 +39,10 @@ It contains the following informations:
 
 """
 mutable struct GradientRotField2D{F,A} <: AbstractGradientField2D{F,A}
-   f :: F
-   ∇data :: A
-   Δdata :: A
-   rdata :: A
+    f::F
+    ∇data::A
+    Δdata::A
+    rdata::A
 end
 
 """
@@ -59,8 +59,8 @@ It contains the following informations:
 
 """
 mutable struct GradientCurlField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    ωdata :: A
+    f::F
+    ωdata::A
 end
 
 """
@@ -76,9 +76,9 @@ It contains the following informations:
 
 """
 mutable struct GradientField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    ∇data :: A
-    Δdata :: A
+    f::F
+    ∇data::A
+    Δdata::A
 end
 
 """
@@ -95,10 +95,10 @@ It contains the following informations:
 
 """
 mutable struct GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    ∇data :: A
-    Δdata :: A
-    rdata :: A
+    f::F
+    ∇data::A
+    Δdata::A
+    rdata::A
 end
 
 """
@@ -114,9 +114,9 @@ It contains the following informations:
 
 """
 mutable struct GradientCurlField2D{F,A} <: AbstractGradientField2D{F,A}
-    f :: F
-    ∇data :: A
-    ωdata :: A
+    f::F
+    ∇data::A
+    ωdata::A
 end
 
 """
@@ -131,7 +131,8 @@ Parameters are:
 - `laplacian`: specify if a rotation should be computed or not.
 - `vorticity`: specify if a rotation should be computed or not.
 """
-function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vorticity::Bool = false) where {F<:AbstractField2D}
+function GradientField(f::F; rotation::Bool=false, laplacian::Bool=true,
+                       vorticity::Bool=false) where {F<:AbstractField2D}
     ∇data = similar_data(f.data) # dx
     push!(∇data, similar_data(f.data)...) # dy
     if laplacian
@@ -164,7 +165,8 @@ Parameters are:
 - `rotation`: specify if a rotation should be computed or not.
 - `vorticity`: specify if a rotation should be computed or not.
 """
-function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vorticity::Bool = false) where {F<:AbstractField3D}
+function GradientField(f::F; rotation::Bool=false, laplacian::Bool=true,
+                       vorticity::Bool=false) where {F<:AbstractField3D}
     if laplacian
         # grad
         ∇data = similar_data(f.data) # dx
@@ -191,7 +193,8 @@ function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vor
     end
 end
 
-@inline function Base.getproperty(gf::AbstractGradientField{F}, name::Symbol) where {F<:AbstractField{1}}
+@inline function Base.getproperty(gf::AbstractGradientField{F},
+                                  name::Symbol) where {F<:AbstractField{1}}
     if name === :dx
         return gf.∇data[1]
     elseif name === :dy
@@ -213,21 +216,22 @@ end
     else
         return getfield(gf, name)
     end
- end
+end
 
- @inline function Base.getproperty(gf::AbstractGradientField{F}, name::Symbol) where {F<:AbstractField{N}} where N
+@inline function Base.getproperty(gf::AbstractGradientField{F},
+                                  name::Symbol) where {F<:AbstractField{N}} where {N}
     if name === :dx
         return gf.∇data[1:N]
     elseif name === :dy
-        return gf.∇data[1+N:2*N]
+        return gf.∇data[(1 + N):(2 * N)]
     elseif name === :dz
-        return gf.∇data[1+2*N:3*N]
+        return gf.∇data[(1 + 2 * N):(3 * N)]
     elseif name === :ddx
         return gf.Δdata[1:N]
     elseif name === :ddy
-        return gf.Δdata[1+N:2*N]
+        return gf.Δdata[(1 + N):(2 * N)]
     elseif name === :ddz
-        return gf.Δdata[1+2*N:3*N]
+        return gf.Δdata[(1 + 2 * N):(3 * N)]
     elseif name === :rx
         return gf.rdata[1]
     elseif name === :ry
@@ -237,14 +241,16 @@ end
     else
         return getfield(gf, name)
     end
- end
+end
 
-Base.show(io::IO, f::GradientField2D{F,A}) where {F,A} =
-    print(io, "GradientField2D\n",
-        "  ├──────  Array type: $(A)", '\n',
-        "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
+function Base.show(io::IO, f::GradientField2D{F,A}) where {F,A}
+    return print(io, "GradientField2D\n",
+                 "  ├──────  Array type: $(A)", '\n',
+                 "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
+end
 
-Base.show(io::IO, f::GradientField3D{F,A}) where {F,A} =
-    print(io, "GradientField3D\n",
-        "  ├───────  FloatType: $(A)", '\n',
-        "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")
+function Base.show(io::IO, f::GradientField3D{F,A}) where {F,A}
+    return print(io, "GradientField3D\n",
+                 "  ├───────  FloatType: $(A)", '\n',
+                 "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")
+end

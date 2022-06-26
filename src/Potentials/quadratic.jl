@@ -38,9 +38,10 @@ struct PotentialQuadratic{F} <: AbstractPotential{F}
     γz::Real
 
     function PotentialQuadratic(f::F; α::Real=0, γx::Real=1, γy::Real=1,
-                                γz::Real=1) where {F<:AbstractField{1,FT,FFT,A}} where {FT,
-                                                                                        FFT,
-                                                                                        A}
+                                γz::Real=1) where {F<:AbstractField{N,1,FT,FFT,A}} where {N,
+                                                                                          FT,
+                                                                                          FFT,
+                                                                                          A}
         V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
 
         p = new{F}(f, V, α, γx, γy, γz)

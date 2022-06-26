@@ -68,14 +68,14 @@ end
 function write!(w::WriterSave{F};
                 prefix="res"::AbstractString,
                 istep=0::Integer,
-                Δt=1::Real) where {F<:AbstractField{N,FT,FFT,A}} where {N,FT,FFT,A}
+                Δt=1::Real) where {F<:AbstractField{N,ND,FT,FFT,A}} where {N,ND,FT,FFT,A}
     pen = Pencil(size_global(w.f.ϕ), MPI.COMM_WORLD)
     tmp = PencilArray{FFT}(undef, pen)
 
     open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5",
          tmp.pencil.topology.comm; write=true) do h5file
         tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp)))
-        if N == 1
+        if ND == 1
             copyto!(parent(tmp), parent(w.f.ϕ))
             @. tmpr = real(tmp[1])
             h5file["re"] = tmpr
@@ -151,7 +151,7 @@ end
 function write!(w::WriterVTK{F};
                 prefix="res"::AbstractString,
                 istep=0::Integer,
-                Δt=1::Real) where {F<:AbstractField2D{N,FT,FFT,A}} where {N,FT,FFT,A}
+                Δt=1::Real) where {F<:AbstractField2D{ND,FT,FFT,A}} where {ND,FT,FFT,A}
     ϕ = w.f.ϕ
     comm = ϕ.pencil.topology.comm
     mpi_rank = MPI.Comm_rank(comm) + 1
@@ -166,7 +166,7 @@ function write!(w::WriterVTK{F};
 
     vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y; extents=extents, part=mpi_rank,
                         nparts=mpi_size)
-    if N == 1
+    if ND == 1
         tmp = A{FT}(undef, size_local(ϕ))
         tmp .= real.(parent(ϕ))
         vtkfile["re", VTKCellData()] = tmp
@@ -201,7 +201,7 @@ end
 function write!(w::WriterVTK{F};
                 prefix="res"::AbstractString,
                 istep=0::Integer,
-                Δt=1::Real) where {F<:AbstractField3D{N,FT,FFT,A}} where {N,FT,FFT,A}
+                Δt=1::Real) where {F<:AbstractField3D{ND,FT,FFT,A}} where {ND,FT,FFT,A}
     ϕ = w.f.ϕ
     comm = ϕ.pencil.topology.comm
     mpi_rank = MPI.Comm_rank(comm) + 1
@@ -219,7 +219,7 @@ function write!(w::WriterVTK{F};
     tmp = A{FT}(undef, size_local(ϕ))
     vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y, z; extents=extents, part=mpi_rank,
                         nparts=mpi_size)
-    if N == 1
+    if ND == 1
         copyto!(parent(tmp), real.(parent(ϕ)))
         vtkfile["re", VTKCellData()] = tmp
         copyto!(parent(tmp), imag.(parent(ϕ)))

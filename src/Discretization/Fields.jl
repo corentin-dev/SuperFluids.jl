@@ -11,54 +11,41 @@ export ComplexField, RealField
 export Field
 
 "Abstract supertype for numerical models."
-abstract type AbstractField{N,FT,FFT,A,PA,G,P} end
-"Abstract supertype for numerical models."
-abstract type AbstractField2D{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P} end
-"Abstract supertype for numerical models."
-abstract type AbstractField3D{N,FT,FFT,A,PA,G,P} <: AbstractField{N,FT,FFT,A,PA,G,P} end
+abstract type AbstractField{N,ND,FT,FFT,A,PA,G,P} end
+"Alias for 1D abstract field."
+const AbstractField1D{ND,FT,FFT,A,PA,G,P} = AbstractField{1,ND,FT,FFT,A,PA,G,P}
+"Alias for 2D abstract field."
+const AbstractField2D{ND,FT,FFT,A,PA,G,P} = AbstractField{2,ND,FT,FFT,A,PA,G,P}
+"Alias for 3D abstract field."
+const AbstractField3D{ND,FT,FFT,A,PA,G,P} = AbstractField{3,ND,FT,FFT,A,PA,G,P}
 
 """
-    Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
+$(SIGNATURES)
 
-Type representing a 2D field on a 2D grid.
+Type representing a field on a grid.
 
-- `pen`: informations concerning the decomposition.
-- `x`, `y`: local grid (relative to the `ϕ` decomposition).
-- `g`: reference to the grid.
-- `data`: distributed containing the data.
-
+$(TYPEDFIELDS)
 """
-mutable struct Field2D{N,FT,FFT,A,PA,G,P} <: AbstractField2D{N,FT,FFT,A,PA,G,P}
+mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P}
+    "informations concerning the decomposition."
     pen::P
+    "local grid (relative to the `ϕ` decomposition)."
     grid::LocalGrids.AbstractLocalGrid
+    "reference to the grid."
     g::G
-    data::Vector{PA}
+    "distributed containing the data."
+    data::Array{PA,ND}
 end
 
-"""
-    Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
-
-Type representing a 3D field on a 3D grid.
-
-- `pen`: informations concerning the decomposition.
-- `x`, `y`, `z`: local grid (relative to the `ϕ` decomposition).
-- `ndims`: number of dimension (additional) of the field.
-- `g`: reference to the grid.
-- `data`: distributed containing the data.
+"Alias for 1D field."
+const Field1D{ND,FT,FFT,A,PA,G,P} = Field{1,ND,FT,FFT,A,PA,G,P}
+"Alias for 2D field."
+const Field2D{ND,FT,FFT,A,PA,G,P} = Field{2,ND,FT,FFT,A,PA,G,P}
+"Alias for 3D field."
+const Field3D{ND,FT,FFT,A,PA,G,P} = Field{3,ND,FT,FFT,A,PA,G,P}
 
 """
-mutable struct Field3D{N,FT,FFT,A,PA,G,P} <: AbstractField3D{N,FT,FFT,A,PA,G,P}
-    pen::P
-    grid::LocalGrids.AbstractLocalGrid
-    g::G
-    data::Vector{PA}
-end
-
-"""
-    Field(
-         g::AbstractGrid2D{FT,A}, t::FieldType;
-         ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo1D()
-      ) where {FT<:Real, A}
+$(SIGNATURES)
 
 Returns a 2D field.
 
@@ -108,10 +95,7 @@ function Field(g::AbstractGrid2D{FT,A}, t::FieldType;
 end
 
 """
-    Field(
-         g::AbstractGrid3D{FT,A}, t::FieldType;
-         ndims::Integer=1, mpi_topo::AbstractDomainDecomposition=MPITopo2D()
-      ) where {FT<:Real, A}
+$(SIGNATURES)
 
 Returns a 3D field.
 
@@ -134,7 +118,7 @@ Field3D
 ```
 """
 function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
-               ndims::Integer=1,
+               ndim::Integer=1,
                mpi_topo::AbstractDomainDecomposition=MPITopo2D()) where {FT<:Real,A}
     if typeof(t) == RealField
         myT = FT
@@ -146,7 +130,7 @@ function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
     pen_x = Pencil(A, mpi_topo.topo, dims, (2, 3))
     local_dims = size_local(pen_x)
     data = [PencilArray(pen_x, A{myT}(undef, local_dims))]
-    for i in 1:(ndims - 1)
+    for i in 1:(ndim - 1)
         push!(data, PencilArray(pen_x, A{myT}(undef, local_dims)))
     end
 
@@ -170,7 +154,7 @@ function norm(f::Field3D)
 end
 
 """
-    normalize!(f::AbstractField)
+$(SIGNATURES)
 
 Normalize a field.
 
@@ -223,13 +207,13 @@ function similar_data(data::Vector{A}) where {A}
     return newdata
 end
 
-function Base.show(io::IO, f::Field2D{N,FT,FFT}) where {N,FT,FFT}
+function Base.show(io::IO, f::Field2D{ND,FT,FFT}) where {ND,FT,FFT}
     return print(io, "Field2D\n",
                  "  ├──────  Array type: $(FFT)", '\n',
                  "  └──────────  memory: $(sizeof(f.ϕ)/1024^2) MB")
 end
 
-function Base.show(io::IO, f::Field3D{N,FT,FFT}) where {N,FT,FFT}
+function Base.show(io::IO, f::Field3D{ND,FT,FFT}) where {ND,FT,FFT}
     return print(io, "Field3D\n",
                  "  ├───────  FloatType: $(FFT)", '\n',
                  "  └──────────  memory: $(sizeof(f.ϕ.data)/1024^2) MB")

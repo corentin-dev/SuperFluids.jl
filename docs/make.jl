@@ -15,7 +15,7 @@ examples = [
 ]
 
 for example in examples
-    Literate.markdown(example, "docs/src/generated"; flavor = Literate.DocumenterFlavor())
+    Literate.markdown(example, "docs/src/generated"; flavor = Literate.DocumenterFlavor(), credit=false)
 end
 
 makedocs(

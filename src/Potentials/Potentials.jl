@@ -1,11 +1,7 @@
 export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic,
        PotentialExternalVelocity
 
-"""
-    AbstractPotential
-
-Abstract supertype for field initialization classes.
-"""
+"Abstract supertype for field initialization classes."
 abstract type AbstractPotential{F} end
 
 struct PotentialZero{F} <: AbstractPotential{F}
@@ -13,7 +9,7 @@ struct PotentialZero{F} <: AbstractPotential{F}
     V::AbstractArray
 end
 
-function PotentialZero(f::F) where {F<:AbstractField{1,FT,FFT,A}} where {FT,FFT,A}
+function PotentialZero(f::F) where {F<:AbstractField{N,1,FT,FFT,A}} where {N,FT,FFT,A}
     V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
     V .= 0.0
     return PotentialZero{F}(f, V)

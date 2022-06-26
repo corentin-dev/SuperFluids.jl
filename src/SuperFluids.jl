@@ -6,6 +6,7 @@ using LinearAlgebra: mul!, ldiv!, transpose!
 using MPI
 using HDF5
 using PencilArrays
+using DocStringExtensions
 
 include("MPI/MPI.jl")
 include("Discretization/Discretization.jl")

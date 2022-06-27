@@ -17,7 +17,6 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo2D()
 
-
 # We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
 # that allows interactive javascript plots using WebGL, but you can also
 # use `GLMakie` for interactive plots on your computer, or `CairoMakie`
@@ -39,18 +38,18 @@ use_saves = true # hide
 #if you want to re-run the page, change to false # hide
 
 if use_plots # hide
-if makie_style == "WGLMakie"
-    using WGLMakie
-    WGLMakie.activate!()
-    using JSServe # hide
-    Page(exportable=true, offline=true) # hide
-elseif makie_style == "GLMakie"
-    using GLMakie
-    GLMakie.activate!()
-elseif makie_style == "CairoMakie"
-    using CairoMakie
-    CairoMakie.activate!()
-end
+    if makie_style == "WGLMakie"
+        using WGLMakie
+        WGLMakie.activate!()
+        using JSServe # hide
+        Page(; exportable=true, offline=true) # hide
+    elseif makie_style == "GLMakie"
+        using GLMakie
+        GLMakie.activate!()
+    elseif makie_style == "CairoMakie"
+        using CairoMakie
+        CairoMakie.activate!()
+    end
 end # hide
 
 # We setup the wanted discretization. We want $n_x \times n_y \times n_z = 128\times 128\times 128$.
@@ -62,18 +61,18 @@ nx = 85
 ny = 85
 nz = 85
 
-xrange = (0, 2*π)
-yrange = (0, 2*π)
-zrange = (0, 2*π)
+xrange = (0, 2 * π)
+yrange = (0, 2 * π)
+zrange = (0, 2 * π)
 
-grid = Grid((nx,ny,nz), (xrange,yrange,zrange), array_type=Array)
+grid = Grid((nx, ny, nz), (xrange, yrange, zrange); array_type=Array)
 
 # A field, containing the simulation informations, is setup. The field
 # is decomposed, hence the information of `mpi_topo` (which is not mandatory).
 # In this specific simulation, for the Gross-Pitaevskii equation, we need
 # a complex field ``ϕ``, and we specify it through the singleton `ComplexField()`.
 
-field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
+field = Field(grid, ComplexField(); mpi_topo=mpi_topo)
 
 # ## First step : convergence to a stationary field
 #
@@ -90,11 +89,9 @@ field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
 #
 # and $V = \dfrac{\left( u_{\text{adv}_x}^2 + u_{\text{adv}_y}^2 + u_{\text{adv}_z}^2 \right)}{α}
 
-param = GrossPitaevskiiParameters(
-    coeffΔ = -0.075,
-    β = 27,
-    pot = PotentialExternalVelocity(field, α=4*27*0.075)
-    )
+param = GrossPitaevskiiParameters(; coeffΔ=-0.075,
+                                  β=27,
+                                  pot=PotentialExternalVelocity(field; α=4 * 27 * 0.075))
 
 # initialisation
 
@@ -102,9 +99,9 @@ init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
 if mpi_topo.size == 1 # hide
-volume(grid.x, grid.y, grid.z, abs2.(field.ϕ), algorithm=:iso, isovalue = 0.4, isorange = 0.2)
+    volume(grid.x, grid.y, grid.z, abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
+           isorange=0.2)
 end # hide
-
 
 # The solver uses [`NumModelExternalVelocity`](@ref).
 # It uses the following scheme:
@@ -127,25 +124,26 @@ nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 # Solve the problem:
 
 if isfile("../../save/QT_TG_3D-490.h5") && use_saves # hide
-read!(nummodel.writers.writerList[2], prefix="../../save/QT_TG_3D", istep=490) # hide
-nummodel.niter = 10 # hide
-res = solve!(nummodel, istart=490, plot=false) # hide
-nummodel.niter = 500 # hide
+    read!(nummodel.writers.writerList[2]; prefix="../../save/QT_TG_3D", istep=490) # hide
+    nummodel.niter = 10 # hide
+    res = solve!(nummodel; istart=490, plot=false) # hide
+    nummodel.niter = 500 # hide
 else # hide
-res = solve!(nummodel, plot=false);
+    res = solve!(nummodel; plot=false)
 end # hide
 res[end]
 
 # Plot the solution
 
 if mpi_topo.size == 1 # hide
-volume(grid.x, grid.y, grid.z, abs2.(field.ϕ), algorithm=:iso, isovalue = 0.4, isorange = 0.2)
+    volume(grid.x, grid.y, grid.z, abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
+           isorange=0.2)
 end # hide
 
 # Cut at ``z = π``:
 
 if mpi_topo.size == 1 # hide
-surface(grid.x,grid.y,abs2.(field.ϕ[:,:,nz ÷ 2]))
+    surface(grid.x, grid.y, abs2.(field.ϕ[:, :, nz ÷ 2]))
 end # hide
 
 # ## Second step: unstationary restart
@@ -158,11 +156,9 @@ field_insta.ϕ .= field.ϕ;
 # The parameters are similar to the previous stationary simulation, but
 # the potential is different (``V=0``)
 
-param_insta = GrossPitaevskiiParameters(
-    coeffΔ = param.coeffΔ,
-    β = param.β,
-    pot = PotentialZero(field_insta)
-    )
+param_insta = GrossPitaevskiiParameters(; coeffΔ=param.coeffΔ,
+                                        β=param.β,
+                                        pot=PotentialZero(field_insta))
 
 # We instantiate a `NumModelADI2` which corresponds to
 # a second order Strangle scheme.
@@ -170,28 +166,30 @@ param_insta = GrossPitaevskiiParameters(
 Δt_insta = Δt
 niter_insta = 1000
 freqbckp_insta = 10
-nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta, freqbckp_insta)
+nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta,
+                              freqbckp_insta)
 
 # And we start the solver.
 
 if isfile("../../save/QT_TG_3D-1490.h5") && use_saves # hide
-read!(nummodel_insta.writers.writerList[2], prefix="../../save/QT_TG_3D", istep=1490) # hide
-nummodel_insta.niter = 10 # hide
-res_insta = solve!(nummodel_insta, istart=1490, plot=false) # hide
-nummodel_insta.niter = 1000 # hide
+    read!(nummodel_insta.writers.writerList[2]; prefix="../../save/QT_TG_3D", istep=1490) # hide
+    nummodel_insta.niter = 10 # hide
+    res_insta = solve!(nummodel_insta; istart=1490, plot=false) # hide
+    nummodel_insta.niter = 1000 # hide
 else # hide
-res_insta = solve!(nummodel_insta, istart=niter, plot=false);
+    res_insta = solve!(nummodel_insta; istart=niter, plot=false)
 end # hide
 res_insta[end]
 
 # Plot the solution.
 
 if mpi_topo.size == 1 # hide
-volume(grid.x, grid.y, grid.z, abs2.(field_insta.ϕ), algorithm=:iso, isovalue = 0.4, isorange = 0.2)
+    volume(grid.x, grid.y, grid.z, abs2.(field_insta.ϕ); algorithm=:iso, isovalue=0.4,
+           isorange=0.2)
 end # hide
 
 # Cut at ``z = π``:
 
 if mpi_topo.size == 1 # hide
-surface(grid.x,grid.y,abs2.(field_insta.ϕ[:,:,nz ÷ 2]))
+    surface(grid.x, grid.y, abs2.(field_insta.ϕ[:, :, nz ÷ 2]))
 end # hide

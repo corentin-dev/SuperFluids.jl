@@ -40,18 +40,18 @@ use_saves = true # hide
 #if you want to re-run the page, change to false # hide
 
 if use_plots # hide
-if makie_style == "WGLMakie"
-    using WGLMakie
-    WGLMakie.activate!()
-    using JSServe # hide
-    Page(exportable=true, offline=true) # hide
-elseif makie_style == "GLMakie"
-    using GLMakie
-    GLMakie.activate!()
-elseif makie_style == "CairoMakie"
-    using CairoMakie
-    CairoMakie.activate!()
-end
+    if makie_style == "WGLMakie"
+        using WGLMakie
+        WGLMakie.activate!()
+        using JSServe # hide
+        Page(; exportable=true, offline=true) # hide
+    elseif makie_style == "GLMakie"
+        using GLMakie
+        GLMakie.activate!()
+    elseif makie_style == "CairoMakie"
+        using CairoMakie
+        CairoMakie.activate!()
+    end
 end # hide
 
 # We setup the wanted discretization. We want ``n_x \times n_y = 128\times 128``.
@@ -62,10 +62,10 @@ end # hide
 nx = 128
 ny = 128
 
-xrange = (0, 2*π)
-yrange = (0, 2*π)
+xrange = (0, 2 * π)
+yrange = (0, 2 * π)
 
-grid = Grid((nx,ny), (xrange,yrange), array_type=Array)
+grid = Grid((nx, ny), (xrange, yrange); array_type=Array)
 
 # A field, containing the simulation informations, is setup. The field
 # is decomposed, hence the information of `mpi_topo` (which is not mandatory).
@@ -88,18 +88,16 @@ field = Field(grid, ComplexField())
 #
 # and ``V = \dfrac{\left( u_{\text{adv}_x}^2 + u_{\text{adv}_y}^2 \right)}{α}``
 
-param = GrossPitaevskiiParameters(
-    coeffΔ = -0.05,
-    β = 40,
-    pot = PotentialExternalVelocity(field, α=4*40*0.05)
-    )
+param = GrossPitaevskiiParameters(; coeffΔ=-0.05,
+                                  β=40,
+                                  pot=PotentialExternalVelocity(field; α=4 * 40 * 0.05))
 
 # initialisation
 init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
 if mpi_topo.size == 1 # hide
-surface(grid.x,grid.y,abs2.(field.ϕ))
+    surface(grid.x, grid.y, abs2.(field.ϕ))
 end # hide
 
 # The solver uses [`NumModelExternalVelocity`](@ref).
@@ -118,24 +116,23 @@ end # hide
 niter = 500
 freqbckp = 100
 
-
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 
 # Solve the problem:
 
-res = solve!(nummodel, plot=false);
+res = solve!(nummodel; plot=false);
 res[end]
 
 # Convergence of energy
 
 if mpi_topo.rank == 0 # hide
-lines( [ l[2] for l in res ], [ l[6] for l in res ] )
+    lines([l[2] for l in res], [l[6] for l in res])
 end # hide
 
 # Plot the solution
 
 if mpi_topo.size == 1 # hide
-surface(grid.x,grid.y,abs2.(field.ϕ))
+    surface(grid.x, grid.y, abs2.(field.ϕ))
 end # hide
 
 # ## Second step: unstationary restart
@@ -148,11 +145,9 @@ field_insta.ϕ .= field.ϕ;
 # The parameters are similar to the previous stationary simulation, but
 # the potential is different (``V=0``)
 
-param_insta = GrossPitaevskiiParameters(
-    coeffΔ = param.coeffΔ,
-    β = param.β,
-    pot = PotentialZero(field_insta)
-    )
+param_insta = GrossPitaevskiiParameters(; coeffΔ=param.coeffΔ,
+                                        β=param.β,
+                                        pot=PotentialZero(field_insta))
 
 # We instantiate a `NumModelADI2` which corresponds to
 # a second order Strangle scheme.
@@ -160,21 +155,22 @@ param_insta = GrossPitaevskiiParameters(
 Δt_insta = Δt
 niter_insta = 2500
 freqbckp_insta = 10
-nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta, freqbckp_insta)
+nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta,
+                              freqbckp_insta)
 
 # And we start the solver.
 
-res_insta = solve!(nummodel_insta, istart=niter, plot=false);
+res_insta = solve!(nummodel_insta; istart=niter, plot=false);
 res_insta[end]
 
 # Total energy should be (almost) constant in this case:
 
 if mpi_topo.rank == 0 # hide
-lines( [ l[2] for l in res_insta ], [ l[6] for l in res_insta ] )
+    lines([l[2] for l in res_insta], [l[6] for l in res_insta])
 end # hide
 
 # Plot the solution.
 
 if mpi_topo.size == 1 # hide
-surface(grid.x,grid.y,abs2.(field_insta.ϕ))
+    surface(grid.x, grid.y, abs2.(field_insta.ϕ))
 end # hide

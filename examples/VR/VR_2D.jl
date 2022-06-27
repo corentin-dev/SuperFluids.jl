@@ -23,8 +23,8 @@ mpi_topo = SuperFluids.MPITopo1D()
 
 # You can change those values if you want PNG or GL plots
 
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
+#makie_style = "WGLMakie"
+makie_style = "GLMakie"
 #makie_style = "CairoMakie"
 
 if mpi_topo.size == 1 # hide
@@ -34,18 +34,18 @@ else # hide
 end # hide
 
 if use_plots # hide
-if makie_style == "WGLMakie"
-    using WGLMakie
-    WGLMakie.activate!()
-    using JSServe # hide
-    Page(exportable=true, offline=true) # hide
-elseif makie_style == "GLMakie"
-    using GLMakie
-    GLMakie.activate!()
-elseif makie_style == "CairoMakie"
-    using CairoMakie
-    CairoMakie.activate!()
-end
+    if makie_style == "WGLMakie"
+        using WGLMakie
+        WGLMakie.activate!()
+        using JSServe # hide
+        Page(; exportable=true, offline=true) # hide
+    elseif makie_style == "GLMakie"
+        using GLMakie
+        GLMakie.activate!()
+    elseif makie_style == "CairoMakie"
+        using CairoMakie
+        CairoMakie.activate!()
+    end
 end # hide
 
 # We setup the wanted discretization. We want $n_x \times n_y = 128\times 128$.
@@ -57,8 +57,8 @@ ny = 128
 xrange = (0, 2π)
 yrange = (0, 2π)
 
-grid = Grid((nx,ny), (xrange,yrange))
-field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
+grid = Grid((nx, ny), (xrange, yrange))
+field = Field(grid, ComplexField(); mpi_topo=mpi_topo)
 
 # ## Physical parameters
 
@@ -67,12 +67,12 @@ field = Field(grid, ComplexField(), mpi_topo = mpi_topo)
 # and $β$ from this information. We force the distance $d_\\text{vor}$
 # between the two vortices to be equal to 20 times the healing length $ξ$.
 
-ξ = 15. / minimum((nx,ny))
+ξ = 15.0 / minimum((nx, ny))
 coeffΔ = -2ξ / √2
-β = - coeffΔ / ξ^2
-d = 20.
-v₊ = ( grid.Lx/4 + grid.xmin, grid.Ly/2 + d*ξ/2 + grid.ymin, +1)
-v₋ = ( grid.Lx/4 + grid.xmin, grid.Ly/2 - d*ξ/2 + grid.ymin, -1)
+β = -coeffΔ / ξ^2
+d = 20.0
+v₊ = (grid.Lx / 4 + grid.xmin, grid.Ly / 2 + d * ξ / 2 + grid.ymin, +1)
+v₋ = (grid.Lx / 4 + grid.xmin, grid.Ly / 2 - d * ξ / 2 + grid.ymin, -1)
 
 # We want to have a constant advection velocity:
 # $$ u⃗ = \\begin{pmatrix}
@@ -82,16 +82,15 @@ v₋ = ( grid.Lx/4 + grid.xmin, grid.Ly/2 - d*ξ/2 + grid.ymin, -1)
 # $$
 # In order to obtain this velocity, we use a [`PotentialExternalVelocity`](@ref)
 # with a custom function called `uadv_function_VR_2D`:
-uadv_function_VR_2D = ( (x,y) -> -coeffΔ * ( (1+cos(d*ξ)) / sin(d*ξ) + d*ξ /π ), (x,y)->0. );
+uadv_function_VR_2D = ((x, y) -> -coeffΔ * ((1 + cos(d * ξ)) / sin(d * ξ) + d * ξ / π),
+                       (x, y) -> 0.0);
 
-pot = PotentialExternalVelocity(field, uadv_function=uadv_function_VR_2D, α = -4*coeffΔ)
+pot = PotentialExternalVelocity(field; uadv_function=uadv_function_VR_2D, α=-4 * coeffΔ)
 
 # We then create [`GrossPitaevskiiParameters`](@ref) using this potential:
-param = GrossPitaevskiiParameters(
-    coeffΔ = coeffΔ,
-    β = β,
-    pot = pot
-    )
+param = GrossPitaevskiiParameters(; coeffΔ=coeffΔ,
+                                  β=β,
+                                  pot=pot)
 
 # ## Initialization
 
@@ -102,45 +101,52 @@ param = GrossPitaevskiiParameters(
 # We call it `ρ_vortex`:
 
 function ρ_vortex(r)
-    a₁, a₂, b₁, b₂ = 11. / 32., 11. / 384., 1. / 3., 11. / 384.
-    return √( ( a₁ * r^2 + a₂ * r^4 ) / ( 1 + b₁ * r^2 + b₂ * r^4  ) )
+    a₁, a₂, b₁, b₂ = 11.0 / 32.0, 11.0 / 384.0, 1.0 / 3.0, 11.0 / 384.0
+    return √((a₁ * r^2 + a₂ * r^4) / (1 + b₁ * r^2 + b₂ * r^4))
 end
 
 # The following function allows to create a vortex pair:
 
 function init_VR_tanh(x, y, ξ, v₊, v₋, grid)
-
     x₋, y₋ = (x - v₋[1]), (y - v₋[2])
     x₊, y₊ = (x - v₊[1]), (y - v₊[2])
 
-    ρ = ρ_vortex(
-            √( x₋^2 + y₋^2 )/ξ
-        ) *
-        ρ_vortex(
-            √( x₊^2 + y₊^2 )/ξ
-        )
+    ρ = ρ_vortex(√(x₋^2 + y₋^2) / ξ) *
+        ρ_vortex(√(x₊^2 + y₊^2) / ξ)
 
-
-    θ = (v₋[1]-v₊[1])*y / 2π
-    for k ∈ -5:5
-        θ += (
-            atan( tanh( 0.5 * (y₋+2π*k) ) * tan(0.5(x₋-π)) )
-          - atan( tanh( 0.5 * (y₊+2π*k) ) * tan(0.5(x₊-π)) )
-          + π * ( ( (x₊ > 0) ? 1. : 0.) - ( (x₋ > 0) ? 1. : 0.) )
-        )
+    θ = (v₋[1] - v₊[1]) * y / 2π
+    for k in -5:5
+        θ += (atan(tanh(0.5 * (y₋ + 2π * k)) * tan(0.5(x₋ - π)))
+              -
+              atan(tanh(0.5 * (y₊ + 2π * k)) * tan(0.5(x₊ - π)))
+              +
+              π * (((x₊ > 0) ? 1.0 : 0.0) - ((x₋ > 0) ? 1.0 : 0.0)))
     end
-    return ρ * exp(im*θ)
+    return ρ * exp(im * θ)
 end
 
+function init_VR_exp(x, y, ξ, v₊, v₋, grid)
+    #if y -
+    return exp(im * x * 2π / grid.Lx)
+end
+
+# if((discretization_y_ddm(j) - ymin) < vortices(1, 2) .OR. (discretization_y_ddm(j) - ymin) > vortices(2, 2)) then
+#     phi_0(i, j, 1, 1) = 1.0d0
+#  else
+#     phi_0(i, j, 1, 1) = exp(uim*(discretization_x(i))*pi2/Lx)
+#  end if
+
 # We create an alias in order to broadcast the function over the field:
-my_init = (x,y) -> init_VR_tanh(x, y, ξ, v₊, v₋, grid)
+my_init = (x, y) -> init_VR_tanh(x, y, ξ, v₊, v₋, grid)
+my_init = (x, y) -> init_VR_exp(x, y, ξ, v₊, v₋, grid)
 @. field.ϕ = my_init(field.x, field.y)
+@. field.ϕ .= 1.0
 
 # We obtain the following phase:
 #if use_plots # hide
-contourf(grid.x, grid.y, atan.(imag.(field.ϕ),real.(field.ϕ)) )
+contourf(grid.x, grid.y, atan.(imag.(field.ϕ), real.(field.ϕ)))
 # And module :
-contourf(grid.x, grid.y, abs2.(field.ϕ) )
+contourf(grid.x, grid.y, abs2.(field.ϕ))
 #end # hide
 
 # To clean the solution a bit, we use the ARGLE scheme
@@ -151,9 +157,9 @@ contourf(grid.x, grid.y, abs2.(field.ϕ) )
 niter = 2000
 freqbckp = 200
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
-res = solve!(nummodel, plot=false);
+res = solve!(nummodel; plot=false);
 if use_plots # hide
-contourf(grid.x, grid.y, abs2.(field.ϕ) )
+    contourf(grid.x, grid.y, abs2.(field.ϕ))
 end # hide
 
 # ## Unsteady computation
@@ -165,11 +171,9 @@ field_insta.ϕ .= field.ϕ;
 # The parameters are similar to the previous stationary simulation, but
 # the potential is different (``V=0``)
 
-param_insta = GrossPitaevskiiParameters(
-    coeffΔ = param.coeffΔ,
-    β = param.β,
-    pot = PotentialZero(field_insta)
-    )
+param_insta = GrossPitaevskiiParameters(; coeffΔ=param.coeffΔ,
+                                        β=param.β,
+                                        pot=PotentialZero(field_insta))
 
 # We instantiate a `NumModelADI2` which corresponds to
 # a second order Strangle scheme.
@@ -177,11 +181,12 @@ param_insta = GrossPitaevskiiParameters(
 Δt_insta = Δt / 2.5
 niter_insta = 20000
 freqbckp_insta = 400
-nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta, freqbckp_insta)
+nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta,
+                              freqbckp_insta)
 
 # And we start the solver.
 
-res_insta = solve!(nummodel_insta, istart=niter, plot=false);
+res_insta = solve!(nummodel_insta; istart=niter, plot=false);
 if use_plots # hide
-contourf(grid.x, grid.y, abs2.(field_insta.ϕ) )
+    contourf(grid.x, grid.y, abs2.(field_insta.ϕ))
 end # hide

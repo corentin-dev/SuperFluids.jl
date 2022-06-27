@@ -43,19 +43,19 @@ julia> write!(writer)
 function write!(w::WriterSave{F};
                 prefix="res"::AbstractString,
                 istep=0::Integer,
-                Δt=1::Real) where {F<:AbstractField{N,FT,FFT,A}} where {N,FT,FFT,A<:Array}
+                Δt=1::Real) where {F<:AbstractField{N,ND,FT,FFT,A}} where {N,ND,FT,FFT,A<:Array}
     tmp = w.f.data
 
     open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5",
          tmp[1].pencil.topology.comm; write=true) do h5file
         tmpr = PencilArray(tmp[1].pencil, Array{FT}(undef, size_local(tmp[1])))
-        if N == 1
+        if ND == 1
             @. tmpr = real(tmp[1])
             h5file["re"] = tmpr
             @. tmpr = imag(tmp[1])
             h5file["im"] = tmpr
         else
-            for i in 1:N
+            for i in 1:ND
                 @. tmpr = real(tmp[i])
                 h5file["U$(i)"] = tmpr
             end
@@ -82,7 +82,7 @@ function write!(w::WriterSave{F};
             @. tmpr = imag(tmp[1])
             h5file["im"] = tmpr
         else
-            for i in 1:N
+            for i in 1:ND
                 copyto!(parent(tmp), parent(w.f.data[i]))
                 @. tmpr = real(tmp)
                 h5file["U$(i)"] = tmpr

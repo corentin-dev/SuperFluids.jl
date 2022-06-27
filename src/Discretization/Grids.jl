@@ -78,7 +78,7 @@ function Grid(size::Tuple{Integer,Integer},
     Δx, Δy = Lx / nx, Ly / ny
     x = array_type(x[1:(end - 1)])
     y = array_type(y[1:(end - 1)])
-    return Grid{2,FT,array_type}([x, y], [nx, ny], [xmin, xmax], [ymin, ymax], [Lx, Ly],
+    return Grid{2,FT,array_type}([x, y], [nx, ny], [xmin, ymin], [xmax, ymax], [Lx, Ly],
                                  [Δx, Δy])
 end
 
@@ -121,8 +121,8 @@ function Grid(size::Tuple{Integer,Integer,Integer},
     x = array_type(x[1:(end - 1)])
     y = array_type(y[1:(end - 1)])
     z = array_type(z[1:(end - 1)])
-    return Grid{3,FT,array_type}([x, y, z], [nx, ny, nz], [xmin, xmax, ymin],
-                                 [ymax, zmin, zmax],
+    return Grid{3,FT,array_type}([x, y, z], [nx, ny, nz], [xmin, ymin, zmin],
+                                 [xmax, ymax, zmax],
                                  [Lx, Ly, Lz], [Δx, Δy, Δz])
 end
 

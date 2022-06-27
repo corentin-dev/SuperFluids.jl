@@ -51,7 +51,7 @@ pot = PotentialQuadratic(field; γx=γx, γy=γy)
 # ```
 
 param = GrossPitaevskiiParameters(; β=1000,
-                                  Ω=0.5,
+                                  Ω=0.9,
                                   pot=pot)
 
 # The initialization is done through [`InitThomasFermi`](@ref) which

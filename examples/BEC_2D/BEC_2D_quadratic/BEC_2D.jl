@@ -7,13 +7,15 @@
 
 using SuperFluids
 
-# ## Quadratic potential : ``\dfrac{1}{2} (1-α)(γ_x x² +γ_y y²)``
+# ## Quadratic potential
 
 # ### Discretization
 
-# We setup the wanted discretization. We want $n_x \times n_y = 128\times 128$.
+# We setup the wanted discretization. `SuperFluids` uses only regular rectangular grids in order to use either FFT or finite differences.
+
+# For this case, we want $n_x \times n_y = 128\times 128$.
 # The domain bounds are set to $[-12,12]\times[-12,12]$.
-# With those informations, we can create [`Grid`](@ref), using the constructor:
+# With those informations, we can create a [`Grid`](@ref), using the constructor:
 
 nx = 128
 ny = 128
@@ -66,39 +68,36 @@ initField!(init)
 
 # ### Plot initial solution
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots.
 
-# You can change those values if you want PNG or GL plots
+# For documentation purpose, we use `WGLMakie` # hide
+# that allows interactive javascript plots using WebGL, but you can also # hide
+# use `GLMakie` for interactive plots on your computer, or `CairoMakie` # hide
+# for static image plots. # hide
 
-#makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-makie_style = "CairoMakie"
+# You can change those values if you want PNG or GL plots # hide
 
-use_plots = false
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        using JSServe # hide
-        Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
+makie_style = "WGLMakie" # hide
+#makie_style = "GLMakie" # hide
+#makie_style = "CairoMakie" # hide
+
+if makie_style == "WGLMakie" # hide
+    using WGLMakie
+    WGLMakie.activate!() # hide
+    using JSServe # hide
+    Page(; exportable=true, offline=true) # hide
+elseif makie_style == "GLMakie" # hide
+    using GLMakie # hide
+    GLMakie.activate!() # hide
+elseif makie_style == "CairoMakie" # hide
+    using CairoMakie # hide
+    CairoMakie.activate!() # hide
 end # hide
 
 # We plot the initial solution:
 
-if use_plots # hide
-    #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
-    surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
-end # hide
+#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
+surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
 
 # The solver use implicit [`NumModelBackwardEuler`](@ref) scheme:
 
@@ -119,31 +118,25 @@ res[end]
 
 # We plot the convergence:
 
-if use_plots && mpi_topo.rank == 0 # hide
-    lines(1:length(res), [l[6] for l in res]; label="Total energy")
-    lines!(1:length(res), [l[3] for l in res]; label="Rotational energy")
-    lines!(1:length(res), [l[4] for l in res]; label="Potential+kinetic energy")
-    lines!(1:length(res), [l[5] for l in res]; label="Interaction energy")
-    axislegend()
-    current_figure()
-end # hide
+lines(1:length(res), [l[6] for l in res]; label="Total energy")
+lines!(1:length(res), [l[3] for l in res]; label="Rotational energy")
+lines!(1:length(res), [l[4] for l in res]; label="Potential+kinetic energy")
+lines!(1:length(res), [l[5] for l in res]; label="Interaction energy")
+axislegend()
+current_figure()
 
 # Number of Krylov iteration per imaginary time step:
 
-if use_plots && mpi_topo.rank == 0 # hide
-    lines(1:length(res), [l[1] for l in res]; label="Number of Krylov iterations")
-    axislegend()
-    current_figure()
-end # hide
+lines(1:length(res), [l[1] for l in res]; label="Number of Krylov iterations")
+axislegend()
+current_figure()
 
 # ### Solution for the quadratic potential
 
 # We plot the solution:
 
-if use_plots # hide
-    #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
-    surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
-end # hide
+#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
+surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
 
 # ## Quartic potential
 
@@ -162,7 +155,5 @@ res_quad[end]
 
 # We plot the solution:
 
-if use_plots # hide
-    #surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
-    surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
-end # hide
+#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
+surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)

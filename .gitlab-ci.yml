@@ -14,7 +14,7 @@ pages:
     - echo "link to /usr"
     - ln -s /opt/julia-1.7.2/bin/julia /usr/local/bin/julia
     - echo "install dependencies for documentation"
-    - julia -e 'using Pkg; Pkg.add("Documenter"); Pkg.add("Literate"); Pkg.add("WGLMakie"); Pkg.add("JSServe");'
+    - julia -e 'using Pkg; Pkg.add("Documenter"); Pkg.add("Literate"); Pkg.add("WGLMakie"); Pkg.add("JSServe"); Pkg.add("CairoMakie")'
     - echo "install dependencies for MPI"
     - julia -e 'using Pkg; Pkg.add("MPI"); Pkg.add("HDF5");'
     - echo "build MPI and HDF5 with system libraries"

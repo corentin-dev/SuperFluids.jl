@@ -41,7 +41,8 @@ struct PotentialQuarticQuadratic{F} <: AbstractPotential{F}
     κ4::Real
 
     function PotentialQuarticQuadratic(f::F; α::Real=0, γx::Real=1, γy::Real=1, γz::Real=1,
-                                       κ4::Real=1) where {F<:AbstractField{N,1,FT,FFT,A}} where {FT,
+                                       κ4::Real=1) where {F<:AbstractField{N,1,FT,FFT,A}} where {N,
+                                                                                                 FT,
                                                                                                  FFT,
                                                                                                  A}
         V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))

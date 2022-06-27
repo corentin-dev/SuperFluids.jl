@@ -10,7 +10,7 @@ const AbstractGradientField3D{F,A} = AbstractGradientField{3,F,A}
 export GradientField
 
 """
-$(SIGNATURES)
+$(TYPEDEF)
 
 Type representing a gradient of a 2D field.
 
@@ -35,7 +35,7 @@ const GradientField2D{F,A} = GradientField{2,F,A}
 const GradientField3D{F,A} = GradientField{3,F,A}
 
 """
-$(SIGNATURES)
+$(TYPEDEF)
 
 Type representing a gradient of a 2D field with rotation along z axis.
 
@@ -62,17 +62,13 @@ const GradientRotField2D{F,A} = GradientRotField{2,F,A}
 const GradientRotField3D{F,A} = GradientRotField{3,F,A}
 
 """
-$(SIGNATURES)
+$(TYPEDEF)
 
 Type representing a gradient of a 3D field, laplacian and curl.
 
 It contains the following informations:
 
-- `f`: reference to a field.
-- `dx`, `dy`: first derivatives of the given field.
-- `ddx`, `ddy`: second derivatives of the given field.
-- `rx`, `ry`: rotation along the `z` axis.
-
+$(TYPEDFIELDS)
 """
 mutable struct GradientCurlField{N,F,A} <: AbstractGradientField{N,F,A}
     "reference to a field."
@@ -91,7 +87,7 @@ const GradientCurlField2D{F,A} = GradientCurlField{2,F,A}
 const GradientCurlField3D{F,A} = GradientCurlField{3,F,A}
 
 """
-     GradientField(f::F; rotation::Bool = true) where {F<:AbstractField2D}
+$(TYPEDSIGNATURES)
 
 Returns a GradientField2D or GradientRotField2D.
 
@@ -125,7 +121,7 @@ function GradientField(f::F; rotation::Bool=false, laplacian::Bool=true,
 end
 
 """
-     GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
+$(TYPEDSIGNATURES)
 
 Returns a GradientField3D or GradientRotField3D.
 

@@ -7,55 +7,40 @@ MPI.Init()
 
 # DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
 
-examples = [
-    joinpath("examples/BEC_2D/BEC_2D_quadratic/BEC_2D.jl"),
-    joinpath("examples/QT_TG_2D/QT_TG_2D.jl"),
-    joinpath("examples/QT_TG_3D/QT_TG_3D.jl"),
-    joinpath("examples/VR/VR_2D.jl"),
-]
+examples = [joinpath("examples/BEC_2D/BEC_2D_quadratic/BEC_2D.jl"),
+            joinpath("examples/QT_TG_2D/QT_TG_2D.jl"),
+            joinpath("examples/QT_TG_3D/QT_TG_3D.jl"),
+            joinpath("examples/VR/VR_2D.jl")]
 
 for example in examples
-    Literate.markdown(example, "docs/src/generated"; flavor = Literate.DocumenterFlavor(), credit=false)
+    Literate.markdown(example, "docs/src/generated"; flavor=Literate.DocumenterFlavor(),
+                      credit=false)
 end
 
-makedocs(
-    authors = "Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
-    repo = "https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl",
-    sitename = "SuperFluids.jl",
-    format = Documenter.HTML(),
-    doctest = false,
-    strict = false,
-    clean = true,
-    modules = [SuperFluids],
-    pages = [
-        "Home" => "index.md",
-        "QuickStart" => "quickstart.md",
-        "Physic models" => [
-            "Gross-Pitaevskii" => [
-                "grosspitaevskii/grosspitaevskii.md",
-                "grosspitaevskii/init.md",
-                "grosspitaevskii/potential.md",
-                "grosspitaevskii/nummodel.md",
-            ]
-        ],
-        "Library" => [
-            "grid.md",
-            "field.md",
-            "plan.md",
-            "gradientfield.md",
-        ],
-        "Examples" => [
-           "generated/BEC_2D.md",
-           "generated/VR_2D.md",
-           "generated/QT_TG_2D.md",
-           "generated/QT_TG_3D.md",
-        ],
-        "Plots" => [
-            "plots/plots.md",
-        ],
-        "API" => "api.md",
-    ],
-)
+makedocs(; authors="Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
+         repo="https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl",
+         sitename="SuperFluids.jl",
+         format=Documenter.HTML(),
+         doctest=false,
+         strict=false,
+         clean=true,
+         modules=[SuperFluids],
+         pages=["Home" => "index.md",
+                "QuickStart" => "quickstart.md",
+                "Physic models" => ["Gross-Pitaevskii" => ["grosspitaevskii/grosspitaevskii.md",
+                                                           "grosspitaevskii/init.md",
+                                                           "grosspitaevskii/potential.md",
+                                                           "grosspitaevskii/nummodel.md"]],
+                "Library" => ["grid.md",
+                              "field.md",
+                              "plan.md",
+                              "gradientfield.md"],
+                "Examples" => ["generated/BEC_2D.md",
+                               "generated/VR_2D.md",
+                               "generated/QT_TG_2D.md",
+                               "generated/QT_TG_3D.md"],
+                "Plots" => ["plots/plots.md"],
+                "API" => "api.md"])
 
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual

@@ -20,7 +20,7 @@ const AbstractField2D{ND,FT,FFT,A,PA,G,P} = AbstractField{2,ND,FT,FFT,A,PA,G,P}
 const AbstractField3D{ND,FT,FFT,A,PA,G,P} = AbstractField{3,ND,FT,FFT,A,PA,G,P}
 
 """
-$(SIGNATURES)
+$(TYPEDEF)
 
 Type representing a field on a grid.
 
@@ -45,7 +45,7 @@ const Field2D{ND,FT,FFT,A,PA,G,P} = Field{2,ND,FT,FFT,A,PA,G,P}
 const Field3D{ND,FT,FFT,A,PA,G,P} = Field{3,ND,FT,FFT,A,PA,G,P}
 
 """
-$(SIGNATURES)
+$(TYPEDSIGNATURES)
 
 Returns a 2D field.
 
@@ -95,7 +95,7 @@ function Field(g::AbstractGrid2D{FT,A}, t::FieldType;
 end
 
 """
-$(SIGNATURES)
+$(TYPEDSIGNATURES)
 
 Returns a 3D field.
 
@@ -154,7 +154,7 @@ function norm(f::Field3D)
 end
 
 """
-$(SIGNATURES)
+$(TYPEDSIGNATURES)
 
 Normalize a field.
 

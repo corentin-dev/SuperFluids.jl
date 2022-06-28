@@ -20,17 +20,17 @@ $(TYPEDFIELDS)
 """
 struct Grid{N,FT,A} <: AbstractGrid{N,FT,A}
     "a vector containing the positions along each direction."
-    data::Vector{A}
+    data::NTuple{N,A}
     "dimension of the grid along each direction."
-    n::Vector{Integer}
+    n::NTuple{N,Integer}
     "minimum bounds of the grid."
-    min::Vector{FT}
+    min::NTuple{N,FT}
     "maximum bounds of the grid."
-    max::Vector{FT}
+    max::NTuple{N,FT}
     "physical length along each direction."
-    L::Vector{FT}
+    L::NTuple{N,FT}
     "corresponds to the minimum distance between each point of the grid in each direction."
-    Δ::Vector{FT}
+    Δ::NTuple{N,FT}
 end
 
 "Alias for 1D grids."
@@ -78,8 +78,8 @@ function Grid(size::Tuple{Integer,Integer},
     Δx, Δy = Lx / nx, Ly / ny
     x = array_type(x[1:(end - 1)])
     y = array_type(y[1:(end - 1)])
-    return Grid{2,FT,array_type}([x, y], [nx, ny], [xmin, ymin], [xmax, ymax], [Lx, Ly],
-                                 [Δx, Δy])
+    return Grid{2,FT,array_type}((x, y), (nx, ny), (xmin, ymin), (xmax, ymax), (Lx, Ly),
+                                 (Δx, Δy))
 end
 
 """
@@ -121,9 +121,9 @@ function Grid(size::Tuple{Integer,Integer,Integer},
     x = array_type(x[1:(end - 1)])
     y = array_type(y[1:(end - 1)])
     z = array_type(z[1:(end - 1)])
-    return Grid{3,FT,array_type}([x, y, z], [nx, ny, nz], [xmin, ymin, zmin],
-                                 [xmax, ymax, zmax],
-                                 [Lx, Ly, Lz], [Δx, Δy, Δz])
+    return Grid{3,FT,array_type}((x, y, z), (nx, ny, nz), (xmin, ymin, zmin),
+                                 (xmax, ymax, zmax),
+                                 (Lx, Ly, Lz), (Δx, Δy, Δz))
 end
 
 Base.eltype(::AbstractGrid{FT}) where {FT} = FT

@@ -25,6 +25,10 @@ $(TYPEDEF)
 Type representing a field on a grid.
 
 $(TYPEDFIELDS)
+
+Constructor:
+
+$(METHODLIST)
 """
 mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P}
     "informations concerning the decomposition."
@@ -35,6 +39,13 @@ mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P
     g::G
     "distributed containing the data."
     data::Array{PA,ND}
+
+    function Field{N,ND,FFT}(pen_x::P, grid, g::G,
+                             data::Vector{PA}) where {ND,FFT,PA,G<:AbstractGrid{N,FT,A},P} where {N,
+                                                                                                  FT,
+                                                                                                  A}
+        return new{N,ND,FT,FFT,A,PA,G,P}(pen_x, grid, g, data)
+    end
 end
 
 "Alias for 1D field."
@@ -71,27 +82,21 @@ function Field(g::AbstractGrid2D{FT,A}, t::FieldType;
                ndims::Integer=1,
                mpi_topo::AbstractDomainDecomposition=MPITopo1D()) where {FT<:Real,A}
     if typeof(t) == RealField
-        myT = FT
+        FFT = FT
     elseif typeof(t) == ComplexField
-        myT = Complex{FT}
+        FFT = Complex{FT}
     end
 
-    dims = (g.nx, g.ny)
-
-    pen_x = Pencil(A, mpi_topo.topo, dims, (2,))
+    pen_x = Pencil(A, mpi_topo.topo, g.n, (2,))
     local_dims = size_local(pen_x)
-    data = [PencilArray(pen_x, A{myT}(undef, local_dims))]
+    data = [PencilArray(pen_x, A{FFT}(undef, local_dims))]
     for i in 1:(ndims - 1)
-        push!(data, PencilArray(pen_x, A{myT}(undef, local_dims)))
+        push!(data, PencilArray(pen_x, A{FFT}(undef, local_dims)))
     end
 
-    pen_array_glob = global_view(data[1])
-    r = Tuple([minimum(a):maximum(a) for a in axes(pen_array_glob)])
+    grid = localgrid(pen_x, g.data)
 
-    grid = localgrid(pen_x, (g.x, g.y))
-
-    return Field2D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, grid, g,
-                                                                           data)
+    return Field2D{ndims,FFT}(pen_x, grid, g, data)
 end
 
 """
@@ -121,26 +126,21 @@ function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
                ndim::Integer=1,
                mpi_topo::AbstractDomainDecomposition=MPITopo2D()) where {FT<:Real,A}
     if typeof(t) == RealField
-        myT = FT
+        FFT = FT
     elseif typeof(t) == ComplexField
-        myT = Complex{FT}
+        FFT = Complex{FT}
     end
 
-    dims = (g.nx, g.ny, g.nz)
-    pen_x = Pencil(A, mpi_topo.topo, dims, (2, 3))
+    pen_x = Pencil(A, mpi_topo.topo, g.n, (2, 3))
     local_dims = size_local(pen_x)
-    data = [PencilArray(pen_x, A{myT}(undef, local_dims))]
+    data = [PencilArray(pen_x, A{FFT}(undef, local_dims))]
     for i in 1:(ndim - 1)
-        push!(data, PencilArray(pen_x, A{myT}(undef, local_dims)))
+        push!(data, PencilArray(pen_x, A{FFT}(undef, local_dims)))
     end
 
-    pen_array_glob = global_view(data[1])
-    r = Tuple([minimum(a):maximum(a) for a in axes(pen_array_glob)])
+    grid = localgrid(pen_x, g.data)
 
-    grid = localgrid(pen_x, (g.x, g.y, g.z))
-
-    return Field3D{ndims,FT,myT,A,typeof(data[1]),typeof(g),typeof(pen_x)}(pen_x, grid, g,
-                                                                           data)
+    return Field3D{ndims,FFT}(pen_x, grid, g, data)
 end
 
 function norm(f::Field2D)

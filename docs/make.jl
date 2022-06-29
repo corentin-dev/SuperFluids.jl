@@ -23,21 +23,21 @@ if run_example
                           credit=false)
     end
 else
-   examples_md = []
+    examples_md = []
 end
 
 pages = ["Home" => "index.md",
-        "QuickStart" => "quickstart.md",
-        "Physic models" => ["Gross-Pitaevskii" => ["grosspitaevskii/grosspitaevskii.md",
-                                                "grosspitaevskii/init.md",
-                                                "grosspitaevskii/potential.md",
-                                                "grosspitaevskii/nummodel.md"]],
-        "Library" => ["grid.md",
-                    "field.md",
-                    "plan.md",
-                    "gradientfield.md"],
-        "Plots" => ["plots/plots.md"],
-        "API" => "api.md"]
+         "QuickStart" => "quickstart.md",
+         "Physic models" => ["Gross-Pitaevskii" => ["grosspitaevskii/grosspitaevskii.md",
+                                                    "grosspitaevskii/init.md",
+                                                    "grosspitaevskii/potential.md",
+                                                    "grosspitaevskii/nummodel.md"]],
+         "Library" => ["grid.md",
+                       "field.md",
+                       "plan.md",
+                       "gradientfield.md"],
+         "Plots" => ["plots/plots.md"],
+         "API" => "api.md"]
 
 if run_example
     insert!(pages, 5, "Examples" => examples_md)

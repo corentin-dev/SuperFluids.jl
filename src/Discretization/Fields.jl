@@ -41,7 +41,7 @@ mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P
                              data::Vector{PA}) where {ND,FFT,PA,G<:AbstractGrid{N,FT,A},P} where {N,
                                                                                                   FT,
                                                                                                   A}
-        new{N,ND,FT,FFT,A,PA,G,P}(pen_x, grid, g, data)
+        return new{N,ND,FT,FFT,A,PA,G,P}(pen_x, grid, g, data)
     end
 end
 

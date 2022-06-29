@@ -1,5 +1,5 @@
 """
-    PotentialQuadratic{F} <: AbstractPotential{F}
+$(TYPEDEF)
 
 Represents a quadratic potential. It can be used for [`GrossPitaevskiiParameters`](@ref).
 It has the following form:
@@ -11,12 +11,11 @@ It has the following form:
 
 The potential has the following informations:
 
-- `f`: the field on which the potential acts,
-- `V`: a potential field (real),
-- `α`: a scalar,
-- `γx`: a scalar,
-- `γy`: a scalar,
-- `γz`: a scalar (only for 3D).
+$(TYPEDFIELDS)
+
+Constructor:
+
+$(METHODLIST)
 
 Example
 =======
@@ -30,13 +29,24 @@ Quadratic Potential for 2D fields
 ```
 """
 struct PotentialQuadratic{F} <: AbstractPotential{F}
+    "field on which the potential acts."
     f::F
+    "potential field (real)."
     V::AbstractArray
+    "scaling scalar"
     α::Real
+    "x quadratic coefficient."
     γx::Real
+    "y quadratic coefficient."
     γy::Real
+    "z quadratic coefficient (for 3D)."
     γz::Real
 
+    """
+    $(TYPEDSIGNATURES)
+
+    Returns a `PotentialQuarticQuadratic` potential.
+    """
     function PotentialQuadratic(f::F; α::Real=0, γx::Real=1, γy::Real=1,
                                 γz::Real=1) where {F<:AbstractField{N,1,FT,FFT,A}} where {N,
                                                                                           FT,

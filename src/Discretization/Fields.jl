@@ -7,8 +7,9 @@ struct ComplexField <: FieldType end
 "Real field"
 struct RealField <: FieldType end
 
-export ComplexField, RealField
-export Field
+export FieldType, ComplexField, RealField
+export AbstractField, AbstractField1D, AbstractField2D, AbstractField3D
+export Field, Field1D, Field2D, Field3D
 
 "Abstract supertype for numerical models."
 abstract type AbstractField{N,ND,FT,FFT,A,PA,G,P} end
@@ -25,10 +26,6 @@ $(TYPEDEF)
 Type representing a field on a grid.
 
 $(TYPEDFIELDS)
-
-Constructor:
-
-$(METHODLIST)
 """
 mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P}
     "informations concerning the decomposition."
@@ -38,13 +35,13 @@ mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P
     "reference to the grid."
     g::G
     "distributed containing the data."
-    data::Array{PA,ND}
+    data::Vector{PA}
 
     function Field{N,ND,FFT}(pen_x::P, grid, g::G,
                              data::Vector{PA}) where {ND,FFT,PA,G<:AbstractGrid{N,FT,A},P} where {N,
                                                                                                   FT,
                                                                                                   A}
-        return new{N,ND,FT,FFT,A,PA,G,P}(pen_x, grid, g, data)
+        new{N,ND,FT,FFT,A,PA,G,P}(pen_x, grid, g, data)
     end
 end
 
@@ -123,7 +120,7 @@ Field3D
 ```
 """
 function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
-               ndim::Integer=1,
+               ndims::Integer=1,
                mpi_topo::AbstractDomainDecomposition=MPITopo2D()) where {FT<:Real,A}
     if typeof(t) == RealField
         FFT = FT
@@ -134,7 +131,7 @@ function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
     pen_x = Pencil(A, mpi_topo.topo, g.n, (2, 3))
     local_dims = size_local(pen_x)
     data = [PencilArray(pen_x, A{FFT}(undef, local_dims))]
-    for i in 1:(ndim - 1)
+    for i in 1:(ndims - 1)
         push!(data, PencilArray(pen_x, A{FFT}(undef, local_dims)))
     end
 

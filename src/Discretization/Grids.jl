@@ -7,7 +7,8 @@ const AbstractGrid2D{FT,A} = AbstractGrid{2,FT,A}
 "Alias for 3D abstract grids."
 const AbstractGrid3D{FT,A} = AbstractGrid{3,FT,A}
 
-export Grid
+export AbstractGrid, AbstractGrid1D, AbstractGrid2D, AbstractGrid3D
+export Grid, Grid1D, Grid2D, Grid3D
 
 """
 $(TYPEDEF)

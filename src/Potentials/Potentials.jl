@@ -4,6 +4,11 @@ export PotentialZero, PotentialQuarticQuadratic, PotentialQuadratic,
 "Abstract supertype for field initialization classes."
 abstract type AbstractPotential{F} end
 
+"""
+$(TYPEDEF)
+
+Zero potential (``V=0``).
+"""
 struct PotentialZero{F} <: AbstractPotential{F}
     f::F
     V::AbstractArray

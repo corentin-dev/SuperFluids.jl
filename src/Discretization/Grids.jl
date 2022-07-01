@@ -15,9 +15,11 @@ $(TYPEDEF)
 
 Type representing a grid.
 
-A `Grid` contains the following informations:
+It contains the following informations:
 
 $(TYPEDFIELDS)
+
+See also [`Field`](@ref).
 """
 struct Grid{N,FT,A} <: AbstractGrid{N,FT,A}
     "a vector containing the positions along each direction."
@@ -44,21 +46,20 @@ const Grid3D{FT,A} = Grid{3,FT,A}
 """
 $(TYPEDSIGNATURES)
 
-Returns a Grid2D with of size `size = (nx,ny)` ranging from `bounds = ((xmin,xmax),(ymin,ymax))` .
+Returns a Grid2D of size `size = (nx,ny)` ranging from `bounds = ((xmin,xmax),(ymin,ymax))` .
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)))
+julia> grid = Grid((32,32), ((-12,12), (-12,12)))
 Grid2D
-  ├──────  resolution: 128×128
-  ├───────  mesh size: 16384
-  ├────  grid spacing: 0.1875×0.1875
+  ├──────  resolution: 32×32
+  ├───────  mesh size: 1024
+  ├────  grid spacing: 0.75×0.75
   └──────────  domain: [-12.0,12.0]×[-12.0,12.0]
 ```
 
 See also [`Field`](@ref).
-
 """
 function Grid(size::Tuple{Integer,Integer},
               bounds::Tuple{Tuple{Real,Real},Tuple{Real,Real}};
@@ -88,14 +89,14 @@ $(TYPEDSIGNATURES)
 
 Returns a Grid3D with of size `size = (nx,ny,nz)` ranging from `bounds = ((xmin,xmax),(ymin,ymax),(zmin,zmax))` .
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128,128), ((-12,12),(-12,12),(-12,12)))
+julia> grid = Grid((32,32,32), ((-12,12),(-12,12),(-12,12)))
 Grid3D
-  ├──────  resolution: 128×128×128
-  ├───────  mesh size: 2097152
-  ├────  grid spacing: 0.1875×0.1875×0.1875
+  ├──────  resolution: 32×32×32
+  ├───────  mesh size: 32768
+  ├────  grid spacing: 0.75×0.75×0.75
   └──────────  domain: [-12.0,12.0]×[-12.0,12.0]×[-12.0,12.0]
 ```
 """

@@ -5,30 +5,27 @@ export GrossPitaevskiiParameters
 export NavierStokesParameters
 
 """
-    GrossPitaevskiiParameters <: AbstractParameters
+$(TYPEDEF)
 
 Parameters to compute Gross-Pitarvskii equations.
 
 It contains the following informations:
 
-- `coeffΔ`: coefficient in front of Δ term,
-- `β`: interaction coefficient,
-- `pot`: potential,
-- `Ω`: rotation coefficient.
+$(TYPEDFIELDS)
 """
 mutable struct GrossPitaevskiiParameters <: AbstractParameters
+    "coefficient in front of Δ term."
     coeffΔ::Real
+    "interaction coefficient."
     β::Real
+    "potential."
     pot::AbstractPotential
+    "rotation along ``z`` axis."
     Ω::Real
 end
 
 """
-    GrossPitaevskiiParameters(;
-      coeffΔ = -0.5 :: Real,
-      β = 1. :: Real,
-      pot :: AbstractPotential,
-      Ω = 0. :: Real)
+$(TYPEDSIGNATURES)
 
 Returns a `GrossPitaevskiiParameters``.
 
@@ -38,10 +35,10 @@ Parameters are:
 - `pot`: potential (of class `AbstractPotential`),
 - `Ω`: rotation along ``z`` axis.
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8)
+julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8, pot = PotentialZero(field))
 GrossPitaevskiiParameters
   ├──────  equation solved:
   ├─────── idϕ/dt = -0.5 Δϕ + 1000 |ϕ|²ϕ  + V(x)ϕ - i 0.8 Lz ϕ
@@ -64,9 +61,11 @@ function Base.show(io::IO, param::GrossPitaevskiiParameters)
 end
 
 """
-    NavierStokesParameters <: AbstractParameters
+$(TYPEDEF)
 
 Parameters to compute Navier-Stokes equations.
+
+$(TYPEDFIELDS)
 """
 mutable struct NavierStokesParameters <: AbstractParameters
     "viscosity"
@@ -76,9 +75,7 @@ mutable struct NavierStokesParameters <: AbstractParameters
 end
 
 """
-    NavierStokesParameters(;
-      ν :: Real = 0.001,
-      ρ :: Real = 1.)
+$(TYPEDSIGNATURES)
 
 Returns a NavierStokesParameters.
 
@@ -90,7 +87,7 @@ NavierStokesParameters
   ├──────  equation solved:
   ├─────── du/dt + ∇⋅(uu) = -1/ρ ∇p + ν Δu
   ├─────── ∇⋅u = 0
-  └─────── ν: 0.001
+  └─────── ν: 0.001 ρ: 1.0
 ```
 """
 function NavierStokesParameters(;

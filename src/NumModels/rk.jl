@@ -1,26 +1,38 @@
+"""
+$(TYPEDEF)
+
+Contains:
+
+$(TYPEDFIELDS)
+"""
 mutable struct NumModelForwardEuler{F,P,Plan} <: AbstractNumModel{F,P,Plan}
+    "field to work on."
     f::F
+    "gradient field to compute derivatives."
     gf::AbstractGradientField
+    "physical parameters."
     param::P
+    "time step."
     Δt::Real
+    "number of iterations."
     niter::Integer
+    "frequency of backups."
     freqbckp::Integer
+    "plan to compute derivatives."
     plan::Plan
+    "writers for backups."
     writers::AbstractWriterCollection{F}
 end
 
 """
-    NumModelForwardEuler(f::AbstractField, param::AbstractParameters,
-          Δt::Real, niter::Integer, freqbckp::Integer)
+$(TYPEDSIGNATURES)
 
 Returns a Runge-Kutta 2 numerical model.
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
-julia> param = GrossPitaevskiiParameters();
+julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8, pot = PotentialZero(field));
 julia> nummodel = NumModelForwardEuler(field, param, 0.01, 1000, 100)
 Backward Euler
   ├───────  time step: 0.01

@@ -14,18 +14,14 @@ mutable struct NumModelBackwardEuler{F,P,Plan} <: AbstractNumModel{F,P,Plan}
 end
 
 """
-    NumModelBackwardEuler(f::AbstractField, param::AbstractParameters,
-          Δt::Real, niter::Integer, freqbckp::Integer;
-          nkrylov::Integer = 70, tolkrylov::Real = 1e-8)
+$(TYPEDSIGNATURES)
 
 Returns a Backward Euler numerical model.
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
-julia> param = GrossPitaevskiiParameters();
+julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8, pot = PotentialZero(field));
 julia> nummodel = NumModelBackwardEuler(field, param, 0.01, 1000, 100)
 Backward Euler
   ├──────────  krylov: n iterations 70, tolerance 1.0e-8

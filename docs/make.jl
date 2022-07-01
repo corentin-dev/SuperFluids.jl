@@ -4,8 +4,14 @@ using SuperFluids
 using MPI
 
 MPI.Init()
+DocMeta.setdocmeta!(SuperFluids, :DocTestSetup,
+                    :(using SuperFluids;
+                      grid = Grid((32, 32), ((-12, 12), (-12, 12)));
+                      field = Field(grid, ComplexField()); 
+                      grid3 = Grid((32, 32, 32), ((-12,  12), (-12,  12), (-12,  12)));
+                      field3 = Field(grid3, ComplexField());
+                     ); recursive=true)
 
-# DocMeta.setdocmeta!(SuperFluids, :DocTestSetup, :(using SuperFluids); recursive=true)
 run_example = true
 
 if run_example

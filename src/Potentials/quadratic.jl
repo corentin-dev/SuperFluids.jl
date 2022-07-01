@@ -17,15 +17,13 @@ Constructor:
 
 $(METHODLIST)
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
 julia> PotentialQuadratic(field, γx = 0.5, γy = 0.5)
 Quadratic Potential for 2D fields
-   ├──────  parameters: α 0 γx 0.5 γy 0.5
-   └──────────────  V = (1-α)/2 × (γx x² + γy y²)
+    ├──────  parameters: α 0 γx 0.5 γy 0.5
+    └──────────────  V = (1-α)/2 × (γx x² + γy y²)
 ```
 """
 struct PotentialQuadratic{F} <: AbstractPotential{F}

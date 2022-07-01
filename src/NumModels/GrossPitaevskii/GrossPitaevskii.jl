@@ -1,5 +1,5 @@
 """
-    lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField2D, P<:GrossPitaevskiiParameters, Plan}
+$(TYPEDSIGNATURES)
 
 Returns a field containing the value:
 
@@ -22,7 +22,7 @@ function lapRot(n::AbstractNumModel{F,P,Plan},
 end
 
 """
-    lapRot(n::AbstractNumModel{F,P, Plan}, ϕt) where {F<:AbstractField3D, P<:GrossPitaevskiiParameters, Plan}
+$(TYPEDSIGNATURES)
 
 Returns a field containing the value:
 

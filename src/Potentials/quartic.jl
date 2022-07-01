@@ -14,11 +14,9 @@ The potential has the following informations:
 
 $(TYPEDFIELDS)
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
 julia> PotentialQuarticQuadratic(field, γx = 0.5, γy = 0.5, κ4 = 1.)
 Quartic-Quadratic Potential for 2D fields
   ├──────  parameters: α 0 γx 0.5 γy 0.5  κ₄ 1.0

@@ -16,8 +16,4 @@ include("Inits/Inits.jl")
 include("IO/IO.jl")
 include("NumModels/NumModels.jl")
 
-export initField!, energy, finishWriter!
-export Grid, Field
-export print_parallel, println_parallel
-
 end # module

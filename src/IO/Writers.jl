@@ -8,19 +8,19 @@ export write!, read!
 abstract type AbstractWriter{F} end
 
 """
-   WriterSave{F<:AbstractField} <: AbstractWriter{F}
+$(TYPEDEF)
 
 Type representing a saving writer for a given field.
+
+$(TYPEDFIELDS)
 """
 struct WriterSave{F<:AbstractField} <: AbstractWriter{F}
+    "field to read/write"
     f::F
 end
 
 """
-   write!(w::WriterSave{AbstractField};
-      prefix="res"::AbstractString,
-      istep=0::Integer,
-      Δt=1::Real)
+$(TYPEDSIGNATURES)
 
 Write a given field in a HDF5 format.
 
@@ -34,8 +34,6 @@ Parameters:
 The HDF5 handles parallel files through a `PencilArray`.
 
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
 julia> writer = WriterSave(field);
 julia> write!(writer)
 ```
@@ -78,9 +76,9 @@ function write!(w::WriterSave{F};
         tmpr = PencilArray(tmp.pencil, Array{FT}(undef, size_local(tmp)))
         if ND == 1
             copyto!(parent(tmp), parent(w.f.ϕ))
-            @. tmpr = real(tmp[1])
+            @. tmpr = real(tmp)
             h5file["re"] = tmpr
-            @. tmpr = imag(tmp[1])
+            @. tmpr = imag(tmp)
             h5file["im"] = tmpr
         else
             for i in 1:ND
@@ -95,16 +93,13 @@ function write!(w::WriterSave{F};
 end
 
 """
-   Base.read!(w::WriterSave{AbstractField};
-      prefix="res"::AbstractString,
-      istep=0::Integer,
-      Δt=1::Real)
+$(TYPEDSIGNATURES)
 
 Read a given field in the HDF5 format.
 
 Parameters:
 
-- `w`: a `WriterSave` with a `Field` to read,
+- `w`: a `WriterSave` with a [`Field`](@ref) to read,
 - `prefix`: a string that is put in front of the saved file (default: `"res"`),
 - `istep`: an integer representing the current `istep` value (default: `0`),
 - `Δt` : a real representing the time step value (default: `1.`).
@@ -112,8 +107,6 @@ Parameters:
 The HDF5 handles parallel files through a `PencilArray`.
 
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
 julia> writer = WriterSave(field);
 julia> write!(writer)
 julia> read!(writer)
@@ -122,26 +115,35 @@ julia> read!(writer)
 function Base.read!(w::WriterSave{F};
                     prefix="res"::AbstractString,
                     istep=0::Integer,
-                    Δt=1::Real) where {F}
+                    Δt=1::Real) where {F<:AbstractField{N,ND,FT,FFT,A}} where {N,ND,FT,FFT,A}
+
+    pen = Pencil(size_global(w.f.ϕ), MPI.COMM_WORLD)
+    tmp = PencilArray{FFT}(undef, pen)
+
     open(PencilArrays.PencilIO.PHDF5Driver(), "$(prefix)-$(istep).h5",
-         w.f.ϕ.pencil.topology.comm; read=true) do h5file
-        tmp = PencilArray(w.f.ϕ.pencil, Array{Float64}(undef, size_local(w.f.ϕ)))
-        read!(h5file, tmp, "re")
+         tmp.pencil.topology.comm; read=true) do h5file
+        tmpr = PencilArray(tmp.pencil, Array{Float64}(undef, size_local(w.f.ϕ)))
+        read!(h5file, tmpr, "re")
+        tmp .= tmpr
+        read!(h5file, tmpr, "im")
+        tmp .+= im .* tmpr
         copyto!(parent(w.f.ϕ), parent(tmp))
-        read!(h5file, tmp, "im")
-        return copyto!(parent(w.f.ϕ), im .* parent(tmp))
     end
 
     return nothing
 end
 
 """
-    WriterVTK{F<:AbstractField} <: AbstractWriter{F}
+$(TYPEDEF)
 
 Type representing a VTK writer for a given field.
+
+$(TYPEDFIELDS)
 """
 struct WriterVTK{F<:AbstractField} <: AbstractWriter{F}
+    "field to read/write."
     f::F
+    "file name."
     filename::AbstractString
 end
 
@@ -212,12 +214,12 @@ function write!(w::WriterVTK{F};
     r_local = (r_local[1][begin]:(r_local[1][end] + 1),
                r_local[2][begin]:(r_local[2][end] + 1),
                r_local[3][begin]:(r_local[3][end] + 1))
-    x, y, z = A(LinRange(w.f.g.xmin, w.f.g.xmax, w.f.g.nx + 1)[r_local[1]]),
-              A(LinRange(w.f.g.ymin, w.f.g.ymax, w.f.g.ny + 1)[r_local[2]]),
-              A(LinRange(w.f.g.zmin, w.f.g.zmax, w.f.g.nz + 1)[r_local[3]])
+    x, y, z = Array(LinRange(w.f.g.xmin, w.f.g.xmax, w.f.g.nx + 1)[r_local[1]]),
+              Array(LinRange(w.f.g.ymin, w.f.g.ymax, w.f.g.ny + 1)[r_local[2]]),
+              Array(LinRange(w.f.g.zmin, w.f.g.zmax, w.f.g.nz + 1)[r_local[3]])
     extents = MPI.Allgather(r_local, comm)
 
-    tmp = A{FT}(undef, size_local(ϕ))
+    tmp = Array{FT}(undef, size_local(ϕ))
     vtkfile = pvtk_grid("$(prefix)-$(istep)", x, y, z; extents=extents, part=mpi_rank,
                         nparts=mpi_size)
     if ND == 1

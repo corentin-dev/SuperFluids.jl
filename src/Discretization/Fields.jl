@@ -10,6 +10,7 @@ struct RealField <: FieldType end
 export FieldType, ComplexField, RealField
 export AbstractField, AbstractField1D, AbstractField2D, AbstractField3D
 export Field, Field1D, Field2D, Field3D
+export norm, normalize!
 
 "Abstract supertype for numerical models."
 abstract type AbstractField{N,ND,FT,FFT,A,PA,G,P} end
@@ -23,9 +24,13 @@ const AbstractField3D{ND,FT,FFT,A,PA,G,P} = AbstractField{3,ND,FT,FFT,A,PA,G,P}
 """
 $(TYPEDEF)
 
-Type representing a field on a grid.
+Type representing a field on a [`Grid`](@ref).
+
+A `Field` contains the following informations:
 
 $(TYPEDFIELDS)
+
+See also [`Grid`](@ref), [`GradientField`](@ref).
 """
 mutable struct Field{N,ND,FT,FFT,A,PA,G,P} <: AbstractField{N,ND,FT,FFT,A,PA,G,P}
     "informations concerning the decomposition."
@@ -57,22 +62,20 @@ $(TYPEDSIGNATURES)
 
 Returns a 2D field.
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
 julia> field = Field(grid, RealField())
 Field2D
-  ├──────  Array type: Matrix{Float64}
-  └──────────  memory: 0.5 MB
+  ├──────  Array type: Float64
+  └──────────  memory: 0.00018310546875 MB
 ```
 
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
 julia> field = Field(grid, ComplexField())
 Field2D
-  ├──────  Array type: Matrix{ComplexF64}
-  └──────────  memory: 0.5 MB
+  ├──────  Array type: ComplexF64
+  └──────────  memory: 0.00018310546875 MB
 ```
 """
 function Field(g::AbstractGrid2D{FT,A}, t::FieldType;
@@ -101,22 +104,20 @@ $(TYPEDSIGNATURES)
 
 Returns a 3D field.
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
-julia> field = Field(grid, RealField())
+julia> field = Field(grid3, RealField())
 Field3D
   ├───────  FloatType: Float64
-  └──────────  memory: 64.0 MB
+  └──────────  memory: 0.25 MB
 ```
 
 ```jldoctest
-julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField())
+julia> field = Field(grid3, ComplexField())
 Field3D
-  ├───────  FloatType: ComplexF64
-  └──────────  memory: 64.0 MB
+├───────  FloatType: ComplexF64
+└──────────  memory: 0.5 MB
 ```
 """
 function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
@@ -140,6 +141,19 @@ function Field(g::AbstractGrid3D{FT,A}, t::FieldType;
     return Field3D{ndims,FFT}(pen_x, grid, g, data)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Computes the norm of a 2D field.
+
+# Example
+
+```jldoctest
+julia> @. field3.ϕ = (-12-field.grid.x)*(12+field.grid.x)+(-12-field.grid.y)*(12+field.grid.y)+(-12-field.grid.z)*(12+field.grid.z);
+julia> norm(field3)
+72951.55177239206
+```
+"""
 function norm(f::Field2D)
     normϕ = sum(abs2.(f.ϕ))
     return normϕ = sqrt(normϕ) * sqrt(f.g.Δx * f.g.Δy)
@@ -153,19 +167,15 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Normalize a field.
+Normalize a field (L2 norm).
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128,128), ((-12,12), (-12,12), (-12,12)));
-julia> field = Field(grid, ComplexField());
-julia> field.ϕ .= 2;
-julia> norm(field)
-235.15101530718513
+julia> @. field.ϕ = (-12-field.grid.x)*(12+field.grid.x)+(-12-field.grid.y)*(12+field.grid.y);
 julia> normalize!(field)
-julia> norm(field)
-1.000000000000001
+julia> norm(field) ≈ 1
+true
 ```
 """
 function normalize!(f::AbstractField)

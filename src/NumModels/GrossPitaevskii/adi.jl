@@ -9,6 +9,26 @@ mutable struct NumModelADI1{F,P,Plan} <: AbstractNumModel{F,P,Plan}
     writers::AbstractWriterCollection{F}
 end
 
+
+"""
+$(TYPEDSIGNATURES)
+
+Returns a first order splitting scheme (only FFT).
+
+# Details
+
+TODO
+
+# Example
+
+```jldoctest
+julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8, pot = PotentialZero(field));
+julia> nummodel = NumModelADI1(field, param, 0.01, 1000, 100)
+Splitting Order 1
+  ├───────  time step: 0.01
+  └──────────── solve: number of iterations 1000, backup frequency 100
+```
+"""
 function NumModelADI1(f::AbstractField, param::AbstractParameters,
                       Δt::Real, niter::Integer, freqbckp::Integer)
     gf = GradientField(f; rotation=true)
@@ -46,6 +66,25 @@ mutable struct NumModelADI2{F,P,Plan} <: AbstractNumModel{F,P,Plan}
     writers::AbstractWriterCollection{F}
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns a second order splitting scheme (only FFT).
+
+# Details
+
+TODO
+
+# Example
+
+```jldoctest
+julia> param = GrossPitaevskiiParameters(β = 1000, Ω = 0.8, pot = PotentialZero(field));
+julia> nummodel = NumModelADI2(field, param, 0.01, 1000, 100)
+Splitting Order 2
+  ├───────  time step: 0.01
+  └──────────── solve: number of iterations 1000, backup frequency 100
+```
+"""
 function NumModelADI2(f::AbstractField, param::AbstractParameters,
                       Δt::Real, niter::Integer, freqbckp::Integer)
     gf = GradientField(f; rotation=true)

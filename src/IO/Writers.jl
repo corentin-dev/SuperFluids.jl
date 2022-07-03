@@ -115,8 +115,8 @@ julia> read!(writer)
 function Base.read!(w::WriterSave{F};
                     prefix="res"::AbstractString,
                     istep=0::Integer,
-                    Δt=1::Real) where {F<:AbstractField{N,ND,FT,FFT,A}} where {N,ND,FT,FFT,A}
-
+                    Δt=1::Real) where {F<:AbstractField{N,ND,FT,FFT,A}} where {N,ND,FT,FFT,
+                                                                               A}
     pen = Pencil(size_global(w.f.ϕ), MPI.COMM_WORLD)
     tmp = PencilArray{FFT}(undef, pen)
 

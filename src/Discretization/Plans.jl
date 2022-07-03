@@ -159,16 +159,14 @@ Parameters are:
 - `f`: a field
 - `t`: a type of plan (either `FFTPlan()` or `FiniteDifferencePlan()`)
 
-Example
-=======
+# Example
+
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
 julia> field = Field(grid, RealField());
 julia> plan = Plan(field, t=FFTPlan());
 ```
 
 ```jldoctest
-julia> grid = Grid((128,128), ((-12,12), (-12,12)));
 julia> field = Field(grid, RealField());
 julia> plan = Plan(field, t=FiniteDifferencePlan());
 ```
@@ -225,8 +223,8 @@ Parameters are:
 - `f`: a field
 - `t`: a type of plan (either `FFTPlan()` or `FiniteDifferencePlan()`)
 
-Example
-=======
+# Example
+
 ```jldoctest
 julia> field3 = Field(grid3, RealField());
 julia> plan = Plan(field3, t=FFTPlan());

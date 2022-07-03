@@ -17,6 +17,25 @@ mutable struct NumModelCrankNicolson{F,P,Plan} <: AbstractNumModel{F,P,Plan}
     writers::AbstractWriterCollection{F}
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns a stationnary Crank-Nicolson scheme numerical model.
+
+# Detail
+
+A Newton-Raphson loop using `n.nnewton` iterations until the tolerance `n.tolnewton` is reached, followed by a renormalization step. During the non-linear loop, the linear problem MAϕ=Mb is solved using a krylov solver. The system is built using :
+
+Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ + 1/2 Aₙₗ₂ conj(ϕ) - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
+
+M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
+
+Aₙₗ = V + 2 × β × ∥ψ∥²
+
+Aₙₗ₂ = β × ψ²
+
+b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
+"""
 function NumModelCrankNicolson(f, param,
                                Δt::Real, niter::Integer, freqbckp::Integer;
                                nkrylov::Integer=70, tolkrylov::Real=1e-8,
@@ -39,189 +58,6 @@ function NumModelCrankNicolson(f, param,
                                                                        writers)
 end
 
-function Base.show(io::IO, n::NumModelCrankNicolson)
-    return print(io,
-                 "Crank-Nicolson Newton-Raphson scheme\n",
-                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
-                 "  ├───────  time step: $(n.Δt)\n",
-                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-end
-
-mutable struct NumModelCrankNicolsonQuasiNewton{F,P,Plan} <: AbstractNumModel{F,P,Plan}
-    f::F
-    gf::Any
-    param::P
-    Δt::Real
-    niter::Integer
-    freqbckp::Integer
-    nkrylov::Integer
-    tolkrylov::Real
-    nnewton::Integer
-    tolnewton::Real
-    plan::Plan
-    M::AbstractArray
-    b::AbstractArray
-    Anl::AbstractArray
-    writers::AbstractWriterCollection{F}
-end
-
-function NumModelCrankNicolsonQuasiNewton(f, param,
-                                          Δt::Real, niter::Integer, freqbckp::Integer;
-                                          nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                                          nnewton::Integer=15, tolnewton::Real=1e-6)
-    gf = GradientField(f; rotation=true)
-    plan = Plan(f)
-    writer = WriterVTK(f)
-    saver = WriterSave(f)
-    writers = WriterCollection([writer, saver])
-    M = similar(f.ϕ)
-    b = similar(f.ϕ)
-    Anl = similar(f.ϕ)
-    return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(param),typeof(plan)}(f, gf,
-                                                                                  param,
-                                                                                  Δt, niter,
-                                                                                  freqbckp,
-                                                                                  nkrylov,
-                                                                                  tolkrylov,
-                                                                                  nnewton,
-                                                                                  tolnewton,
-                                                                                  plan, M,
-                                                                                  b, Anl,
-                                                                                  writers)
-end
-
-function Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton)
-    return print(io,
-                 "Crank-Nicolson Quasi-Newton scheme\n",
-                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
-                 "  ├───────  time step: $(n.Δt)\n",
-                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-end
-
-mutable struct NumModelCrankNicolsonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
-    f::F
-    gf::Any
-    param::P
-    Δt::Real
-    niter::Integer
-    freqbckp::Integer
-    nkrylov::Integer
-    tolkrylov::Real
-    nnewton::Integer
-    tolnewton::Real
-    plan::Plan
-    M::AbstractArray
-    b::AbstractArray
-    Anl::AbstractArray
-    Anl2::AbstractArray
-    writers::AbstractWriterCollection{F}
-end
-
-function NumModelCrankNicolsonT(f::AbstractField, param::AbstractParameters,
-                                Δt::Real, niter::Integer, freqbckp::Integer;
-                                nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                                nnewton::Integer=15, tolnewton::Real=1e-6)
-    gf = GradientField(f; rotation=true)
-    plan = Plan(f)
-    writer = WriterVTK(f)
-    saver = WriterSave(f)
-    writers = WriterCollection([writer, saver])
-    M = similar(f.ϕ)
-    b = similar(f.ϕ)
-    Anl = similar(f.ϕ)
-    Anl2 = similar(f.ϕ)
-    return NumModelCrankNicolsonT{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
-                                                                        Δt, niter, freqbckp,
-                                                                        nkrylov, tolkrylov,
-                                                                        nnewton, tolnewton,
-                                                                        plan, M, b, Anl,
-                                                                        Anl2,
-                                                                        writers)
-end
-
-function Base.show(io::IO, n::NumModelCrankNicolsonT)
-    return print(io,
-                 "Time dependant Crank-Nicolson Newton-Raphson scheme\n",
-                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
-                 "  ├───────  time step: $(n.Δt)\n",
-                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-end
-
-mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
-    f::F
-    gf::Any
-    param::P
-    Δt::Real
-    niter::Integer
-    freqbckp::Integer
-    nkrylov::Integer
-    tolkrylov::Real
-    nnewton::Integer
-    tolnewton::Real
-    plan::Plan
-    M::AbstractArray
-    b::AbstractArray
-    Anl::AbstractArray
-    writers::AbstractWriterCollection{F}
-end
-
-function NumModelCrankNicolsonQuasiNewtonT(f::AbstractField, param::AbstractParameters,
-                                           Δt::Real, niter::Integer, freqbckp::Integer;
-                                           nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                                           nnewton::Integer=15, tolnewton::Real=1e-6)
-    gf = GradientField(f; rotation=true)
-    plan = Plan(f)
-    writer = WriterVTK(f)
-    saver = WriterSave(f)
-    writers = WriterCollection([writer, saver])
-    M = similar(f.ϕ)
-    b = similar(f.ϕ)
-    Anl = similar(f.ϕ)
-    return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(param),typeof(plan)}(f, gf,
-                                                                                   param,
-                                                                                   Δt,
-                                                                                   niter,
-                                                                                   freqbckp,
-                                                                                   nkrylov,
-                                                                                   tolkrylov,
-                                                                                   nnewton,
-                                                                                   tolnewton,
-                                                                                   plan, M,
-                                                                                   b, Anl,
-                                                                                   writers)
-end
-
-function Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewtonT)
-    return print(io,
-                 "Time dependant Crank-Nicolson Quasi-Newton scheme\n",
-                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
-                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
-                 "  ├───────  time step: $(n.Δt)\n",
-                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
-end
-
-"""
-    timeStep!(n::NumModelCrankNicolson)
-
-Performs a single time step for the stationnary Crank-Nicolson scheme.
-
-# Detail
-
-A Newton-Raphson loop using `n.nnewton` iterations until the tolerance `n.tolnewton` is reached, followed by a renormalization step. During the non-linear loop, the linear problem MAϕ=Mb is solved using a krylov solver. The system is built using :
-
-Aϕ = ( Δt⁻¹ + 1/2 Aₙₗ) ϕ + 1/2 Aₙₗ₂ conj(ϕ) - 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
-
-M⁻¹ = Δt⁻¹ + 1/2 × ( V + 3 × β × ∥ψ∥² )
-
-Aₙₗ = V + 2 × β × ∥ψ∥²
-
-Aₙₗ₂ = β × ψ²
-
-b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
-"""
 function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField,
                                                          P<:GrossPitaevskiiParameters}
     # create working vectors
@@ -266,7 +102,7 @@ function timeStep!(n::NumModelCrankNicolson{F,P}) where {F<:AbstractField,
 end
 
 """
-    prodA(n::NumModelCrankNicolson, ϕt)
+$(TYPEDSIGNATURES)
 
 Matrix-vector product for the stationnary Crank-Nicolson Newton-Raphson method :
 
@@ -276,10 +112,37 @@ function prodA(n::NumModelCrankNicolson, ϕt)
     return (1 / n.Δt .+ n.Anl) .* ϕt .+ 0.5 .* n.Anl2 .* conj.(ϕt) .- 0.5 .* lapRot(n, ϕt)
 end
 
-"""
-    timeStep!(n::NumModelCrankNicolsonQuasiNewton)
+function Base.show(io::IO, n::NumModelCrankNicolson)
+    return print(io,
+                 "Crank-Nicolson Newton-Raphson scheme\n",
+                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
+                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
+                 "  ├───────  time step: $(n.Δt)\n",
+                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
+end
 
-Performs a single time step for the stationnary Crank-Nicolson scheme.
+mutable struct NumModelCrankNicolsonQuasiNewton{F,P,Plan} <: AbstractNumModel{F,P,Plan}
+    f::F
+    gf::Any
+    param::P
+    Δt::Real
+    niter::Integer
+    freqbckp::Integer
+    nkrylov::Integer
+    tolkrylov::Real
+    nnewton::Integer
+    tolnewton::Real
+    plan::Plan
+    M::AbstractArray
+    b::AbstractArray
+    Anl::AbstractArray
+    writers::AbstractWriterCollection{F}
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Returns a stationnary Crank-Nicolson Quasi-Newton scheme numerical model.
 
 # Detail
 
@@ -293,6 +156,31 @@ Aₙₗ = V + 3 × β × ∥ψ∥²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
+function NumModelCrankNicolsonQuasiNewton(f, param,
+                                          Δt::Real, niter::Integer, freqbckp::Integer;
+                                          nkrylov::Integer=70, tolkrylov::Real=1e-8,
+                                          nnewton::Integer=15, tolnewton::Real=1e-6)
+    gf = GradientField(f; rotation=true)
+    plan = Plan(f)
+    writer = WriterVTK(f)
+    saver = WriterSave(f)
+    writers = WriterCollection([writer, saver])
+    M = similar(f.ϕ)
+    b = similar(f.ϕ)
+    Anl = similar(f.ϕ)
+    return NumModelCrankNicolsonQuasiNewton{typeof(f),typeof(param),typeof(plan)}(f, gf,
+                                                                                  param,
+                                                                                  Δt, niter,
+                                                                                  freqbckp,
+                                                                                  nkrylov,
+                                                                                  tolkrylov,
+                                                                                  nnewton,
+                                                                                  tolnewton,
+                                                                                  plan, M,
+                                                                                  b, Anl,
+                                                                                  writers)
+end
+
 function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractField,
                                                                     P<:GrossPitaevskiiParameters}
     # create working vectors
@@ -335,7 +223,7 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewton{F,P}) where {F<:AbstractF
 end
 
 """
-    prodA(n::NumModelCrankNicolsonQuasiNewton, ϕt)
+$(TYPEDSIGNATURES)
 
 Matrix-vector product for the stationnary Crank-Nicolson Quasi-Newton method :
 
@@ -345,10 +233,38 @@ function prodA(n::NumModelCrankNicolsonQuasiNewton, ϕt)
     return (1 / n.Δt .+ n.Anl .* 0.5) .* ϕt .- 0.5 .* lapRot(n, ϕt)
 end
 
-"""
-    timeStep!(n::NumModelCrankNicolsonT)
+function Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewton)
+    return print(io,
+                 "Crank-Nicolson Quasi-Newton scheme\n",
+                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
+                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
+                 "  ├───────  time step: $(n.Δt)\n",
+                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
+end
 
-Performs a single time step for the unstationnary Crank-Nicolson scheme.
+mutable struct NumModelCrankNicolsonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
+    f::F
+    gf::Any
+    param::P
+    Δt::Real
+    niter::Integer
+    freqbckp::Integer
+    nkrylov::Integer
+    tolkrylov::Real
+    nnewton::Integer
+    tolnewton::Real
+    plan::Plan
+    M::AbstractArray
+    b::AbstractArray
+    Anl::AbstractArray
+    Anl2::AbstractArray
+    writers::AbstractWriterCollection{F}
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Returns an unstationnary Crank-Nicolson scheme numerical model.
 
 # Detail
 
@@ -364,6 +280,28 @@ Aₙₗ₂ = β × ψ²
 
 b = i Δt⁻¹ × (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
+function NumModelCrankNicolsonT(f::AbstractField, param::AbstractParameters,
+                                Δt::Real, niter::Integer, freqbckp::Integer;
+                                nkrylov::Integer=70, tolkrylov::Real=1e-8,
+                                nnewton::Integer=15, tolnewton::Real=1e-6)
+    gf = GradientField(f; rotation=true)
+    plan = Plan(f)
+    writer = WriterVTK(f)
+    saver = WriterSave(f)
+    writers = WriterCollection([writer, saver])
+    M = similar(f.ϕ)
+    b = similar(f.ϕ)
+    Anl = similar(f.ϕ)
+    Anl2 = similar(f.ϕ)
+    return NumModelCrankNicolsonT{typeof(f),typeof(param),typeof(plan)}(f, gf, param,
+                                                                        Δt, niter, freqbckp,
+                                                                        nkrylov, tolkrylov,
+                                                                        nnewton, tolnewton,
+                                                                        plan, M, b, Anl,
+                                                                        Anl2,
+                                                                        writers)
+end
+
 function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField,
                                                           P<:GrossPitaevskiiParameters}
     # create working vectors
@@ -406,7 +344,7 @@ function timeStep!(n::NumModelCrankNicolsonT{F,P}) where {F<:AbstractField,
 end
 
 """
-    prodA(n::NumModelCrankNicolsonT, ϕt)
+$(TYPEDSIGNATURES)
 
 Matrix-vector product for the unstationnary Crank-Nicolson Newton-Raphson method :
 
@@ -417,10 +355,37 @@ function prodA(n::NumModelCrankNicolsonT, ϕt)
            0.5 .* lapRot(n, ϕt)
 end
 
-"""
-    timeStep!(n::NumModelCrankNicolsonQuasiNewton)
+function Base.show(io::IO, n::NumModelCrankNicolsonT)
+    return print(io,
+                 "Time dependant Crank-Nicolson Newton-Raphson scheme\n",
+                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
+                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
+                 "  ├───────  time step: $(n.Δt)\n",
+                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
+end
 
-Performs a single time step for the stationnary Crank-Nicolson scheme.
+mutable struct NumModelCrankNicolsonQuasiNewtonT{F,P,Plan} <: AbstractNumModel{F,P,Plan}
+    f::F
+    gf::Any
+    param::P
+    Δt::Real
+    niter::Integer
+    freqbckp::Integer
+    nkrylov::Integer
+    tolkrylov::Real
+    nnewton::Integer
+    tolnewton::Real
+    plan::Plan
+    M::AbstractArray
+    b::AbstractArray
+    Anl::AbstractArray
+    writers::AbstractWriterCollection{F}
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Returns an unstationnary Crank-Nicolson Quasi-Newton scheme numerical model.
 
 # Detail
 
@@ -434,6 +399,32 @@ Aₙₗ = V + 3 × β × ∥ψ∥²
 
 b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ + Ω Lz) × ψ
 """
+function NumModelCrankNicolsonQuasiNewtonT(f::AbstractField, param::AbstractParameters,
+                                           Δt::Real, niter::Integer, freqbckp::Integer;
+                                           nkrylov::Integer=70, tolkrylov::Real=1e-8,
+                                           nnewton::Integer=15, tolnewton::Real=1e-6)
+    gf = GradientField(f; rotation=true)
+    plan = Plan(f)
+    writer = WriterVTK(f)
+    saver = WriterSave(f)
+    writers = WriterCollection([writer, saver])
+    M = similar(f.ϕ)
+    b = similar(f.ϕ)
+    Anl = similar(f.ϕ)
+    return NumModelCrankNicolsonQuasiNewtonT{typeof(f),typeof(param),typeof(plan)}(f, gf,
+                                                                                   param,
+                                                                                   Δt,
+                                                                                   niter,
+                                                                                   freqbckp,
+                                                                                   nkrylov,
+                                                                                   tolkrylov,
+                                                                                   nnewton,
+                                                                                   tolnewton,
+                                                                                   plan, M,
+                                                                                   b, Anl,
+                                                                                   writers)
+end
+
 function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:AbstractField,
                                                                      P<:GrossPitaevskiiParameters}
     # create working vectors
@@ -474,7 +465,7 @@ function timeStep!(n::NumModelCrankNicolsonQuasiNewtonT{F,P}) where {F<:Abstract
 end
 
 """
-    prodA(n::NumModelCrankNicolsonQuasiNewtonT, ϕt)
+$(TYPEDSIGNATURES)
 
 Matrix-vector product for the unstationnary Crank-Nicolson Quasi-Newton method :
 
@@ -482,4 +473,13 @@ Aϕ = ( i Δt⁻¹ - 1/2 Aₙₗ) ϕ + 1/2 (coeffΔ Δϕ + Ω Lz ϕ)
 """
 function prodA(n::NumModelCrankNicolsonQuasiNewtonT, ϕt)
     return ((1.0 * im / n.Δt) .- n.Anl .* 0.5) .* ϕt .+ 0.5 .* lapRot(n, ϕt)
+end
+
+function Base.show(io::IO, n::NumModelCrankNicolsonQuasiNewtonT)
+    return print(io,
+                 "Time dependant Crank-Nicolson Quasi-Newton scheme\n",
+                 "  ├──────────  krylov: n iterations $(n.nkrylov), tolerance $(n.tolkrylov)\n",
+                 "  ├──────────  newton: n iterations $(n.nnewton), tolerance $(n.tolnewton)\n",
+                 "  ├───────  time step: $(n.Δt)\n",
+                 "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 end

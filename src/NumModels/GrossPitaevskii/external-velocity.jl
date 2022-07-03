@@ -34,7 +34,7 @@ function Base.show(io::IO, n::NumModelExternalVelocity)
 end
 
 """
-    timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
+$(TYPEDSIGNATURES)
 
 Performs a single time step for stationnary field approximating a velocity field.
 """
@@ -77,7 +77,7 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
 end
 
 """
-    timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField3D}
+$(TYPEDSIGNATURES)
 
 Performs a single time step for stationnary field approximating a velocity field.
 """

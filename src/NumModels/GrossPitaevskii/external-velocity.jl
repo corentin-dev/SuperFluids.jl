@@ -9,6 +9,19 @@ mutable struct NumModelExternalVelocity{F,P,Plan} <: AbstractNumModel{F,P,Plan}
     writers::AbstractWriterCollection{F}
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns an ARGLE scheme for a stationnary field approximating a velocity field.
+
+# Details
+
+TODO
+
+# Example
+
+TODO
+"""
 function NumModelExternalVelocity(f, param,
                                   Δt::Real, niter::Integer, freqbckp::Integer;)
     plan = Plan(f)
@@ -33,11 +46,6 @@ function Base.show(io::IO, n::NumModelExternalVelocity)
                  "  └──────────── solve: number of iterations $(n.niter), backup frequency $(n.freqbckp)")
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Performs a single time step for stationnary field approximating a velocity field.
-"""
 function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
     # references
     ϕ = n.f.ϕ
@@ -76,11 +84,6 @@ function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField2D}
     return 1
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Performs a single time step for stationnary field approximating a velocity field.
-"""
 function timeStep!(n::NumModelExternalVelocity{F}) where {F<:AbstractField3D}
     # references
     ϕ = n.f.ϕ

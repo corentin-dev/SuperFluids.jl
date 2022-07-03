@@ -5,8 +5,8 @@
 ### Imaginary time
 
 ```@docs
-NumModelBackwardEuler(f::AbstractField, param::SuperFluids.AbstractParameters, Δt::Real, niter::Integer, freqbckp::Integer; nkrylov, tolkrylov, plantype)
-NumModelBackwardEulerNoPrecond(f::AbstractField, param::SuperFluids.AbstractParameters, Δt::Real, niter::Integer, freqbckp::Integer; nkrylov, tolkrylov, plantype)
+NumModelBackwardEuler
+NumModelBackwardEulerNoPrecond
 NumModelCrankNicolson
 NumModelCrankNicolsonQuasiNewton
 ```
@@ -22,8 +22,6 @@ NumModelCrankNicolsonQuasiNewtonT
 
 ### External velocity
 
-### Linear operator
-
 ```@docs
-SuperFluids.prodA
+NumModelExternalVelocity
 ```

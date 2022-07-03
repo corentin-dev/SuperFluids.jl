@@ -10,7 +10,7 @@ with:
 
 - $α$: `coeffΔ` by default it is $-\frac{1}{2}$, but can be anything (negative),
 - $β$: `β` it is the interaction coefficient,
-- $V(x⃗)$: `pot` a [potential](@ref potential),
+- $V(x⃗)$: `pot` a [potential](@ref Potential),
 - $Ω$: `Ω` the rotation coefficient along $z$ axis.
 
 A particular equation is solved in the cas of stationary cases. A particular set of

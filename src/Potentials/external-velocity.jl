@@ -1,36 +1,68 @@
-struct PotentialTaylorGreen{F} <: AbstractPotential{F}
-   f :: F
-   V :: AbstractArray
-   uadvx :: AbstractArray
-   uadvy :: AbstractArray
-   uadvz :: AbstractArray
+"""
+    PotentialTaylorGreen{F} <: AbstractPotential{F}
+
+Represents a potential used for external velocities ``u_\\text{adv}``. It can be used for [`GrossPitaevskiiParameters`](@ref).
+It has the following form:
+
+The potential has the following informations:
+
+- `f`: the field on which the potential acts,
+- `V`: a potential field (real),
+- `uadvx`: a vector field,
+- `uadvy`: a vector field,
+- `uadvz`: a vector field (for 3D only).
+
+Example
+=======
+```jldoctest
+julia> grid = Grid((128,128), ((-12,12), (-12,12)));
+julia> field = Field(grid, ComplexField());
+julia> β = 40.; coeffΔ = -0.05;
+julia> PotentialExternalVelocity(field, α=-4*coeffΔ*β)
+TaylorGreen Potential
+```
+"""
+struct PotentialExternalVelocity{F} <: AbstractPotential{F}
+    f::F
+    V::AbstractArray
+    uadvx::AbstractArray
+    uadvy::AbstractArray
+    uadvz::AbstractArray
+
+    function PotentialExternalVelocity(f::F;
+                                       uadv_function=uadv_function_taylorgreen2D,
+                                       α::Real=1) where {F<:AbstractField2D}
+        V = real.(similar(f.ϕ))
+        uadvx = similar(V)
+        uadvy = similar(V)
+        uadvz = []
+        # velocity field
+        @. uadvx = uadv_function[1].(f.x, f.y)
+        @. uadvy = uadv_function[2].(f.x, f.y)
+        # potential
+        @. V = (uadvx^2 + uadvy^2) / α
+        return new{F}(f, V, uadvx, uadvy, uadvz)
+    end
+
+    function PotentialExternalVelocity(f::F;
+                                       uadv_function=uadv_function_taylorgreen3D,
+                                       α::Real=1) where {F<:AbstractField3D}
+        V = real.(similar(f.ϕ))
+        uadvx = similar(V)
+        uadvy = similar(V)
+        uadvz = similar(V)
+        # velocity field
+        @. uadvx = uadv_function[1].(f.x, f.y, f.z)
+        @. uadvy = uadv_function[2].(f.x, f.y, f.z)
+        @. uadvz = uadv_function[3].(f.x, f.y, f.z)
+        # potential
+        @. V = (uadvx^2 + uadvy^2 + uadvz^2) / α
+        return new{F}(f, V, uadvx, uadvy, uadvz)
+    end
 end
 
-function PotentialTaylorGreen(f::F; α :: Real = 1) where {F<:AbstractField2D}
-   V = real.(similar(f.ϕ))
-   uadvx = similar(V)
-   uadvy = similar(V)
-   uadvz = []
-   # velocity field
-   @. uadvx =  sin(f.x)*cos(f.y)
-   @. uadvy = -cos(f.x)*sin(f.y)
-   # potential
-   @. V = ( uadvx^2 + uadvy^2 ) / α # (-4*param.coeffΔ .- param.β)
-   return PotentialTaylorGreen{F}(f, V, uadvx, uadvy, uadvz)
-end
+uadv_function_taylorgreen2D = ((x, y) -> sin(x) * cos(y), (x, y) -> -cos(x) * sin(y))
+uadv_function_taylorgreen3D = ((x, y, z) -> sin(x) * cos(y) * cos(z),
+                               (x, y, z) -> -cos(x) * sin(y) * cos(z), (x, y, z) -> 0.0)
 
-function PotentialTaylorGreen(f::F; α :: Real = 1) where {F<:AbstractField3D}
-   V = real.(similar(f.ϕ))
-   uadvx = similar(V)
-   uadvy = similar(V)
-   uadvz = similar(V)
-   # velocity field
-   @. uadvx =  sin(f.x)*cos(f.y)*cos(f.z)
-   @. uadvy = -cos(f.x)*sin(f.y)*cos(f.z)
-   @. uadvz = 0.
-   # potential
-   @. V = ( uadvx^2 + uadvy^2 + uadvz^2 ) / α # (-4*param.coeffΔ .- param.β)
-   return PotentialTaylorGreen{F}(f, V, uadvx, uadvy, uadvz)
-end
-
-Base.show(io::IO, p::PotentialTaylorGreen) = print(io, "TaylorGreen Potential")
+Base.show(io::IO, p::PotentialExternalVelocity) = print(io, "TaylorGreen Potential")

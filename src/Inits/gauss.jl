@@ -11,9 +11,9 @@ It contains the following informations:
 
 """
 struct InitGauss{F} <: AbstractInit{F}
-   f :: F
-   γz :: Real
-   Ω :: Real
+    f::F
+    γz::Real
+    Ω::Real
 end
 
 """
@@ -28,8 +28,8 @@ Parameters are:
 - `Ω`: rotation speed.
 
 """
-function InitGauss(f :: F; γz :: Real = 1., Ω :: Real = 0.) where {F<:AbstractField}
-   return InitGauss{F}(f, γz, Ω)
+function InitGauss(f::F; γz::Real=1.0, Ω::Real=0.0) where {F<:AbstractField}
+    return InitGauss{F}(f, γz, Ω)
 end
 
 """
@@ -46,9 +46,11 @@ Initialize a field using a `InitGauss` initializer for 2D grids.
     ``ϕ`` is normalized in order to have ``∥ϕ∥₂ = 1``.
 """
 function initField!(init::InitGauss{F}) where {F<:AbstractField2D}
-   @. init.f.ϕ = (1-init.Ω) * (1/sqrt(π)*exp(-0.5*(init.f.x^2+init.f.y^2))) + init.Ω * (1*(init.f.x+im*init.f.y)/sqrt(π)*exp(-0.5*(init.f.x^2+init.f.y^2)))
-   normalize!(init.f)
-   return nothing
+    @. init.f.ϕ = (1 - init.Ω) * (1 / sqrt(π) * exp(-0.5 * (init.f.x^2 + init.f.y^2))) +
+                  init.Ω * (1 * (init.f.x + im * init.f.y) / sqrt(π) *
+                            exp(-0.5 * (init.f.x^2 + init.f.y^2)))
+    normalize!(init.f)
+    return nothing
 end
 
 """
@@ -65,25 +67,30 @@ Initialize a field using a `InitGauss` initializer for 3D grids.
     ``ϕ`` is normalized in order to have ``∥ϕ∥₂ = 1``.
 """
 function initField!(init::InitGauss{F}) where {F<:AbstractField3D}
-   x = init.f.x
-   y = init.f.y
-   z = init.f.z
+    x = init.f.x
+    y = init.f.y
+    z = init.f.z
 
-   @. init.f.ϕ = (1-init.Ω) * exp(-0.5*(x^2+y^2+init.γz*z^2))*(init.γz^0.25/π^0.75) + init.Ω * (x+im*y+0*z)*exp(-0.5*(x^2+y^2+init.γz*z^2))*(init.γz^0.25/π^0.75)
-   normalize!(init.f)
-   return nothing
+    @. init.f.ϕ = (1 - init.Ω) * exp(-0.5 * (x^2 + y^2 + init.γz * z^2)) *
+                  (init.γz^0.25 / π^0.75) +
+                  init.Ω * (x + im * y + 0 * z) * exp(-0.5 * (x^2 + y^2 + init.γz * z^2)) *
+                  (init.γz^0.25 / π^0.75)
+    normalize!(init.f)
+    return nothing
 end
 
-Base.show(io::IO, init::InitGauss{F}) where {F<:AbstractField2D} =
-     print(io, "InitGauss\n",
-         "  ├──────  parameters: Ω $(init.Ω)\n",
-         "  ├─────────────  s1 = 1 / π^1/2 × exp(-1/2 × (x²+y²))\n",
-         "  ├─────────────  s2 = (x+iy) / π^1/2 × exp(-1/2 × (x²+y²))\n",
-         "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+function Base.show(io::IO, init::InitGauss{F}) where {F<:AbstractField2D}
+    return print(io, "InitGauss\n",
+                 "  ├──────  parameters: Ω $(init.Ω)\n",
+                 "  ├─────────────  s1 = 1 / π^1/2 × exp(-1/2 × (x²+y²))\n",
+                 "  ├─────────────  s2 = (x+iy) / π^1/2 × exp(-1/2 × (x²+y²))\n",
+                 "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+end
 
-Base.show(io::IO, init::InitGauss{F}) where {F<:AbstractField3D} =
-     print(io, "InitGauss\n",
-         "  ├──────  parameters: γz $(init.γz) Ω $(init.Ω)\n",
-         "  ├─────────────  s1 = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+γz z²))\n",
-         "  ├─────────────  s2 = γz^1/4 (x+iy) / π^3/4 × exp(-1/2 × (x²+y²+γz z²))\n",
-         "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+function Base.show(io::IO, init::InitGauss{F}) where {F<:AbstractField3D}
+    return print(io, "InitGauss\n",
+                 "  ├──────  parameters: γz $(init.γz) Ω $(init.Ω)\n",
+                 "  ├─────────────  s1 = γz^1/4 / π^3/4 × exp(-1/2 × (x²+y²+γz z²))\n",
+                 "  ├─────────────  s2 = γz^1/4 (x+iy) / π^3/4 × exp(-1/2 × (x²+y²+γz z²))\n",
+                 "  └──────────────  ϕ = (1-Ω) × s1 + Ω × s2")
+end

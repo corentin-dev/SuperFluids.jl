@@ -1,126 +1,93 @@
-"Abstract supertype for numerical models."
-abstract type AbstractGradientField{F,A} end
-"Abstract supertype for numerical models."
-abstract type AbstractGradientField2D{F,A} <: AbstractGradientField{F,A} end
-"Abstract supertype for numerical models."
-abstract type AbstractGradientField3D{F,A} <: AbstractGradientField{F,A} end
+"Abstract type for gradient field."
+abstract type AbstractGradientField{N,F,A} end
+"Alias for 1D abstract gradient field."
+const AbstractGradientField1D{F,A} = AbstractGradientField{1,F,A}
+"Alias for 2D abstract gradient field."
+const AbstractGradientField2D{F,A} = AbstractGradientField{2,F,A}
+"Alias for 3D abstract gradient field."
+const AbstractGradientField3D{F,A} = AbstractGradientField{3,F,A}
 
 export GradientField
 
 """
-     GradientField2D{F,A} <: AbstractGradientField2D{F,A}
+$(TYPEDEF)
 
 Type representing a gradient of a 2D field.
 
 It contains the following informations:
 
-- `f`: reference to a field.
-- `dx`, `dy`: first derivatives of the given field.
-- `ddx`, `ddy`: second derivatives of the given field.
-
+$(TYPEDFIELDS)
 """
-mutable struct GradientField2D{F,A} <: AbstractGradientField2D{F,A}
-    f :: F
-    ∇data :: A
-    Δdata :: A
+mutable struct GradientField{N,F,A} <: AbstractGradientField{N,F,A}
+    "reference to a field."
+    f::F
+    "first derivatives of the given field."
+    ∇data::A
+    "second derivatives of the given field."
+    Δdata::A
 end
 
+"Alias for 1D gradient field with gradient"
+const GradientField1D{F,A} = GradientField{1,F,A}
+"Alias for 2D gradient field with gradient"
+const GradientField2D{F,A} = GradientField{2,F,A}
+"Alias for 3D gradient field with gradient"
+const GradientField3D{F,A} = GradientField{3,F,A}
+
 """
-     GradientRotField2D{F,A} <: AbstractGradientField2D{F,A}
+$(TYPEDEF)
 
 Type representing a gradient of a 2D field with rotation along z axis.
 
 It contains the following informations:
 
-- `f`: reference to a field.
-- `dx`, `dy`: first derivatives of the given field.
-- `ddx`, `ddy`: second derivatives of the given field.
-- `rx`, `ry`: rotation along the `z` axis.
-
+$(TYPEDFIELDS)
 """
-mutable struct GradientRotField2D{F,A} <: AbstractGradientField2D{F,A}
-   f :: F
-   ∇data :: A
-   Δdata :: A
-   rdata :: A
+mutable struct GradientRotField{N,F,A} <: AbstractGradientField{N,F,A}
+    "reference to a field."
+    f::F
+    "first derivatives of the given field."
+    ∇data::A
+    "second derivatives of the given field."
+    Δdata::A
+    "rotation along the `z` axis."
+    rdata::A
 end
 
+"Alias for 1D gradient field with gradient and rotation."
+const GradientRotField1D{F,A} = GradientRotField{1,F,A}
+"Alias for 2D gradient field with gradient and rotation."
+const GradientRotField2D{F,A} = GradientRotField{2,F,A}
+"Alias for 3D gradient field with gradient and rotation."
+const GradientRotField3D{F,A} = GradientRotField{3,F,A}
+
 """
-     GradientCurlField2D{F,A} <: AbstractGradientField2D{F,A}
+$(TYPEDEF)
 
 Type representing a gradient of a 3D field, laplacian and curl.
 
 It contains the following informations:
 
-- `f`: reference to a field.
-- `dx`, `dy`: first derivatives of the given field.
-- `ddx`, `ddy`: second derivatives of the given field.
-- `rx`, `ry`: rotation along the `z` axis.
-
+$(TYPEDFIELDS)
 """
-mutable struct GradientCurlField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    ωdata :: A
+mutable struct GradientCurlField{N,F,A} <: AbstractGradientField{N,F,A}
+    "reference to a field."
+    f::F
+    "first derivatives of the given field."
+    ∇data::A
+    "curl derivatives of given field."
+    ωdata::A
 end
 
-"""
-     GradientField3D{F,A} <: AbstractGradientField3D{F,A}
-
-Type representing a gradient of a 3D field.
-
-It contains the following informations:
-
-- `f`: reference to a field.
-- `dx`, `dy`, `dz`: first derivatives of the given field.
-- `ddx`, `ddy`, `ddz`: second derivatives of the given field.
+"Alias for 1D gradient field with gradient and curl."
+const GradientCurlField1D{F,A} = GradientCurlField{1,F,A}
+"Alias for 2D gradient field with gradient and curl."
+const GradientCurlField2D{F,A} = GradientCurlField{2,F,A}
+"Alias for 3D gradient field with gradient and curl."
+const GradientCurlField3D{F,A} = GradientCurlField{3,F,A}
 
 """
-mutable struct GradientField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    ∇data :: A
-    Δdata :: A
-end
-
-"""
-     GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
-
-Type representing a gradient of a 3D field with rotation along z axis.
-
-It contains the following informations:
-
-- `f`: reference to a field.
-- `dx`, `dy`, `dz`: first derivatives of the given field.
-- `ddx`, `ddy`, `ddz`: second derivatives of the given field.
-- `rx`, `ry`: rotation along the `z` axis.
-
-"""
-mutable struct GradientRotField3D{F,A} <: AbstractGradientField3D{F,A}
-    f :: F
-    ∇data :: A
-    Δdata :: A
-    rdata :: A
-end
-
-"""
-     GradientCurlField2D{F,A} <: AbstractGradientField2D{F,A}
-
-Type representing a gradient of a 2D field, laplacian and curl.
-
-It contains the following informations:
-
-- `f`: reference to a field.
-- `dx`, `dy`: first derivatives of the given field.
-- `ω`: rotation along the `z` axis.
-
-"""
-mutable struct GradientCurlField2D{F,A} <: AbstractGradientField2D{F,A}
-    f :: F
-    ∇data :: A
-    ωdata :: A
-end
-
-"""
-     GradientField(f::F; rotation::Bool = true) where {F<:AbstractField2D}
+$(TYPEDSIGNATURES)
 
 Returns a GradientField2D or GradientRotField2D.
 
@@ -131,7 +98,8 @@ Parameters are:
 - `laplacian`: specify if a rotation should be computed or not.
 - `vorticity`: specify if a rotation should be computed or not.
 """
-function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vorticity::Bool = false) where {F<:AbstractField2D}
+function GradientField(f::F; rotation::Bool=false, laplacian::Bool=true,
+                       vorticity::Bool=false) where {F<:AbstractField2D}
     ∇data = similar_data(f.data) # dx
     push!(∇data, similar_data(f.data)...) # dy
     if laplacian
@@ -153,7 +121,7 @@ function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vor
 end
 
 """
-     GradientField(f::F; rotation::Bool = true) where {F<:AbstractField3D}
+$(TYPEDSIGNATURES)
 
 Returns a GradientField3D or GradientRotField3D.
 
@@ -164,7 +132,8 @@ Parameters are:
 - `rotation`: specify if a rotation should be computed or not.
 - `vorticity`: specify if a rotation should be computed or not.
 """
-function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vorticity::Bool = false) where {F<:AbstractField3D}
+function GradientField(f::F; rotation::Bool=false, laplacian::Bool=true,
+                       vorticity::Bool=false) where {F<:AbstractField3D}
     if laplacian
         # grad
         ∇data = similar_data(f.data) # dx
@@ -191,7 +160,8 @@ function GradientField(f::F; rotation::Bool = false, laplacian::Bool = true, vor
     end
 end
 
-@inline function Base.getproperty(gf::AbstractGradientField{F}, name::Symbol) where {F<:AbstractField{1}}
+@inline function Base.getproperty(gf::AbstractGradientField{N,F},
+                                  name::Symbol) where {N,F<:AbstractField{N,1}}
     if name === :dx
         return gf.∇data[1]
     elseif name === :dy
@@ -213,38 +183,41 @@ end
     else
         return getfield(gf, name)
     end
- end
+end
 
- @inline function Base.getproperty(gf::AbstractGradientField{F}, name::Symbol) where {F<:AbstractField{N}} where N
+@inline function Base.getproperty(gf::AbstractGradientField{N,F},
+                                  name::Symbol) where {N,F<:AbstractField{N,ND}} where {ND}
     if name === :dx
-        return gf.∇data[1:N]
+        return gf.∇data[1:ND]
     elseif name === :dy
-        return gf.∇data[1+N:2*N]
+        return gf.∇data[(1 + ND):(2 * ND)]
     elseif name === :dz
-        return gf.∇data[1+2*N:3*N]
+        return gf.∇data[(1 + 2 * ND):(3 * ND)]
     elseif name === :ddx
-        return gf.Δdata[1:N]
+        return gf.Δdata[1:ND]
     elseif name === :ddy
-        return gf.Δdata[1+N:2*N]
+        return gf.Δdata[(1 + ND):(2 * ND)]
     elseif name === :ddz
-        return gf.Δdata[1+2*N:3*N]
+        return gf.Δdata[(1 + 2 * ND):(3 * ND)]
     elseif name === :rx
         return gf.rdata[1]
     elseif name === :ry
         return gf.rdata[2]
     elseif name === :ω
-        return gf.ωdata[1:N]
+        return gf.ωdata[1:ND]
     else
         return getfield(gf, name)
     end
- end
+end
 
-Base.show(io::IO, f::GradientField2D{F,A}) where {F,A} =
-    print(io, "GradientField2D\n",
-        "  ├──────  Array type: $(A)", '\n',
-        "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
+function Base.show(io::IO, f::GradientField2D{F,A}) where {F,A}
+    return print(io, "GradientField2D\n",
+                 "  ├──────  Array type: $(A)", '\n',
+                 "  └──────────  memory: $(2*f.g.nx*f.g.ny*16/1024^2) MB")
+end
 
-Base.show(io::IO, f::GradientField3D{F,A}) where {F,A} =
-    print(io, "GradientField3D\n",
-        "  ├───────  FloatType: $(A)", '\n',
-        "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")
+function Base.show(io::IO, f::GradientField3D{F,A}) where {F,A}
+    return print(io, "GradientField3D\n",
+                 "  ├───────  FloatType: $(A)", '\n',
+                 "  └──────────  memory: $(2*f.g.nx*f.g.ny*f.g.nz*16/1024^2) MB")
+end

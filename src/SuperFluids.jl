@@ -6,6 +6,7 @@ using LinearAlgebra: mul!, ldiv!, transpose!
 using MPI
 using HDF5
 using PencilArrays
+using DocStringExtensions
 
 include("MPI/MPI.jl")
 include("Discretization/Discretization.jl")
@@ -14,9 +15,5 @@ include("Parameters/Parameters.jl")
 include("Inits/Inits.jl")
 include("IO/IO.jl")
 include("NumModels/NumModels.jl")
-
-export initField!, energy, finishWriter!
-export Grid, Field
-export print_parallel, println_parallel
 
 end # module

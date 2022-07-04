@@ -19,7 +19,7 @@ abstract type AbstractPlot2D{F} <: AbstractPlot{F} end
 abstract type AbstractPlot3D{F} <: AbstractPlot{F} end
 
 function __init__()
-   @require GLMakie="e9467ef8-e4e7-5192-8a1a-b1aee30e663a" @eval include("plot-makie.jl")
+    @require GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a" @eval include("plot-makie.jl")
 end
 
 end

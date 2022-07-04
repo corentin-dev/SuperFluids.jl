@@ -1,25 +1,44 @@
 # Fields
 
-`Field` objects are used to contain the data used by the simulation. It depends on a [Grid](@ref Grids).
+[`Field`](@ref) structures are used to contain the data used by the simulation. It depends on a [Grid](@ref Grids).
 
 !!! info
-    While [`Grid`](@ref Grids) is not distributed, `Field` is distributed.
+    While [`Grid`](@ref Grids) is not distributed, [`Field`](@ref) is distributed.
 
+## Type definition
 
-For the moment, there exists two kinds of fields: [`SuperFluids.Field2D`](@ref) and [`SuperFluids.Field3D`](@ref).
-
-## [Constructors](@id field.constructors)
+A [`Field`](@ref) contains all the local information of the data. By local, we mean in term of process.
 
 ```@docs
 Field
 ```
 
-## [Structures](@id field.structures)
+## Constructors
+
+To construct a [`Field2D`](@ref), a more friendly constructor has been defined as follow:
 
 ```@docs
-SuperFluids.Field2D
+Field(g::AbstractGrid2D{FT,A}, t::FieldType;
+               ndims::Integer=1,
+               mpi_topo::AbstractDomainDecomposition) where {FT<:Real,A}
+```
+
+To construct a [`Field3D`](@ref), a more friendly constructor has been defined as follow:
+
+```@docs
+Field(g::AbstractGrid3D{FT,A}, t::FieldType;
+               ndims::Integer=1,
+               mpi_topo::AbstractDomainDecomposition) where {FT<:Real,A}
+```
+
+## Aliases
+
+To have a more friendly type, some aliases has been declared. For the moment, there exists two kinds of fields: [`Field2D`](@ref) and [`Field3D`](@ref).
+
+```@docs
+Field2D
 ```
 
 ```@docs
-SuperFluids.Field3D
+Field3D
 ```

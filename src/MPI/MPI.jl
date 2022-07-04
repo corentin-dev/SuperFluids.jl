@@ -4,7 +4,7 @@ include("domain_topology.jl")
 global _rank = -1
 
 """
-    print_parallel(arg...)
+$(SIGNATURES)
 
 Only prints for rank 0.
 """
@@ -17,7 +17,7 @@ function print_parallel(arg...)
 end
 
 """
-    println_parallel(arg...)
+$(SIGNATURES)
 
 Only prints for rank 0.
 """

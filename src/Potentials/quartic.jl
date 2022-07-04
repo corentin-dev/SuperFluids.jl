@@ -1,34 +1,80 @@
-struct PotentialQuarticQuadratic{F} <: AbstractPotential{F}
-   f :: F
-   V :: AbstractArray
-   α :: Real
-   γx :: Real
-   γy :: Real
-   γz :: Real
-   κ4 :: Real
-end
+"""
+$(TYPEDEF)
 
-function PotentialQuarticQuadratic(f::F; α::Real = 0, γx::Real = 1, γy::Real = 1, κ4::Real = 1) where {F<:AbstractField{1,FT,FFT,A}} where {FT,FFT,A}
-   V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
-   p = PotentialQuarticQuadratic{F}(f, V, α, γx, γy, γz, κ4)
-   compute!(p)
-   return p
+Represents a quadratic potential. It can be used for [`GrossPitaevskiiParameters`](@ref).
+It has the following form:
+```math
+\\dfrac{1}{2}(1-α)\\left(
+   γ_x x² + γ_y y² + γ_z z² + κ_4 r⁴
+\\right)
+```
+with ``r=\\sqrt{x²+y²+z²}`` and ``z=0`` in ``2D``.
+
+The potential has the following informations:
+
+$(TYPEDFIELDS)
+
+# Example
+
+```jldoctest
+julia> PotentialQuarticQuadratic(field, γx = 0.5, γy = 0.5, κ4 = 1.)
+Quartic-Quadratic Potential for 2D fields
+  ├──────  parameters: α 0 γx 0.5 γy 0.5  κ₄ 1.0
+  └──────────────  V = (1-α)/2 × (γx x² + γy y²) + κ₄/2 r⁴
+```
+"""
+struct PotentialQuarticQuadratic{F} <: AbstractPotential{F}
+    "field on which the potential acts."
+    f::F
+    "potential field (real)."
+    V::AbstractArray
+    "scaling scalar"
+    α::Real
+    "x quadratic coefficient."
+    γx::Real
+    "y quadratic coefficient."
+    γy::Real
+    "z quadratic coefficient (for 3D)."
+    γz::Real
+    "radius quartic coefficient."
+    κ4::Real
+
+    """
+    $(TYPEDSIGNATURES)
+
+    Returns a `PotentialQuarticQuadratic` potential.
+    """
+    function PotentialQuarticQuadratic(f::F; α::Real=0, γx::Real=1, γy::Real=1, γz::Real=1,
+                                       κ4::Real=1) where {F<:AbstractField{N,1,FT,FFT,A}} where {N,
+                                                                                                 FT,
+                                                                                                 FFT,
+                                                                                                 A}
+        V = PencilArray(f.ϕ.pencil, A{FT}(undef, size_local(f.ϕ)))
+
+        p = new{F}(f, V, α, γx, γy, γz, κ4)
+        compute!(p)
+        return p
+    end
 end
 
 function compute!(p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D}
-   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.x^2+γy*p.f.y^2) + 0.5*p.κ4 * (p.f.x^2 + p.f.y^2)^2
+    @. p.V = 0.5 * (1 - p.α) * (p.γx * p.f.x^2 + p.γy * p.f.y^2) +
+             0.5 * p.κ4 * (p.f.x^2 + p.f.y^2)^2
 end
 
 function compute!(p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D}
-   @. p.V = 0.5*(1-p.α)*(p.γx*p.f.x^2+γy*p.f.y^2+γz*p.f.z^2) + 0.5*p.κ4 * (p.f.x^2 + p.f.y^2)^2
+    @. p.V = 0.5 * (1 - p.α) * (p.γx * p.f.x^2 + p.γy * p.f.y^2 + p.γz * p.f.z^2) +
+             0.5 * p.κ4 * (p.f.x^2 + p.f.y^2)^2
 end
 
-Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D} =
-     print(io, "Quartic-Quadratic Potential for 2D fields\n",
-         "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
-         "  └──────────────  V = (1-α)/2 × (γx x² + γy y²) + κ₄/2 r⁴")
+function Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField2D}
+    return print(io, "Quartic-Quadratic Potential for 2D fields\n",
+                 "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
+                 "  └──────────────  V = (1-α)/2 × (γx x² + γy y²) + κ₄/2 r⁴")
+end
 
-Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D} =
-     print(io, "Quartic-Quadratic Potential for 3D fields\n",
-         "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
-         "  └──────────────  V = (1-α)/2 × (γx x² + γy y² + γz z²) + κ₄/2 r⁴")
+function Base.show(io::IO, p::PotentialQuarticQuadratic{F}) where {F<:AbstractField3D}
+    return print(io, "Quartic-Quadratic Potential for 3D fields\n",
+                 "  ├──────  parameters: α $(p.α) γx $(p.γx) γy $(p.γy)  κ₄ $(p.κ4)\n",
+                 "  └──────────────  V = (1-α)/2 × (γx x² + γy y² + γz z²) + κ₄/2 r⁴")
+end

@@ -76,10 +76,12 @@ function energy(n::AbstractNumModel{F,P,Plan},
     EΩ = sum(real.(im .* conj.(ϕ) .* (Ω .* (n.gf.rx .+ n.gf.ry)))) * Δx * Δy
     EΔ = (-coeffΔ .* (abs∇ϕ_x .+ abs∇ϕ_y) + sum(V .* abs2.(ϕ))) * Δx * Δy
     Eβ = sum(0.5 * β * (abs2.(ϕ) .^ 2)) * Δx * Δy
+    μ = -EΩ + EΔ + Eβ * 2
     # compute sum
     E = -EΩ + EΔ + Eβ
 
     if (showEnergy)
+        println_parallel("Chemical potential : $(μ)")
         println_parallel("Angular Momentum Energy : $(EΩ)")
         println_parallel("Kinetic + Potential Energy : $(EΔ)")
         println_parallel("Interaction Energy : $(Eβ)")

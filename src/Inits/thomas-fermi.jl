@@ -56,8 +56,8 @@ with ``ρ_0 = √( 4β √(γ_x γ_y) / π )``
     ``ϕ`` is normalized in order to have ``∥ϕ∥_2 = 1``.
 """
 function initField!(init::InitThomasFermi{F}) where {F<:AbstractField2D}
-    x = init.f.x
-    y = init.f.y
+    x = @. init.f.x
+    y = @. init.f.y
     ρ0 = √(4 * init.β * √(init.γx * init.γy) / π)
     function TF(x, y)
         if x^2 + y^2 > ρ0
@@ -92,9 +92,9 @@ with ``ρ_0 = (30 β √(γ_x γ_y γ_z) / (8π))^{2/5}``
     ``ϕ`` is normalized in order to have ``∥ϕ∥₂ = 1``.
 """
 function initField!(init::InitThomasFermi{F}) where {F<:AbstractField3D}
-    x = init.f.x
-    y = init.f.y
-    z = init.f.z
+    x = @. init.f.x + (init.f.g.xmax + init.f.g.xmin) * 0.5
+    y = @. init.f.y + (init.f.g.ymax + init.f.g.ymin) * 0.5
+    z = @. init.f.z + (init.f.g.zmax + init.f.g.zmin) * 0.5
     ρ0 = (30 * init.β * √(init.γx * init.γy * init.γz) / (8 * π))^(2 / 5)
     function TF(x, y, z)
         if x^2 + y^2 + z^2 > ρ0

@@ -20,9 +20,25 @@ Returns a Backward Euler numerical model.
 
 # Details
 
-M⁻¹ = Δt⁻¹ + V + β × ∥ϕ∥²
-b = M × ϕ × Δt⁻¹
-A = ϕ - M⁻¹ (Δ+rot)ϕ
+It solves a linear system with a Krylov solver.
+
+The linear system is preconditionned with the operator ``M^{-1}``:
+
+```math
+M=\\dfrac{1}{Δt} + β ∥ϕⁿ∥ + V(x)
+````
+
+and the linear operator ``A`` is as follow:
+```math
+A = 1 + M⁻¹ \\left(
+coeffΔ Δ - iΩLₖ
+\\right)
+```
+
+And the right hand side is ``b``:
+```math
+b = (MΔt)⁻¹ϕ
+```
 
 # Example
 
@@ -101,10 +117,25 @@ $(TYPEDSIGNATURES)
 
 Returns a Backward Euler numerical model without preconditionning.
 
-# Details
 
-b = ϕ × Δt⁻¹
-A = (Δt⁻¹ + Δ + V + β × ∥ϕ∥² + rot) ϕ
+It solves a linear system with a Krylov solver.
+
+The linear system is not preconditionned. The linear operator ``A`` is as follow:
+
+```math
+M=
+````
+
+and the linear operator ``A`` is as follow:
+```math
+A = \\dfrac{1}{Δt} + coeffΔ Δ + β ∥ϕⁿ∥ + V(x) - iΩLₖ
+```
+
+And the right hand side is ``b``:
+```math
+b = Δt⁻¹ϕ
+```
+
 
 # Example
 

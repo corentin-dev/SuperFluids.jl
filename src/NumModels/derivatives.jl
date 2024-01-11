@@ -160,19 +160,19 @@ function computeDerivatives!(gf::GradientRotField2D, p::AbstractFDPlan, ϕt::Abs
     grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
     x, y = grid.x, grid.y
     # x direction
-    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx; order=6)
+    computedxddx!(parent(ϕt), parent(gf.dx), parent(gf.ddx), p.Δx; order=6)
     gf.rx .= y .* gf.dx
     # y direction
     transpose!(p.ϕytmp, ϕt)
     dϕytmp = similar(p.ϕytmp)
     ddϕytmp = similar(p.ϕytmp)
-    computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy; order=6)
+    computedyddy!(parent(p.ϕytmp), parent(dϕytmp), parent(ddϕytmp), p.Δy; order=6)
     transpose!(gf.dy, dϕytmp)
     transpose!(gf.ddy, ddϕytmp)
     dϕytmp = nothing
     ddϕytmp = nothing
     # compute (in pen_x)
-    gf.ry = -x .* gf.dy
+    gf.ry .= -x .* gf.dy
     return nothing
 end
 
@@ -180,19 +180,19 @@ end
 
 function computeDerivatives!(gf::GradientField3D, p::AbstractFDPlan, ϕt::AbstractArray)
     # x direction
-    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx; order=6)
+    computedxddx!(parent(ϕt), parent(gf.dx), parent(gf.ddx), p.Δx; order=6)
     # y direction
     transpose!(p.ϕytmp, ϕt)
     dϕytmp = similar(p.ϕytmp)
     ddϕytmp = similar(p.ϕytmp)
-    computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy; order=6)
+    computedyddy!(parent(p.ϕytmp), parent(dϕytmp), parent(ddϕytmp), p.Δy; order=6)
     transpose!(gf.dy, dϕytmp)
     transpose!(gf.ddy, ddϕytmp)
     # z direction
     transpose!(p.ϕztmp, p.ϕytmp)
     dϕztmp = similar(p.ϕztmp)
     ddϕztmp = similar(p.ϕztmp)
-    computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy; order=6)
+    computedyddy!(parent(p.ϕytmp), parent(dϕytmp), parent(ddϕytmp), p.Δy; order=6)
     transpose!(dϕytmp, dϕztmp)
     transpose!(ddϕytmp, ddϕztmp)
     transpose!(gf.dz, dϕytmp)
@@ -209,7 +209,7 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractFDPlan, ϕt::Abs
     # x direction
     grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
     x, y = grid.x, grid.y
-    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx; order=6)
+    computedxddx!(ϕt.data, gf.dx, gf.ddx, p.Δx; order=6)
     gf.rx .= y .* gf.dx
     # y direction
     grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
@@ -220,7 +220,7 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractFDPlan, ϕt::Abs
     computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy; order=6)
     transpose!(gf.dy, dϕytmp)
     transpose!(gf.ddy, ddϕytmp)
-    gf.ry = -x .* gf.dy
+    gf.ry .= -x .* gf.dy
     # z direction
     transpose!(p.ϕztmp, p.ϕytmp)
     dϕztmp = similar(p.ϕztmp)
@@ -353,47 +353,47 @@ function computedyddy!(ϕt::AbstractArray{A,2}, dy::AbstractArray{A,2},
     ny = N[2]
     if order == 2
         for j in 1:ny
-            dy[:, j] = (ϕt[:, j % ny + 1] - ϕt[:, mod(j % ny - 2, ny) + 1]) / (2 * Δy)
-            ddy[:, j] = (-2 * ϕt[:, j] + ϕt[:, j % ny + 1] + ϕt[:, mod(j % ny - 2, ny) + 1]) /
+            dy[j, :] = (ϕt[j % ny + 1, :] - ϕt[mod(j % ny - 2, ny) + 1, :]) / (2 * Δy)
+            ddy[j, :] = (-2 * ϕt[j, :] + ϕt[j % ny + 1, :] + ϕt[mod(j % ny - 2, ny) + 1, :]) /
                         Δy^2
         end
     elseif order == 4
         for j in 1:ny
-            dy[:, j] = (-ϕt[:, (j + 1) % ny + 1] + 8 * ϕt[:, j % ny + 1] -
-                        8 * ϕt[:, mod(j % ny - 2, ny) + 1] + ϕt[:, mod(j % ny - 3, ny) + 1]) /
+            dy[j, :] = (-ϕt[(j + 1) % ny + 1, :] + 8 * ϕt[j % ny + 1, :] -
+                        8 * ϕt[mod(j % ny - 2, ny) + 1, :] + ϕt[mod(j % ny - 3, ny) + 1, :]) /
                        (12 * Δy)
-            ddy[:, j] = (-30 * ϕt[:, j] - ϕt[:, (j + 1) % ny + 1] + 16 * ϕt[:, j % ny + 1] +
-                         16 * ϕt[:, mod(j % ny - 2, ny) + 1] -
-                         ϕt[:, mod(j % ny - 3, ny) + 1]) / (12 * Δy^2)
+            ddy[j, :] = (-30 * ϕt[j, :] - ϕt[(j + 1) % ny + 1] + 16 * ϕt[:, j % ny + 1, :] +
+                         16 * ϕt[mod(j % ny - 2, ny) + 1, :] -
+                         ϕt[mod(j % ny - 3, ny) + 1, :]) / (12 * Δy^2)
         end
     elseif order == 6
         for j in 1:ny
-            dy[:, j] = (ϕt[:, (j + 2) % ny + 1] - 9 * ϕt[:, (j + 1) % ny + 1] +
-                        45 * ϕt[:, j % ny + 1] - 45 * ϕt[:, mod(j % ny - 2, ny) + 1] +
-                        9 * ϕt[:, mod(j % ny - 3, ny) + 1] - ϕt[:, mod(j % ny - 4, ny) + 1]) /
+            dy[j, :] = (ϕt[(j + 2) % ny + 1, :] - 9 * ϕt[(j + 1) % ny + 1, :] +
+                        45 * ϕt[j % ny + 1, :] - 45 * ϕt[mod(j % ny - 2, ny) + 1, :] +
+                        9 * ϕt[mod(j % ny - 3, ny) + 1, :] - ϕt[mod(j % ny - 4, ny) + 1, :]) /
                        (60 * Δy)
-            ddy[:, j] = (-490 * ϕt[:, j] + 2 * ϕt[:, (j + 2) % ny + 1] -
-                         27 * ϕt[:, (j + 1) % ny + 1] + 270 * ϕt[:, j % ny + 1] +
-                         270 * ϕt[:, mod(j % ny - 2, ny) + 1] -
-                         27 * ϕt[:, mod(j % ny - 3, ny) + 1] +
-                         2 * ϕt[:, mod(j % ny - 4, ny) + 1]) / (180 * Δy^2)
+            ddy[j, :] = (-490 * ϕt[j, :] + 2 * ϕt[(j + 2) % ny + 1, :] -
+                         27 * ϕt[(j + 1) % ny + 1, :] + 270 * ϕt[j % ny + 1, :] +
+                         270 * ϕt[mod(j % ny - 2, ny) + 1, :] -
+                         27 * ϕt[mod(j % ny - 3, ny) + 1, :] +
+                         2 * ϕt[mod(j % ny - 4, ny) + 1, :]) / (180 * Δy^2)
         end
     elseif order == 8
         for j in 1:ny
-            dy[:, j] = (-3 * ϕt[:, (j + 3) % ny + 1] + 32 * ϕt[:, (j + 2) % ny + 1] -
-                        168 * ϕt[:, (j + 1) % ny + 1] + 672 * ϕt[:, j % ny + 1]
+            dy[j, :] = (-3 * ϕt[(j + 3) % ny + 1, :] + 32 * ϕt[(j + 2) % ny + 1, :] -
+                        168 * ϕt[(j + 1) % ny + 1, :] + 672 * ϕt[j % ny + 1, :]
                         -
-                        672 * ϕt[:, mod(j % ny - 2, ny) + 1] +
-                        168 * ϕt[:, mod(j % ny - 3, ny) + 1] -
-                        32 * ϕt[:, mod(j % ny - 4, ny) + 1] +
-                        3 * ϕt[:, mod(j % ny - 5, ny) + 1]) / (840 * Δy)
-            ddy[:, j] = (-14350 * ϕt[:, j] - 9 * ϕt[:, (j + 3) % ny + 1] +
-                         128 * ϕt[:, (j + 2) % ny + 1] - 1008 * ϕt[:, (j + 1) % ny + 1] +
-                         8064 * ϕt[:, j % ny + 1]
-                         + 8064 * ϕt[:, mod(j % ny - 2, ny) + 1] -
-                         1008 * ϕt[:, mod(j % ny - 3, ny) + 1] +
-                         128 * ϕt[:, mod(j % ny - 4, ny) + 1] -
-                         9 * ϕt[:, mod(j % ny - 5, ny) + 1]) / (5040 * Δy^2)
+                        672 * ϕt[mod(j % ny - 2, ny) + 1, :] +
+                        168 * ϕt[mod(j % ny - 3, ny) + 1, :] -
+                        32 * ϕt[mod(j % ny - 4, ny) + 1, :] +
+                        3 * ϕt[mod(j % ny - 5, ny) + 1, :]) / (840 * Δy)
+            ddy[j, :] = (-14350 * ϕt[j, :] - 9 * ϕt[(j + 3) % ny + 1, :] +
+                         128 * ϕt[(j + 2) % ny + 1, :] - 1008 * ϕt[(j + 1) % ny + 1, :] +
+                         8064 * ϕt[j % ny + 1, :]
+                         + 8064 * ϕt[mod(j % ny - 2, ny) + 1, :] -
+                         1008 * ϕt[mod(j % ny - 3, ny) + 1, :] +
+                         128 * ϕt[mod(j % ny - 4, ny) + 1, :] -
+                         9 * ϕt[mod(j % ny - 5, ny) + 1, :]) / (5040 * Δy^2)
         end
     end
     return nothing
@@ -405,51 +405,51 @@ function computedyddy!(ϕt::AbstractArray{A,3}, dy::AbstractArray{A,3},
     ny = N[2]
     if order == 2
         for j in 1:ny
-            dy[:, j, :] = (ϕt[:, j % ny + 1, :] - ϕt[:, mod(j % ny - 2, ny) + 1, :]) /
+            dy[j, :, :] = (ϕt[j % ny + 1, :, :] - ϕt[mod(j % ny - 2, ny) + 1, :, :]) /
                           (2 * Δy)
-            ddy[:, j, :] = (-2 * ϕt[:, j, :] + ϕt[:, j % ny + 1, :] +
-                            ϕt[:, mod(j % ny - 2, ny) + 1, :]) / Δy^2
+            ddy[j, :, :] = (-2 * ϕt[j, :, :] + ϕt[j % ny + 1, :, :] +
+                            ϕt[mod(j % ny - 2, ny) + 1, :, :]) / Δy^2
         end
     elseif order == 4
         for j in 1:ny
-            dy[:, j, :] = (-ϕt[:, (j + 1) % ny + 1, :] + 8 * ϕt[:, j % ny + 1, :] -
-                           8 * ϕt[:, mod(j % ny - 2, ny) + 1, :] +
-                           ϕt[:, mod(j % ny - 3, ny) + 1, :]) / (12 * Δy)
-            ddy[:, j, :] = (-30 * ϕt[:, j, :] - ϕt[:, (j + 1) % ny + 1, :] +
-                            16 * ϕt[:, j % ny + 1, :] +
-                            16 * ϕt[:, mod(j % ny - 2, ny) + 1, :] -
-                            ϕt[:, mod(j % ny - 3, ny) + 1, :]) / (12 * Δy^2)
+            dy[j, :, :] = (-ϕt[(j + 1) % ny + 1, :, :] + 8 * ϕt[j % ny + 1, :, :] -
+                           8 * ϕt[mod(j % ny - 2, ny) + 1, :, :] +
+                           ϕt[mod(j % ny - 3, ny) + 1, :, :]) / (12 * Δy)
+            ddy[j, :, :] = (-30 * ϕt[:, j, :] - ϕt[(j + 1) % ny + 1, :, :] +
+                            16 * ϕt[j % ny + 1, :, :] +
+                            16 * ϕt[mod(j % ny - 2, ny) + 1, :, :] -
+                            ϕt[mod(j % ny - 3, ny) + 1, :, :]) / (12 * Δy^2)
         end
     elseif order == 6
         for j in 1:ny
-            dy[:, j, :] = (ϕt[:, (j + 2) % ny + 1, :] - 9 * ϕt[:, (j + 1) % ny + 1, :] +
-                           45 * ϕt[:, j % ny + 1, :] -
-                           45 * ϕt[:, mod(j % ny - 2, ny) + 1, :] +
-                           9 * ϕt[:, mod(j % ny - 3, ny) + 1, :] -
-                           ϕt[:, mod(j % ny - 4, ny) + 1, :]) / (60 * Δy)
-            ddy[:, j, :] = (-490 * ϕt[:, j, :] + 2 * ϕt[:, (j + 2) % ny + 1, :] -
-                            27 * ϕt[:, (j + 1) % ny + 1, :] + 270 * ϕt[:, j % ny + 1, :] +
-                            270 * ϕt[:, mod(j % ny - 2, ny) + 1, :] -
-                            27 * ϕt[:, mod(j % ny - 3, ny) + 1, :] +
-                            2 * ϕt[:, mod(j % ny - 4, ny) + 1, :]) / (180 * Δy^2)
+            dy[j, :, :] = (ϕt[(j + 2) % ny + 1, :, :] - 9 * ϕt[(j + 1) % ny + 1, :, :] +
+                           45 * ϕt[j % ny + 1, :, :] -
+                           45 * ϕt[mod(j % ny - 2, ny) + 1, :, :] +
+                           9 * ϕt[mod(j % ny - 3, ny) + 1, :, :] -
+                           ϕt[mod(j % ny - 4, ny) + 1, :, :]) / (60 * Δy)
+            ddy[j, :, :] = (-490 * ϕt[j, :, :] + 2 * ϕt[(j + 2) % ny + 1, :, :] -
+                            27 * ϕt[(j + 1) % ny + 1, :, :] + 270 * ϕt[j % ny + 1, :, :] +
+                            270 * ϕt[mod(j % ny - 2, ny) + 1, :, :] -
+                            27 * ϕt[mod(j % ny - 3, ny) + 1, :, :] +
+                            2 * ϕt[mod(j % ny - 4, ny) + 1, :, :]) / (180 * Δy^2)
         end
     elseif order == 8
-        for j in 1:ny
-            dy[:, j, :] = (-3 * ϕt[:, (j + 3) % ny + 1, :] +
-                           32 * ϕt[:, (j + 2) % ny + 1, :] -
-                           168 * ϕt[:, (j + 1) % ny + 1, :] + 672 * ϕt[:, j % ny + 1, :]
+        for
+            dy[j, :, :] = (-3 * ϕt[(j + 3) % ny + 1, :, :] +
+                           32 * ϕt[(j + 2) % ny + 1, :, :] -
+                           168 * ϕt[(j + 1) % ny + 1, :, :] + 672 * ϕt[j % ny + 1, :, :]
                            -
-                           672 * ϕt[:, mod(j % ny - 2, ny) + 1, :] +
-                           168 * ϕt[:, mod(j % ny - 3, ny) + 1, :] -
-                           32 * ϕt[:, mod(j % ny - 4, ny) + 1, :] +
-                           3 * ϕt[:, mod(j % ny - 5, ny) + 1, :]) / (840 * Δy)
-            ddy[:, j, :] = (-14350 * ϕt[:, j, :] - 9 * ϕt[:, (j + 3) % ny + 1, :] +
-                            128 * ϕt[:, (j + 2) % ny + 1, :] -
-                            1008 * ϕt[:, (j + 1) % ny + 1, :] + 8064 * ϕt[:, j % ny + 1, :]
-                            + 8064 * ϕt[:, mod(j % ny - 2, ny) + 1, :] -
-                            1008 * ϕt[:, mod(j % ny - 3, ny) + 1, :] +
-                            128 * ϕt[:, mod(j % ny - 4, ny) + 1, :] -
-                            9 * ϕt[:, mod(j % ny - 5, ny) + 1, :]) / (5040 * Δy^2)
+                           672 * ϕt[mod(j % ny - 2, ny) + 1, :, :] +
+                           168 * ϕt[mod(j % ny - 3, ny) + 1, :, :] -
+                           32 * ϕt[mod(j % ny - 4, ny) + 1, :, :] +
+                           3 * ϕt[mod(j % ny - 5, ny) + 1, :, :]) / (840 * Δy)
+            ddy[j, :, :] = (-14350 * ϕt[j, :, :] - 9 * ϕt[(j + 3) % ny + 1, :, :] +
+                            128 * ϕt[(j + 2) % ny + 1, :, :] -
+                            1008 * ϕt[(j + 1) % ny + 1, :] + 8064 * ϕt[:, j % ny + 1, :, :]
+                            + 8064 * ϕt[mod(j % ny - 2, ny) + 1, :, :] -
+                            1008 * ϕt[mod(j % ny - 3, ny) + 1, :, :] +
+                            128 * ϕt[mod(j % ny - 4, ny) + 1, :, :] -
+                            9 * ϕt[mod(j % ny - 5, ny) + 1, :, :]) / (5040 * Δy^2)
         end
     end
     return nothing
@@ -461,51 +461,51 @@ function computedzddz!(ϕt::AbstractArray{A,3}, dz::AbstractArray{A,3},
     nz = N[3]
     if order == 2
         for k in 1:nz
-            dz[:, k, :] = (ϕt[:, k % nz + 1, :] - ϕt[:, mod(k % nz - 2, nz) + 1, :]) /
+            dz[k, :, :] = (ϕt[k % nz + 1, :, :] - ϕt[mod(k % nz - 2, nz) + 1, :, :]) /
                           (2 * Δz)
-            ddz[:, k, :] = (-2 * ϕt[:, k, :] + ϕt[:, k % nz + 1, :] +
-                            ϕt[:, mod(k % nz - 2, nz) + 1, :]) / Δz^2
+            ddz[k, :, :] = (-2 * ϕt[k, :, :] + ϕt[k % nz + 1, :, :] +
+                            ϕt[mod(k % nz - 2, nz) + 1, :, :]) / Δz^2
         end
     elseif order == 4
         for k in 1:nz
-            dz[:, k, :] = (-ϕt[:, (k + 1) % nz + 1, :] + 8 * ϕt[:, k % nz + 1, :] -
-                           8 * ϕt[:, mod(k % nz - 2, nz) + 1, :] +
-                           ϕt[:, mod(k % nz - 3, nz) + 1, :]) / (12 * Δz)
-            ddz[:, k, :] = (-30 * ϕt[:, k, :] - ϕt[:, (k + 1) % nz + 1, :] +
-                            16 * ϕt[:, k % nz + 1, :] +
-                            16 * ϕt[:, mod(k % nz - 2, nz) + 1, :] -
-                            ϕt[:, mod(k % nz - 3, nz) + 1, :]) / (12 * Δz^2)
+            dz[k, :, :] = (-ϕt[(k + 1) % nz + 1, :, :] + 8 * ϕt[k % nz + 1, :, :] -
+                           8 * ϕt[mod(k % nz - 2, nz) + 1, :, :] +
+                           ϕt[mod(k % nz - 3, nz) + 1, :, :]) / (12 * Δz)
+            ddz[k, :, :] = (-30 * ϕt[k, :, :] - ϕt[(k + 1) % nz + 1, :, :] +
+                            16 * ϕt[k % nz + 1, :, :] +
+                            16 * ϕt[mod(k % nz - 2, nz) + 1, :, :] -
+                            ϕt[mod(k % nz - 3, nz) + 1, :, :]) / (12 * Δz^2)
         end
     elseif order == 6
         for k in 1:nz
-            dz[:, k, :] = (ϕt[:, (k + 2) % nz + 1, :] - 9 * ϕt[:, (k + 1) % nz + 1, :] +
-                           45 * ϕt[:, k % nz + 1, :] -
-                           45 * ϕt[:, mod(k % nz - 2, nz) + 1, :] +
-                           9 * ϕt[:, mod(k % nz - 3, nz) + 1, :] -
-                           ϕt[:, mod(k % nz - 4, nz) + 1, :]) / (60 * Δz)
-            ddz[:, k, :] = (-490 * ϕt[:, k, :] + 2 * ϕt[:, (k + 2) % nz + 1, :] -
-                            27 * ϕt[:, (k + 1) % nz + 1, :] + 270 * ϕt[:, k % nz + 1, :] +
-                            270 * ϕt[:, mod(k % nz - 2, nz) + 1, :] -
-                            27 * ϕt[:, mod(k % nz - 3, nz) + 1, :] +
-                            2 * ϕt[:, mod(k % nz - 4, nz) + 1, :]) / (180 * Δz^2)
+            dz[k, :, :] = (ϕt[(k + 2) % nz + 1, :, :] - 9 * ϕt[(k + 1) % nz + 1, :, :] +
+                           45 * ϕt[k % nz + 1, :, :] -
+                           45 * ϕt[mod(k % nz - 2, nz) + 1, :, :] +
+                           9 * ϕt[mod(k % nz - 3, nz) + 1, :, :] -
+                           ϕt[mod(k % nz - 4, nz) + 1, :, :]) / (60 * Δz)
+            ddz[k, :, :] = (-490 * ϕt[k, :, :] + 2 * ϕt[(k + 2) % nz + 1, :, :] -
+                            27 * ϕt[(k + 1) % nz + 1, :, :] + 270 * ϕt[k % nz + 1, :, :] +
+                            270 * ϕt[mod(k % nz - 2, nz) + 1, :, :] -
+                            27 * ϕt[mod(k % nz - 3, nz) + 1, :, :] +
+                            2 * ϕt[mod(k % nz - 4, nz) + 1, :, :]) / (180 * Δz^2)
         end
     elseif order == 8
         for k in 1:nz
-            dz[:, k, :] = (-3 * ϕt[:, (k + 3) % nz + 1, :] +
-                           32 * ϕt[:, (k + 2) % nz + 1, :] -
-                           168 * ϕt[:, (k + 1) % nz + 1, :] + 672 * ϕt[:, k % nz + 1, :]
+            dz[k, :, :] = (-3 * ϕt[(k + 3) % nz + 1, :, :] +
+                           32 * ϕt[(k + 2) % nz + 1, :, :] -
+                           168 * ϕt[(k + 1) % nz + 1, :, :] + 672 * ϕt[k % nz + 1, :, :]
                            -
-                           672 * ϕt[:, mod(k % nz - 2, nz) + 1, :] +
-                           168 * ϕt[:, mod(k % nz - 3, nz) + 1, :] -
-                           32 * ϕt[:, mod(k % nz - 4, nz) + 1, :] +
-                           3 * ϕt[:, mod(k % nz - 5, nz) + 1, :]) / (840 * Δz)
-            ddz[:, k, :] = (-14350 * ϕt[:, k, :] - 9 * ϕt[:, (k + 3) % nz + 1, :] +
-                            128 * ϕt[:, (k + 2) % nz + 1, :] -
-                            1008 * ϕt[:, (k + 1) % nz + 1, :] + 8064 * ϕt[:, k % nz + 1, :]
-                            + 8064 * ϕt[:, mod(k % nz - 2, nz) + 1, :] -
-                            1008 * ϕt[:, mod(k % nz - 3, nz) + 1, :] +
-                            128 * ϕt[:, mod(k % nz - 4, nz) + 1, :] -
-                            9 * ϕt[:, mod(k % nz - 5, nz) + 1, :]) / (5040 * Δz^2)
+                           672 * ϕt[mod(k % nz - 2, nz) + 1, :, :] +
+                           168 * ϕt[mod(k % nz - 3, nz) + 1, :, :] -
+                           32 * ϕt[mod(k % nz - 4, nz) + 1, :, :] +
+                           3 * ϕt[mod(k % nz - 5, nz) + 1, :, :]) / (840 * Δz)
+            ddz[k, :, :] = (-14350 * ϕt[k, :, :] - 9 * ϕt[(k + 3) % nz + 1, :, :] +
+                            128 * ϕt[(k + 2) % nz + 1, :, :] -
+                            1008 * ϕt[(k + 1) % nz + 1, :, :] + 8064 * ϕt[k % nz + 1, :, :]
+                            + 8064 * ϕt[mod(k % nz - 2, nz) + 1, :, :] -
+                            1008 * ϕt[mod(k % nz - 3, nz) + 1, :, :] +
+                            128 * ϕt[mod(k % nz - 4, nz) + 1, :, :] -
+                            9 * ϕt[mod(k % nz - 5, nz) + 1, :, :]) / (5040 * Δz^2)
         end
     end
     return nothing

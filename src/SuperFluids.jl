@@ -1,5 +1,6 @@
 module SuperFluids
 
+using Preferences, MPIPreferences
 using DocStringExtensions
 
 using MPI

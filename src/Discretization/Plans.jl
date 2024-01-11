@@ -128,7 +128,7 @@ $(TYPEDFIELDS)
 """
 struct PlanFD3D{N} <: AbstractFDPlan{N}
     "reference to a field."
-    f::AbstractField2D
+    f::AbstractField3D
     "pencil (or slab) in the ``x`` direction."
     pen_x::Any
     "pencil (or slab) in the ``y`` direction."

@@ -21,3 +21,24 @@ Import package :
 ```
 using SuperFluids
 ```
+
+## `MPI` and `HDF5`
+
+This project uses  `MPIPreferences.jl` to setup `MPI.jl`. In order to use it, you can create a file named `LocalPreferences.toml` containing:
+
+```
+[MPIPreferences]
+_format = "1.0"
+abi = "OpenMPI"
+binary = "system"
+libmpi = "libmpi"
+mpiexec = "mpiexec"
+```
+
+To the same `LocalPreferences.toml`, you can add the following informations:
+
+```
+[HDF5_jll]
+libhdf5_path = "/usr/lib/libhdf5.so"
+libhdf5_hl_path = "/usr/lib/libhdf5_hl.so"
+```

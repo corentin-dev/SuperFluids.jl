@@ -1,12 +1,15 @@
 module SuperFluids
 
-using AbstractFFTs
-using FFTW
-using LinearAlgebra: mul!, ldiv!, transpose!
+using DocStringExtensions
+
 using MPI
 using HDF5
+
+using AbstractFFTs
+using FFTW
+
 using PencilArrays
-using DocStringExtensions
+using LinearAlgebra: mul!, ldiv!, transpose!
 
 include("MPI/MPI.jl")
 include("Discretization/Discretization.jl")

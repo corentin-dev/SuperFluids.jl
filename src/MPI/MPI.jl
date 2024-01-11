@@ -1,5 +1,7 @@
 include("domain_topology.jl")
 
+export print_parallel, println_parallel
+
 "Global variable for print"
 global _rank = -1
 

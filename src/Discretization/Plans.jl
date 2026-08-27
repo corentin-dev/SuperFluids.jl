@@ -278,10 +278,10 @@ function Plan(f::F;
                             ξx, ξy, ξz,
                             datax, datay, dataz)
     else
-        # create arrays for FFT
+        # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)
         ϕytmp = PencilArray{FFT}(undef, pen_y)
-        ϕztmp = PencilArray{FFT}(undef, pen_y)
+        ϕztmp = PencilArray{FFT}(undef, pen_z)
         return PlanFD3D{N}(f, pen_x, pen_y, pen_z, f.g.Δx, f.g.Δy, f.g.Δz, ϕxtmp, ϕytmp,
                            ϕztmp)
     end

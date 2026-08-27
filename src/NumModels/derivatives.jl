@@ -7,20 +7,20 @@ function computeDerivatives!(gf::GradientField2D, p::AbstractFFTPlan, ϕt::Abstr
     x, y, ξx, ξy = grid_x(p)
     mul_x!(p.ϕx_hat, p, ϕt)
     # compute dx
-    p.ϕxtmp_hat .= im .* ξx .* p.ϕx_hat
-    ldiv_x!(gf.dx, p, p.ϕxtmp_hat)
+    p.a_tmp2x .= im .* ξx .* p.ϕx_hat
+    ldiv_x!(gf.dx, p, p.a_tmp2x)
     # compute ddx
-    p.ϕxtmp_hat .= -ξx .^ 2 .* p.ϕx_hat
-    ldiv_x!(gf.ddx, p, p.ϕxtmp_hat)
+    p.a_tmp2x .= -ξx .^ 2 .* p.ϕx_hat
+    ldiv_x!(gf.ddx, p, p.a_tmp2x)
     # FFT y
     x, y, ξx, ξy = grid_y(p)
-    mul_y!(p.ϕy_hat, plan, ϕt)
+    mul_y!(p.ϕy_hat, p, ϕt)
     # compute dy
-    p.ϕytmp_hat .= im .* ξy .* p.ϕy_hat
-    ldiv_y!(gf.dy, p, p.ϕytmp_hat)
+    p.a_tmp2y .= im .* ξy .* p.ϕy_hat
+    ldiv_y!(gf.dy, p, p.a_tmp2y)
     # compute ddy
-    p.ϕytmp_hat .= -ξy .^ 2 .* p.ϕy_hat
-    ldiv_y!(gf.ddy, p, p.ϕytmp_hat)
+    p.a_tmp2y .= -ξy .^ 2 .* p.ϕy_hat
+    ldiv_y!(gf.ddy, p, p.a_tmp2y)
     return nothing
 end
 
@@ -79,11 +79,11 @@ function computeDerivatives!(gf::GradientField3D, p::AbstractFFTPlan, ϕt::Abstr
     x, y, z, ξx, ξy, ξz = grid_z(p)
     mul_z!(p.ϕz_hat, p, ϕt)
     # compute dz
-    p.ϕztmp_hat .= im .* ξz .* p.ϕz_hat
-    ldiv_z!(gf.dz, p, p.ϕztmp_hat)
+    p.a_tmp2z .= im .* ξz .* p.ϕz_hat
+    ldiv_z!(gf.dz, p, p.a_tmp2z)
     # compute ddz
-    p.a_tmp2z .= -ξy .^ 2 .* p.ϕz_hat
-    ldiv_y!(gf.ddz, p, p.a_tmp2z)
+    p.a_tmp2z .= -ξz .^ 2 .* p.ϕz_hat
+    ldiv_z!(gf.ddz, p, p.a_tmp2z)
     return nothing
 end
 
@@ -145,12 +145,12 @@ end
 ## 2D
 function computeDerivatives!(gf::GradientField2D, p::AbstractFDPlan, ϕt::AbstractArray)
     # x direction
-    computedxddx!(ϕt, gf.dx, gf.ddx, p.Δx; order=6)
+    computedxddx!(parent(ϕt), parent(gf.dx), parent(gf.ddx), p.Δx; order=6)
     # y direction
     transpose!(p.ϕytmp, ϕt)
     dϕytmp = similar(p.ϕytmp)
     ddϕytmp = similar(p.ϕytmp)
-    computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy; order=6)
+    computedyddy!(parent(p.ϕytmp), parent(dϕytmp), parent(ddϕytmp), p.Δy; order=6)
     transpose!(gf.dy, dϕytmp)
     transpose!(gf.ddy, ddϕytmp)
     return nothing
@@ -192,7 +192,7 @@ function computeDerivatives!(gf::GradientField3D, p::AbstractFDPlan, ϕt::Abstra
     transpose!(p.ϕztmp, p.ϕytmp)
     dϕztmp = similar(p.ϕztmp)
     ddϕztmp = similar(p.ϕztmp)
-    computedyddy!(parent(p.ϕytmp), parent(dϕytmp), parent(ddϕytmp), p.Δy; order=6)
+    computedzddz!(parent(p.ϕztmp), parent(dϕztmp), parent(ddϕztmp), p.Δz; order=6)
     transpose!(dϕytmp, dϕztmp)
     transpose!(ddϕytmp, ddϕztmp)
     transpose!(gf.dz, dϕytmp)
@@ -209,7 +209,7 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractFDPlan, ϕt::Abs
     # x direction
     grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
     x, y = grid.x, grid.y
-    computedxddx!(ϕt.data, gf.dx, gf.ddx, p.Δx; order=6)
+    computedxddx!(parent(ϕt), parent(gf.dx), parent(gf.ddx), p.Δx; order=6)
     gf.rx .= y .* gf.dx
     # y direction
     grid = localgrid(p.pen_y, (p.f.g.x, p.f.g.y, p.f.g.z))
@@ -217,7 +217,7 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractFDPlan, ϕt::Abs
     transpose!(p.ϕytmp, ϕt)
     dϕytmp = similar(p.ϕytmp)
     ddϕytmp = similar(p.ϕytmp)
-    computedyddy!(p.ϕytmp, dϕytmp, ddϕytmp, p.Δy; order=6)
+    computedyddy!(parent(p.ϕytmp), parent(dϕytmp), parent(ddϕytmp), p.Δy; order=6)
     transpose!(gf.dy, dϕytmp)
     transpose!(gf.ddy, ddϕytmp)
     gf.ry .= -x .* gf.dy
@@ -225,7 +225,7 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractFDPlan, ϕt::Abs
     transpose!(p.ϕztmp, p.ϕytmp)
     dϕztmp = similar(p.ϕztmp)
     ddϕztmp = similar(p.ϕztmp)
-    computedzddz!(p.ϕztmp, dϕztmp, ddϕztmp, p.Δz; order=6)
+    computedzddz!(parent(p.ϕztmp), parent(dϕztmp), parent(ddϕztmp), p.Δz; order=6)
     transpose!(dϕytmp, dϕztmp)
     transpose!(ddϕytmp, ddϕztmp)
     transpose!(gf.dz, dϕytmp)
@@ -350,7 +350,8 @@ end
 function computedyddy!(ϕt::AbstractArray{A,2}, dy::AbstractArray{A,2},
                        ddy::AbstractArray{A,2}, Δy::Real; order::Integer=2) where {A}
     N = size(ϕt)
-    ny = N[2]
+    # after transpose!, the y axis is the leading (1st) dimension
+    ny = N[1]
     if order == 2
         for j in 1:ny
             dy[j, :] = (ϕt[j % ny + 1, :] - ϕt[mod(j % ny - 2, ny) + 1, :]) / (2 * Δy)
@@ -402,7 +403,8 @@ end
 function computedyddy!(ϕt::AbstractArray{A,3}, dy::AbstractArray{A,3},
                        ddy::AbstractArray{A,3}, Δy::Real; order::Integer=2) where {A}
     N = size(ϕt)
-    ny = N[2]
+    # after transpose!, the y axis is the leading (1st) dimension
+    ny = N[1]
     if order == 2
         for j in 1:ny
             dy[j, :, :] = (ϕt[j % ny + 1, :, :] - ϕt[mod(j % ny - 2, ny) + 1, :, :]) /
@@ -458,7 +460,8 @@ end
 function computedzddz!(ϕt::AbstractArray{A,3}, dz::AbstractArray{A,3},
                        ddz::AbstractArray{A,3}, Δz::Real; order::Integer=2) where {A}
     N = size(ϕt)
-    nz = N[3]
+    # after transpose!, the z axis is the leading (1st) dimension
+    nz = N[1]
     if order == 2
         for k in 1:nz
             dz[k, :, :] = (ϕt[k % nz + 1, :, :] - ϕt[mod(k % nz - 2, nz) + 1, :, :]) /

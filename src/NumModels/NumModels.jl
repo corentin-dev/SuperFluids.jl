@@ -5,14 +5,12 @@ include("GrossPitaevskii/GrossPitaevskii.jl")
 include("NavierStokes/NavierStokes.jl")
 
 export NumModelADI1, NumModelADI2
-export NumModelForwardEuler
+export NumModelRK4Imp
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
 export NumModelCrankNicolson, NumModelCrankNicolsonQuasiNewton, NumModelCrankNicolsonT,
        NumModelCrankNicolsonQuasiNewtonT
 export NumModelExternalVelocity
 export solve!
-
-include("rk.jl")
 
 include("krylov.jl")
 

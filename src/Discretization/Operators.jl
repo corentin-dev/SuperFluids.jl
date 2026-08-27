@@ -1,11 +1,32 @@
+"""
+    cross(c, a, b)
+
+Compute the cross product of two vector fields `c = a × b` and return it as a
+new field.
+
+    cross!(c, a, b)
+
+Same, but writes in-place into the (already allocated) vector field `c`.
+"""
 function cross(a, b)
     c = similar_data(a)
+    cross!(c, a, b)
+    return c
+end
+
+function cross!(c, a, b)
     @. c[1] = a[2] * b[3] - a[3] * b[2]
     @. c[2] = a[3] * b[1] - a[1] * b[3]
     @. c[3] = a[1] * b[2] - a[2] * b[1]
     return c
 end
 
+"""
+    dealias!(u_hat, ξx, ξy, ξz)
+
+2/3-rule dealiasing: zero out the modes of the spectral vector field `u_hat`
+whose |k|² exceeds (4/9)·min(|k|max)² of each direction.
+"""
 function dealias!(u_hat, ξx, ξy, ξz)
     func = x -> x^2
     ξmax = 4 / 9 * minimum((mapreduce(func, max, ξx), mapreduce(func, max, ξy),

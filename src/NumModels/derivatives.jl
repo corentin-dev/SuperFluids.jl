@@ -132,9 +132,9 @@ function computeDerivatives!(gf::GradientCurlField3D, p::AbstractFFTPlan, ut::Ab
     ω_hat = similar_data(p.uz_hat)
     x, y, z, ξx, ξy, ξz = grid_z(p)
     # ̂ω  = ∇ × ̂u
-    @. ω_hat[1] = im * (ξy * uz_hat[3] - ξz * uz_hat[2])
-    @. ω_hat[2] = im * (ξz * uz_hat[1] - ξx * uz_hat[3])
-    @. ω_hat[3] = im * (ξx * uz_hat[2] - ξy * uz_hat[1])
+    @. ω_hat[1] = im * (ξy * p.uz_hat[3] - ξz * p.uz_hat[2])
+    @. ω_hat[2] = im * (ξz * p.uz_hat[1] - ξx * p.uz_hat[3])
+    @. ω_hat[3] = im * (ξx * p.uz_hat[2] - ξy * p.uz_hat[1])
     # get ω with iFFT
     ldiv_all!(gf.ω, p, ω_hat)
     return nothing

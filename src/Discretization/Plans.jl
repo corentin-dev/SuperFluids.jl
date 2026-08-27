@@ -325,13 +325,13 @@ end
     elseif name === :uztmp_hat
         return plan.dataz[(N + 1):(2 * N)]
     elseif name === :a_tmpx
-        return plan.datay[2 * N + 1]
+        return plan.datax[2 * N + 1]
     elseif name === :a_tmpy
         return plan.datay[2 * N + 1]
     elseif name === :a_tmpz
         return plan.dataz[2 * N + 1]
     elseif name === :a_tmp2x
-        return plan.datay[2 * N + 2]
+        return plan.datax[2 * N + 2]
     elseif name === :a_tmp2y
         return plan.datay[2 * N + 2]
     elseif name === :a_tmp2z
@@ -346,8 +346,8 @@ function mul_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
     return nothing
 end
 
-function mul_x!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                u_in::Vector{AbstractArray}) where {N}
+function mul_x!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         mul_x!(u_out[i], plan, u_in[i])
     end
@@ -361,8 +361,8 @@ function mul_y!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
     return nothing
 end
 
-function mul_y!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                u_in::Vector{AbstractArray}) where {N}
+function mul_y!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         mul_y!(u_out[i], plan, u_in[i])
     end
@@ -378,8 +378,8 @@ function mul_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
     return nothing
 end
 
-function mul_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                u_in::Vector{AbstractArray}) where {N}
+function mul_z!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         mul_z!(u_out[i], plan, u_in[i])
     end
@@ -408,8 +408,8 @@ function mul_all!(a_out::PencilArray, plan::PlanFFT3D, a_in::PencilArray)
     return nothing
 end
 
-function mul_all!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                  u_in::Vector{AbstractArray}) where {N}
+function mul_all!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                  u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         mul_all!(u_out[i], plan, u_in[i])
     end
@@ -421,8 +421,8 @@ function ldiv_x!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
     return nothing
 end
 
-function ldiv_x!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                 u_in::Vector{AbstractArray}) where {N}
+function ldiv_x!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                 u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         ldiv_x!(u_out[i], plan.plan_x, u_in[i])
     end
@@ -436,8 +436,8 @@ function ldiv_y!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
     return nothing
 end
 
-function ldiv_y!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                 u_in::Vector{AbstractArray}) where {N}
+function ldiv_y!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                 u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         ldiv_y!(u_out[i], plan, u_in[i])
     end
@@ -453,8 +453,8 @@ function ldiv_z!(a_out::PencilArray, plan::AbstractFFTPlan, a_in::PencilArray)
     return nothing
 end
 
-function ldiv_z!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                 u_in::Vector{AbstractArray}) where {N}
+function ldiv_z!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                 u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         ldiv_z!(u_out[i], plan.plan_x, u_in[i])
     end
@@ -483,8 +483,8 @@ function ldiv_all!(a_out::PencilArray, plan::PlanFFT3D, a_in::PencilArray)
     return nothing
 end
 
-function ldiv_all!(u_out::Vector{AbstractArray}, plan::AbstractFFTPlan{N},
-                   u_in::Vector{AbstractArray}) where {N}
+function ldiv_all!(u_out::Vector{<:AbstractArray}, plan::AbstractFFTPlan{N},
+                   u_in::Vector{<:AbstractArray}) where {N}
     for i in 1:N
         ldiv_all!(u_out[i], plan, u_in[i])
     end

@@ -89,11 +89,13 @@ Constructs a 3D MPI topology.
 """
 function MPITopo3D()
     MPI.Init()
-    comm = MPI.COMM_WORLD
-    rank = MPI.Comm_rank(comm)
-    size = MPI.Comm_size(comm)
+    mpi_comm = MPI.COMM_WORLD
+    mpi_rank = MPI.Comm_rank(mpi_comm)
+    mpi_size = MPI.Comm_size(mpi_comm)
     topo_dims = [0, 0, 0]
-    MPI.Dims_create!(size, topo_dims)
-    topo = MPITopology(comm, Tuple(topo_dims))
+    MPI.Dims_create!(mpi_size, topo_dims)
+    topo = MPITopology(mpi_comm, Tuple(topo_dims))
+    global _rank
+    _rank = mpi_rank
     return MPITopo(3, mpi_comm, mpi_rank, mpi_size, topo)
 end

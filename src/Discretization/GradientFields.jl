@@ -151,10 +151,10 @@ function GradientField(f::F; rotation::Bool=false, laplacian::Bool=true,
             return GradientField3D{typeof(f),typeof(∇data)}(f, ∇data, Δdata)
         end
     elseif vorticity == true && rotation == false
-        ωdata = [similar(f.data[1])] # ωx
-        push!(ωdata, similar_data(f.data)...) # ωy
-        push!(ωdata, similar_data(f.data)...) # ωz
-        return GradientCurlField3D{typeof(f),typeof(ωdata)}(f, ωdata)
+        # first derivatives (∇u) and curl (ω = ∇ × u): one PencilArray per component
+        ∇data = similar_data(f.data) # du_x, du_y, du_z
+        ωdata = similar_data(f.data) # ωx, ωy, ωz
+        return GradientCurlField3D{typeof(f),typeof(ωdata)}(f, ∇data, ωdata)
     else
         return nothing
     end

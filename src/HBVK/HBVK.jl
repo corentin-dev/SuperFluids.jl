@@ -383,12 +383,13 @@ function timeStep!(n::NumModelHBVK)
         _hbk_project!(n, n.stage)
         _hbk_project!(n, n.stage_s)
         # --- Step II: corrective derivative at the intermediate state ---
+        # Reference (calcVelocity_forced_04):  u_new = u1 + 0.5*dt*(-k1 + k2)
         copyto!(n.un_hat, n.stage)
         copyto!(n.us_hat, n.stage_s)
         rhs!(n, n.k2n, n.k2s)                # k2 = P(NL(u1))
         for c in 1:nvel
-            @. n.un_hat[c] = n.stage[c]   + 0.5 * Δt * (n.k1n[c] - n.k2n[c])
-            @. n.us_hat[c] = n.stage_s[c] + 0.5 * Δt * (n.k1s[c] - n.k2s[c])
+            @. n.un_hat[c] = n.stage[c]   + 0.5 * Δt * (n.k2n[c] - n.k1n[c])
+            @. n.us_hat[c] = n.stage_s[c] + 0.5 * Δt * (n.k2s[c] - n.k1s[c])
         end
         _hbk_project!(n, n.un_hat)
         _hbk_project!(n, n.us_hat)

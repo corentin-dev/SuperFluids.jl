@@ -91,6 +91,15 @@ function ξsquared(ξx::Real, ξy::Real, ξz::Real)
     end
 end
 
+function ξsquared2(ξx::Real, ξy::Real)
+    a = ξx^2 + ξy^2
+    if abs(a) < 1e-8
+        return 1
+    else
+        return a
+    end
+end
+
 """
 $(TYPEDEF)
 

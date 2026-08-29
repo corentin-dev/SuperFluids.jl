@@ -3,9 +3,11 @@ abstract type AbstractNumModel{AbstractField,AbstractParameters,AbstractPlan} en
 
 include("GrossPitaevskii/GrossPitaevskii.jl")
 include("NavierStokes/NavierStokes.jl")
+include("NavierStokes/NSGP.jl")
 
 export NumModelADI1, NumModelADI2
 export NumModelRK4Imp
+export NSGPParameters, NumModelNSGP
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL
 export NumModelCrankNicolson, NumModelCrankNicolsonQuasiNewton, NumModelCrankNicolsonT,
        NumModelCrankNicolsonQuasiNewtonT

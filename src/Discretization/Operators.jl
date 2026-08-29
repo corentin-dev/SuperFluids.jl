@@ -36,3 +36,29 @@ function dealias!(u_hat, ξx, ξy, ξz)
     @. u_hat[3] *= (ξx^2 + ξy^2 + ξz^2) < ξmax
     return nothing
 end
+
+"""
+    dealias2!(u_hat, ξx, ξy)
+
+2/3-rule dealiasing for a 2-component (2D) spectral velocity field `u_hat`.
+"""
+function dealias2!(u_hat, ξx, ξy)
+    func = x -> x^2
+    ξmax = 4 / 9 * minimum((mapreduce(func, max, ξx), mapreduce(func, max, ξy)))
+    @. u_hat[1] *= (ξx^2 + ξy^2) < ξmax
+    @. u_hat[2] *= (ξx^2 + ξy^2) < ξmax
+    return nothing
+end
+
+"""
+    cross2!(c, a, ωz)
+
+2D advective term `c = u × (ωz ẑ)` written in place. For `u = (a[1], a[2])`
+and vorticity `ω = ωz ẑ`, the cross product is
+`c[1] = -a[2]*ωz`, `c[2] = a[1]*ωz` (the z-component is 0).
+"""
+function cross2!(c, a, ωz)
+    @. c[1] = a[2] * ωz
+    @. c[2] = -a[1] * ωz
+    return c
+end

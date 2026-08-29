@@ -179,8 +179,8 @@ function write!(w::WriterVTK{F};
         vtkfile["module", VTKCellData()] = tmp
     else
         tmp = A{FT}(undef, (2, size_local(ϕ)...))
-        tmp[1] .= real.(parent(w.f.ux))
-        tmp[2] .= real.(parent(w.f.uy))
+        tmp[1, :, :] .= real.(parent(w.f.ux))
+        tmp[2, :, :] .= real.(parent(w.f.uy))
         vtkfile["U", VTKCellData()] = tmp
     end
 

@@ -29,7 +29,7 @@ pages:
   image: docker.io/library/ubuntu:26.04
   stage: deploy
   script:
-    - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y node-katex && apt-get install -y wget libhdf5-openmpi-dev libopenmpi-dev
+    - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y libhdf5-openmpi-dev libopenmpi-dev
     - echo "configure git"
     - git config --global --add safe.directory /builds/lmrs/num/SuperFluids.jl
     - echo "download julia 1.12.7"

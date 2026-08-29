@@ -177,6 +177,68 @@ end
 end
 
 # ==========================================================================
+# GP explicit Runge-Kutta (NumModelGPRK) — port of the reference GP_RK4
+# ==========================================================================
+# Linear case (β = V = Ω = 0): ψ̂(t) = exp(i·coeffΔ·k²·t) ψ̂(0), an exact phase
+# rotation. A plane wave k=(1,1) has a known exact solution, giving a clean
+# convergence-order check for RK1/RK2/RK4 and a norm check.
+@testset "GP explicit RK: plane-wave order and norm preservation (2D)" begin
+    grid = Grid((32, 32), ((-2π, 2π), (-2π, 2π)))
+    coeffΔ = -0.5
+    T = 0.4
+    k2 = 2.0
+    nrm(a) = sqrt(sum(abs.(a) .^ 2))
+    function run(stepper, nsteps)
+        field = Field(grid, ComplexField())
+        X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
+        @. field.ϕ = exp(1im * (X + Y))
+        pot = PotentialZero(field)
+        param = GrossPitaevskiiParameters(coeffΔ=coeffΔ, β=0.0, Ω=0.0, pot=pot)
+        n = NumModelGPRK(field, param, T / nsteps, nsteps, 1; stepper=stepper)
+        for _ in 1:nsteps
+            SuperFluids.timeStep!(n)
+        end
+        exf = Field(grid, ComplexField())
+        Xe = reshape(vec(exf.x), :, 1); Ye = reshape(vec(exf.y), 1, :)
+        @. exf.ϕ = exp(1im * (Xe + Ye))
+        ψx = parent(exf.ϕ) .* exp(1im * coeffΔ * k2 * T)
+        ψm = parent(field.ϕ)
+        return nrm(ψm - ψx) / nrm(ψx), nrm(ψm) / nrm(ψx)
+    end
+    for (stepper, lo, hi) in (("RK1", 0.85, 1.15), ("RK2", 1.85, 2.15), ("RK4", 3.85, 4.15))
+        e_c, n_c = run(stepper, 40)
+        e_f, n_f = run(stepper, 80)
+        order = log2(e_c / e_f)
+        @test lo < order < hi
+        @test abs(n_f - 1.0) < 5e-3          # phase rotation preserves the norm
+        @test e_f > 0.0                      # the fine run is not exact (no trivial pass)
+    end
+end
+
+# Nonlinear case (β > 0): the mass ∫|ψ|² is conserved by the GP equation; the
+# explicit RK integrator must preserve it (up to the truncation error) on a
+# Gaussian initial state.
+@testset "GP explicit RK: nonlinear mass conservation (2D)" begin
+    grid = Grid((32, 32), ((-2π, 2π), (-2π, 2π)))
+    function mass_rel(stepper, dt, T, β)
+        field = Field(grid, ComplexField())
+        @. field.ϕ = exp(-((field.x)^2 + (field.y)^2) / 6.0)
+        m0 = sum(abs.(parent(field.ϕ)) .^ 2)
+        pot = PotentialZero(field)
+        param = GrossPitaevskiiParameters(coeffΔ=-0.5, β=β, Ω=0.0, pot=pot)
+        nsteps = round(Int, T / dt)
+        n = NumModelGPRK(field, param, dt, nsteps, 1; stepper=stepper)
+        for _ in 1:nsteps
+            SuperFluids.timeStep!(n)
+        end
+        m1 = sum(abs.(parent(field.ϕ)) .^ 2)
+        return abs(m1 - m0) / m0
+    end
+    @test mass_rel("RK2", 0.004, 0.2, 2.0) < 1e-6
+    @test mass_rel("RK4", 0.004, 0.2, 2.0) < 1e-7
+end
+
+# ==========================================================================
 # 3D vector field: FFT round-trip (NS velocity field, ndims=3)
 # ==========================================================================
 @testset "3D vector FFT round-trip" begin

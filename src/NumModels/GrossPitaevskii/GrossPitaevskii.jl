@@ -138,4 +138,5 @@ end
 include("backward-euler.jl")
 include("crank-nicolson.jl")
 include("adi.jl")
+include("explicit-rk.jl")
 include("external-velocity.jl")

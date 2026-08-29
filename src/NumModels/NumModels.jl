@@ -5,7 +5,7 @@ include("GrossPitaevskii/GrossPitaevskii.jl")
 include("NavierStokes/NavierStokes.jl")
 include("NavierStokes/NSGP.jl")
 
-export NumModelADI1, NumModelADI2
+export NumModelADI1, NumModelADI2, NumModelGPRK
 export NumModelRK4Imp
 export NSGPParameters, NumModelNSGP
 export NumModelBackwardEuler, NumModelBackwardEulerNoPrecond, NumModelBackwardEulerNL

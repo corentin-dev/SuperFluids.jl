@@ -177,6 +177,74 @@ end
 end
 
 # ==========================================================================
+# Compact  (6th-order periodic compact scheme, port of GPS cdl==0)
+# ==========================================================================
+# Same Fourier-mode accuracy checks as the FD/FFT tests; the compact operator
+# is 6th order, so the same generous TOL_FD bound applies (and is comfortably
+# met).
+@testset "2D compact derivatives (rotation=true)" begin
+    field = Field(Grid((128, 128), ((-12, 12), (-12, 12))), ComplexField())
+    X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
+    kx, ky = set_mode_2d!(field, 2, 3)
+    gf = GradientField(field; rotation=true)
+    plan = Plan(field; t=SuperFluids.CompactPlan())
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    ϕ = field.ϕ
+    @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
+    @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
+    @test relerr(gf.ddx, -kx^2 * ϕ)   < TOL_FD
+    @test relerr(gf.ddy, -ky^2 * ϕ)   < TOL_FD
+    @test relerr(gf.rx,  Y .* gf.dx)   < TOL_FD
+    @test relerr(gf.ry, -X .* gf.dy)   < TOL_FD
+end
+
+@testset "2D compact derivatives (rotation=false)" begin
+    field = Field(Grid((128, 128), ((-12, 12), (-12, 12))), ComplexField())
+    kx, ky = set_mode_2d!(field, 2, 3)
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan())
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    ϕ = field.ϕ
+    @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
+    @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
+    @test relerr(gf.ddx, -kx^2 * ϕ)   < TOL_FD
+    @test relerr(gf.ddy, -ky^2 * ϕ)   < TOL_FD
+end
+
+@testset "3D compact derivatives (rotation=true)" begin
+    field = Field(Grid((64, 64, 64), ((-12, 12), (-12, 12), (-12, 12))), ComplexField())
+    X = reshape(vec(field.x), :, 1, 1); Y = reshape(vec(field.y), 1, :, 1)
+    kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
+    gf = GradientField(field; rotation=true)
+    plan = Plan(field; t=SuperFluids.CompactPlan())
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    ϕ = field.ϕ
+    @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
+    @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
+    @test relerr(gf.dz,  1im * kz * ϕ) < TOL_FD
+    @test relerr(gf.ddx, -kx^2 * ϕ)   < TOL_FD
+    @test relerr(gf.ddy, -ky^2 * ϕ)   < TOL_FD
+    @test relerr(gf.ddz, -kz^2 * ϕ)   < TOL_FD
+    @test relerr(gf.rx,  Y .* gf.dx)   < TOL_FD
+    @test relerr(gf.ry, -X .* gf.dy)   < TOL_FD
+end
+
+@testset "3D compact derivatives (rotation=false)" begin
+    field = Field(Grid((64, 64, 64), ((-12, 12), (-12, 12), (-12, 12))), ComplexField())
+    kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan())
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    ϕ = field.ϕ
+    @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
+    @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
+    @test relerr(gf.dz,  1im * kz * ϕ) < TOL_FD
+    @test relerr(gf.ddx, -kx^2 * ϕ)   < TOL_FD
+    @test relerr(gf.ddy, -ky^2 * ϕ)   < TOL_FD
+    @test relerr(gf.ddz, -kz^2 * ϕ)   < TOL_FD
+end
+
+# ==========================================================================
 # GP explicit Runge-Kutta (NumModelGPRK) — port of the reference GP_RK4
 # ==========================================================================
 # Linear case (β = V = Ω = 0): ψ̂(t) = exp(i·coeffΔ·k²·t) ψ̂(0), an exact phase

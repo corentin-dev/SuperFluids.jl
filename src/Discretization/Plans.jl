@@ -4,8 +4,10 @@ abstract type PlanType end
 struct FFTPlan <: PlanType end
 "Finite difference plan"
 struct FiniteDifferencePlan <: PlanType end
+"Compact finite difference plan (6th-order periodic compact scheme)."
+struct CompactPlan <: PlanType end
 
-export Plan, FFTPlan, FiniteDifferencePlan
+export Plan, FFTPlan, FiniteDifferencePlan, CompactPlan
 
 "Abstract supertype for plans."
 abstract type AbstractPlan{N} end
@@ -13,6 +15,97 @@ abstract type AbstractPlan{N} end
 abstract type AbstractFFTPlan{N} end
 "Abstract supertype for Finite Difference plans."
 abstract type AbstractFDPlan{N} end
+"Abstract supertype for Compact Finite Difference plans."
+abstract type AbstractCompactPlan{N} end
+
+"""
+$(TYPEDEF)
+
+Precomputed multipliers for a compact finite-difference derivative on one axis.
+
+Built by [`compact_setup`](@ref). The cyclic tridiagonal solve (Thomas
+multipliers plus the right-hand-side-independent cyclic correction) is
+precomputed here, so each evaluation only performs the stencil plus two sweeps.
+
+$(TYPEDFIELDS)
+"""
+struct CompactAxis{R}
+    "number of grid points along the axis."
+    n::Int
+    "derivative order (1 or 2)."
+    order::Int
+    "compact coefficient: 1/3 (1st order) or 2/11 (2nd order)."
+    alpha::R
+    "stencil coefficient a."
+    a::R
+    "stencil coefficient b."
+    b::R
+    "Thomas forward multipliers."
+    s::Vector{R}
+    "reciprocals of the Thomas pivots."
+    w::Vector{R}
+    "super-diagonal of the (unchanged) tridiagonal."
+    f::Vector{R}
+    "precomputed cyclic correction vector."
+    t::Vector{R}
+    "cyclic correction denominator."
+    denom::R
+end
+
+"""$(TYPEDSIGNATURES)
+
+Build the precomputed multipliers for a compact finite-difference derivative
+along an axis of `n` points, spacing `Δ`, derivative `order` (1 or 2).
+
+This is a port of the GPS periodic compact scheme (`cdl == 0`). The operator is
+the 6th-order compact derivative
+`` α·(g(i-1)+g(i+1)) + g(i) = a·(f(i+1)-f(i-1)) + b·(f(i+2)-f(i-2)) ``
+(1st order, `α=1/3`, `a=(7/9)/Δ`, `b=(1/36)/Δ`) or the compact second
+derivative (2nd order, `α=2/11`, `a=(12/11)/Δ²`, `b=(3/44)/Δ²`), with periodic
+wrap. The cyclic tridiagonal solve is reduced to Thomas multipliers plus a
+right-hand-side-independent correction vector, both precomputed here.
+"""
+function compact_setup(n::Int, Δ::Real, order::Int)
+    if n < 8
+        error("compact finite-difference scheme requires at least 8 points along the axis (got $n)")
+    end
+    R = eltype(Δ)
+    if order == 1
+        alpha = R(1)/R(3)
+        a = (R(7)/R(9))/Δ
+        b = (R(1)/R(36))/Δ
+    elseif order == 2
+        alpha = R(2)/R(11)
+        a = (R(12)/R(11))/Δ^2
+        b = (R(3)/R(44))/Δ^2
+    else
+        error("compact_setup: order must be 1 or 2")
+    end
+    cv = ones(R, n); cv[1] = R(2); cv[n] = R(1) + alpha^2
+    bv = fill(alpha, n); bv[n] = zero(R)
+    fv = fill(alpha, n); fv[n] = zero(R)
+    # Thomas forward pass (non-cyclic part).
+    s = zeros(R, n); w = ones(R, n)
+    w .= cv
+    for i in 2:n
+        s[i] = bv[i-1]/w[i-1]
+        w[i] = w[i] - fv[i-1]*s[i]
+    end
+    for i in 1:n
+        w[i] = R(1)/w[i]
+    end
+    # Right-hand-side-independent cyclic correction (swept once, reused).
+    t = zeros(R, n); t[1] = -one(R); t[n] = alpha
+    for i in 2:n
+        t[i] -= t[i-1]*s[i]
+    end
+    t[n] *= w[n]
+    for i in n-1:-1:1
+        t[i] = (t[i] - fv[i]*t[i+1])*w[i]
+    end
+    denom = one(R) + t[1] - alpha*t[n]
+    return CompactAxis{R}(n, order, alpha, a, b, s, w, fv, t, denom)
+end
 
 """
 $(TYPEDEF)
@@ -159,6 +252,66 @@ struct PlanFD3D{N} <: AbstractFDPlan{N}
 end
 
 """
+$(TYPEDEF)
+
+Type representing a 2D compact finite difference plan.
+
+$(TYPEDFIELDS)
+"""
+struct PlanCompact2D{N} <: AbstractCompactPlan{N}
+    "reference to a field."
+    f::AbstractField2D
+    "pencil (or slab) in the ``x`` direction."
+    pen_x::Any
+    "pencil (or slab) in the ``y`` direction."
+    pen_y::Any
+    "compact multipliers for the first derivative along ``x``."
+    ax::CompactAxis
+    "compact multipliers for the second derivative along ``x``."
+    a2x::CompactAxis
+    "compact multipliers for the first derivative along ``y``."
+    ay::CompactAxis
+    "compact multipliers for the second derivative along ``y``."
+    a2y::CompactAxis
+    "temporary field distributed along ``y``."
+    ϕytmp::AbstractArray
+end
+
+"""
+$(TYPEDEF)
+
+Type representing a 3D compact finite difference plan.
+
+$(TYPEDFIELDS)
+"""
+struct PlanCompact3D{N} <: AbstractCompactPlan{N}
+    "reference to a field."
+    f::AbstractField3D
+    "pencil (or slab) in the ``x`` direction."
+    pen_x::Any
+    "pencil (or slab) in the ``y`` direction."
+    pen_y::Any
+    "pencil (or slab) in the ``z`` direction."
+    pen_z::Any
+    "compact multipliers for the first derivative along ``x``."
+    ax::CompactAxis
+    "compact multipliers for the second derivative along ``x``."
+    a2x::CompactAxis
+    "compact multipliers for the first derivative along ``y``."
+    ay::CompactAxis
+    "compact multipliers for the second derivative along ``y``."
+    a2y::CompactAxis
+    "compact multipliers for the first derivative along ``z``."
+    az::CompactAxis
+    "compact multipliers for the second derivative along ``z``."
+    a2z::CompactAxis
+    "temporary field distributed along ``y``."
+    ϕytmp::AbstractArray
+    "temporary field distributed along ``z``."
+    ϕztmp::AbstractArray
+end
+
+"""
 $(TYPEDSIGNATURES)
 
 Returns a 2D plan. By default a FFT plan is returned.
@@ -166,7 +319,7 @@ Returns a 2D plan. By default a FFT plan is returned.
 Parameters are:
 
 - `f`: a field
-- `t`: a type of plan (either `FFTPlan()` or `FiniteDifferencePlan()`)
+- `t`: a type of plan (either `FFTPlan()`, `FiniteDifferencePlan()`, or `CompactPlan()`)
 
 # Example
 
@@ -214,6 +367,13 @@ function Plan(f::F;
                             plan_x, plan_y,
                             ξx, ξy,
                             datax, datay)
+    elseif typeof(t) == CompactPlan
+        ax = compact_setup(f.g.nx, f.g.Δx, 1)
+        a2x = compact_setup(f.g.nx, f.g.Δx, 2)
+        ay = compact_setup(f.g.ny, f.g.Δy, 1)
+        a2y = compact_setup(f.g.ny, f.g.Δy, 2)
+        ϕytmp = PencilArray{FFT}(undef, pen_y)
+        return PlanCompact2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp)
     else
         # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)
@@ -230,7 +390,7 @@ Returns a 3D plan. By default a FFT plan is returned.
 Parameters are:
 
 - `f`: a field
-- `t`: a type of plan (either `FFTPlan()` or `FiniteDifferencePlan()`)
+- `t`: a type of plan (either `FFTPlan()`, `FiniteDifferencePlan()`, or `CompactPlan()`)
 
 # Example
 
@@ -286,6 +446,16 @@ function Plan(f::F;
                             plan_x, plan_y, plan_z,
                             ξx, ξy, ξz,
                             datax, datay, dataz)
+    elseif typeof(t) == CompactPlan
+        ax = compact_setup(f.g.nx, f.g.Δx, 1)
+        a2x = compact_setup(f.g.nx, f.g.Δx, 2)
+        ay = compact_setup(f.g.ny, f.g.Δy, 1)
+        a2y = compact_setup(f.g.ny, f.g.Δy, 2)
+        az = compact_setup(f.g.nz, f.g.Δz, 1)
+        a2z = compact_setup(f.g.nz, f.g.Δz, 2)
+        ϕytmp = PencilArray{FFT}(undef, pen_y)
+        ϕztmp = PencilArray{FFT}(undef, pen_z)
+        return PlanCompact3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z, ϕytmp, ϕztmp)
     else
         # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)

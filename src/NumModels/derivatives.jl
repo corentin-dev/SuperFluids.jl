@@ -238,6 +238,214 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractFDPlan, ϕt::Abs
     return nothing
 end
 
+# Compact Finite Difference
+#
+# 6th-order periodic compact scheme (port of the GPS `cdl == 0` operators).
+# The derivative axis is always the leading (local) dimension, so each line is a
+# cyclic tridiagonal system reduced to two Thomas sweeps plus a
+# right-hand-side-independent correction (precomputed in `CompactAxis`).
+
+function compact1line!(a_out, a_in, n, c::CompactAxis)
+    a, b = c.a, c.b
+    α = c.alpha
+    for j in axes(a_in, 2)
+        r = @view(a_out[:, j])
+        u = @view(a_in[:, j])
+        @inbounds begin
+            r[1] = a * (u[2] - u[n]) + b * (u[3] - u[n - 1])
+            r[2] = a * (u[3] - u[1]) + b * (u[4] - u[n])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - u[i - 1]) + b * (u[i + 2] - u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - u[n - 2]) + b * (u[1] - u[n - 3])
+            r[n] = a * (u[1] - u[n - 1]) + b * (u[2] - u[n - 2])
+        end
+        _compact_solve!(r, n, c)
+    end
+    return nothing
+end
+
+function compact2line!(a_out, a_in, n, c::CompactAxis)
+    a, b = c.a, c.b
+    for j in axes(a_in, 2)
+        r = @view(a_out[:, j])
+        u = @view(a_in[:, j])
+        @inbounds begin
+            r[1] = a * (u[2] - 2u[1] + u[n]) + b * (u[3] - 2u[1] + u[n - 1])
+            r[2] = a * (u[3] - 2u[2] + u[1]) + b * (u[4] - 2u[2] + u[n])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - 2u[i] + u[i - 1]) + b * (u[i + 2] - 2u[i] + u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - 2u[n - 1] + u[n - 2]) + b * (u[1] - 2u[n - 1] + u[n - 3])
+            r[n] = a * (u[1] - 2u[n] + u[n - 1]) + b * (u[2] - 2u[n] + u[n - 2])
+        end
+        _compact_solve!(r, n, c)
+    end
+    return nothing
+end
+
+function compact1line3!(a_out, a_in, n, c::CompactAxis)
+    a, b = c.a, c.b
+    for k in axes(a_in, 3), j in axes(a_in, 2)
+        r = @view(a_out[:, j, k])
+        u = @view(a_in[:, j, k])
+        @inbounds begin
+            r[1] = a * (u[2] - u[n]) + b * (u[3] - u[n - 1])
+            r[2] = a * (u[3] - u[1]) + b * (u[4] - u[n])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - u[i - 1]) + b * (u[i + 2] - u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - u[n - 2]) + b * (u[1] - u[n - 3])
+            r[n] = a * (u[1] - u[n - 1]) + b * (u[2] - u[n - 2])
+        end
+        _compact_solve!(r, n, c)
+    end
+    return nothing
+end
+
+function compact2line3!(a_out, a_in, n, c::CompactAxis)
+    a, b = c.a, c.b
+    for k in axes(a_in, 3), j in axes(a_in, 2)
+        r = @view(a_out[:, j, k])
+        u = @view(a_in[:, j, k])
+        @inbounds begin
+            r[1] = a * (u[2] - 2u[1] + u[n]) + b * (u[3] - 2u[1] + u[n - 1])
+            r[2] = a * (u[3] - 2u[2] + u[1]) + b * (u[4] - 2u[2] + u[n])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - 2u[i] + u[i - 1]) + b * (u[i + 2] - 2u[i] + u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - 2u[n - 1] + u[n - 2]) + b * (u[1] - 2u[n - 1] + u[n - 3])
+            r[n] = a * (u[1] - 2u[n] + u[n - 1]) + b * (u[2] - 2u[n] + u[n - 2])
+        end
+        _compact_solve!(r, n, c)
+    end
+    return nothing
+end
+
+"""$(TYPEDSIGNATURES)
+
+In-place cyclic tridiagonal solve for one compact line `r` (already holding the
+stencil right-hand side), using the precomputed multipliers in `c`.
+"""
+function _compact_solve!(r, n, c::CompactAxis)
+    s, w, f = c.s, c.w, c.f
+    α = c.alpha
+    @inbounds begin
+        for i in 2:n
+            r[i] -= r[i - 1] * s[i]
+        end
+        r[n] *= w[n]
+        for i in (n - 1):-1:1
+            r[i] = (r[i] - f[i] * r[i + 1]) * w[i]
+        end
+        sx = (r[1] - α * r[n]) / c.denom
+        for i in 1:n
+            r[i] -= sx * c.t[i]
+        end
+    end
+    return r
+end
+
+## 2D
+function computeDerivatives!(gf::GradientField2D, p::AbstractCompactPlan, ϕt::AbstractArray)
+    nx = p.ax.n
+    # x direction
+    compact1line!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    compact2line!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    dy = similar(p.ϕytmp)
+    ddy = similar(p.ϕytmp)
+    compact1line!(parent(dy), parent(p.ϕytmp), ny, p.ay)
+    compact2line!(parent(ddy), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, dy)
+    transpose!(gf.ddy, ddy)
+    return nothing
+end
+
+function computeDerivatives!(gf::GradientRotField2D, p::AbstractCompactPlan, ϕt::AbstractArray)
+    nx = p.ax.n
+    grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
+    x, y = grid.x, grid.y
+    # x direction
+    compact1line!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    gf.rx .= y .* gf.dx
+    compact2line!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    dy = similar(p.ϕytmp)
+    ddy = similar(p.ϕytmp)
+    compact1line!(parent(dy), parent(p.ϕytmp), ny, p.ay)
+    compact2line!(parent(ddy), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, dy)
+    transpose!(gf.ddy, ddy)
+    gf.ry .= -x .* gf.dy
+    return nothing
+end
+
+## 3D
+function computeDerivatives!(gf::GradientField3D, p::AbstractCompactPlan, ϕt::AbstractArray)
+    nx = p.ax.n
+    # x direction
+    compact1line3!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    compact2line3!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    dy = similar(p.ϕytmp)
+    ddy = similar(p.ϕytmp)
+    compact1line3!(parent(dy), parent(p.ϕytmp), ny, p.ay)
+    compact2line3!(parent(ddy), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, dy)
+    transpose!(gf.ddy, ddy)
+    # z direction (z-layout -> y-layout -> x-layout, one permutation each)
+    transpose!(p.ϕztmp, p.ϕytmp)
+    nz = p.az.n
+    dz = similar(p.ϕztmp)
+    ddz = similar(p.ϕztmp)
+    compact1line3!(parent(dz), parent(p.ϕztmp), nz, p.az)
+    compact2line3!(parent(ddz), parent(p.ϕztmp), nz, p.a2z)
+    transpose!(dy, dz)
+    transpose!(ddy, ddz)
+    transpose!(gf.dz, dy)
+    transpose!(gf.ddz, ddy)
+    return nothing
+end
+
+function computeDerivatives!(gf::GradientRotField3D, p::AbstractCompactPlan, ϕt::AbstractArray)
+    nx = p.ax.n
+    grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
+    x, y = grid.x, grid.y
+    # x direction
+    compact1line3!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    gf.rx .= y .* gf.dx
+    compact2line3!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    dy = similar(p.ϕytmp)
+    ddy = similar(p.ϕytmp)
+    compact1line3!(parent(dy), parent(p.ϕytmp), ny, p.ay)
+    compact2line3!(parent(ddy), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, dy)
+    transpose!(gf.ddy, ddy)
+    gf.ry .= -x .* gf.dy
+    # z direction (z-layout -> y-layout -> x-layout, one permutation each)
+    transpose!(p.ϕztmp, p.ϕytmp)
+    nz = p.az.n
+    dz = similar(p.ϕztmp)
+    ddz = similar(p.ϕztmp)
+    compact1line3!(parent(dz), parent(p.ϕztmp), nz, p.az)
+    compact2line3!(parent(ddz), parent(p.ϕztmp), nz, p.a2z)
+    transpose!(dy, dz)
+    transpose!(ddy, ddz)
+    transpose!(gf.dz, dy)
+    transpose!(gf.ddz, ddy)
+    return nothing
+end
+
 # Finite difference helper functions
 function computedxddx!(ϕt::AbstractArray{A,2}, dx::AbstractArray{A,2},
                        ddx::AbstractArray{A,2}, Δx::Real; order::Integer=2) where {A}

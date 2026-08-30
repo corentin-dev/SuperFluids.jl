@@ -240,10 +240,17 @@ end
 
 # Compact Finite Difference
 #
-# 6th-order periodic compact scheme (port of the GPS `cdl == 0` operators).
-# The derivative axis is always the leading (local) dimension, so each line is a
-# cyclic tridiagonal system reduced to two Thomas sweeps plus a
-# right-hand-side-independent correction (precomputed in `CompactAxis`).
+# 6th-order periodic compact finite-difference derivatives. Each line along the
+# derivative axis is solved as a cyclic tridiagonal system: a Thomas
+# factorization of the interior part plus a rank-one cyclic corner correction.
+# The correction vector and its denominator depend only on the matrix, not on
+# the right-hand side, so they are precomputed in `CompactAxis` and reused on
+# every call.
+#
+# The derivative axis is always the leading (local) dimension, so the kernels
+# loop over the remaining index (axes(a_in, 2) for 2D, or a nested pair for 3D)
+# and solve each line independently. For `y`/`z` the field is first transposed
+# so that the target axis becomes the leading one.
 
 function compact1line!(a_out, a_in, n, c::CompactAxis)
     a, b = c.a, c.b

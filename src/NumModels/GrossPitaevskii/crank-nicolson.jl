@@ -39,9 +39,10 @@ b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ +
 function NumModelCrankNicolson(f, param,
                                Δt::Real, niter::Integer, freqbckp::Integer;
                                nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                               nnewton::Integer=15, tolnewton::Real=1e-6)
+                               nnewton::Integer=15, tolnewton::Real=1e-6,
+                               plantype::PlanType=FFTPlan())
     gf = GradientField(f; rotation=true)
-    plan = Plan(f)
+    plan = Plan(f; t=plantype)
     writer = WriterVTK(f)
     saver = WriterSave(f)
     writers = WriterCollection([writer, saver])
@@ -159,9 +160,10 @@ b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ +
 function NumModelCrankNicolsonQuasiNewton(f, param,
                                           Δt::Real, niter::Integer, freqbckp::Integer;
                                           nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                                          nnewton::Integer=15, tolnewton::Real=1e-6)
+                                          nnewton::Integer=15, tolnewton::Real=1e-6,
+                                          plantype::PlanType=FFTPlan())
     gf = GradientField(f; rotation=true)
-    plan = Plan(f)
+    plan = Plan(f; t=plantype)
     writer = WriterVTK(f)
     saver = WriterSave(f)
     writers = WriterCollection([writer, saver])
@@ -283,9 +285,10 @@ b = i Δt⁻¹ × (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × �
 function NumModelCrankNicolsonT(f::AbstractField, param::AbstractParameters,
                                 Δt::Real, niter::Integer, freqbckp::Integer;
                                 nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                                nnewton::Integer=15, tolnewton::Real=1e-6)
+                                nnewton::Integer=15, tolnewton::Real=1e-6,
+                                plantype::PlanType=FFTPlan())
     gf = GradientField(f; rotation=true)
-    plan = Plan(f)
+    plan = Plan(f; t=plantype)
     writer = WriterVTK(f)
     saver = WriterSave(f)
     writers = WriterCollection([writer, saver])
@@ -402,9 +405,10 @@ b = Δt⁻¹ * (ϕ₁ - ϕ₀) + (V + β × ∥ψ∥²) × ψ + (coeffΔ × Δ +
 function NumModelCrankNicolsonQuasiNewtonT(f::AbstractField, param::AbstractParameters,
                                            Δt::Real, niter::Integer, freqbckp::Integer;
                                            nkrylov::Integer=70, tolkrylov::Real=1e-8,
-                                           nnewton::Integer=15, tolnewton::Real=1e-6)
+                                           nnewton::Integer=15, tolnewton::Real=1e-6,
+                                           plantype::PlanType=FFTPlan())
     gf = GradientField(f; rotation=true)
-    plan = Plan(f)
+    plan = Plan(f; t=plantype)
     writer = WriterVTK(f)
     saver = WriterSave(f)
     writers = WriterCollection([writer, saver])

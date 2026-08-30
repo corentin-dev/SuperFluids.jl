@@ -57,13 +57,19 @@ end
 Build the precomputed multipliers for a compact finite-difference derivative
 along an axis of `n` points, spacing `Δ`, derivative `order` (1 or 2).
 
-This is a port of the GPS periodic compact scheme (`cdl == 0`). The operator is
-the 6th-order compact derivative
+The operator is the 6th-order compact derivative
 `` α·(g(i-1)+g(i+1)) + g(i) = a·(f(i+1)-f(i-1)) + b·(f(i+2)-f(i-2)) ``
 (1st order, `α=1/3`, `a=(7/9)/Δ`, `b=(1/36)/Δ`) or the compact second
 derivative (2nd order, `α=2/11`, `a=(12/11)/Δ²`, `b=(3/44)/Δ²`), with periodic
-wrap. The cyclic tridiagonal solve is reduced to Thomas multipliers plus a
-right-hand-side-independent correction vector, both precomputed here.
+wrap.
+
+The periodic wrap makes the coefficient matrix cyclic pentadiagonal. It is
+solved without building the matrix: a Thomas factorization of the leading
+tridiagonal part plus a cyclic corner correction. Because the corner
+perturbation is rank-one (a single `α` coupling at each end), the correction
+vector and its denominator depend only on the matrix, not on the right-hand
+side; both are precomputed here so that each evaluation costs one stencil plus
+two sweeps.
 """
 function compact_setup(n::Int, Δ::Real, order::Int)
     if n < 8

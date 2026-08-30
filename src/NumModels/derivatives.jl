@@ -353,6 +353,104 @@ function _compact_solve!(r, n, c::CompactAxis)
     return r
 end
 
+# Spectral-compact (Fourier-multiplier) derivatives.
+#
+# These dispatch on the PlanCompactFFT* plan types (built for GPU / non-Array
+# backends). Each derivative is IDFT(T(ξ)·FFT(ϕ)) with T the compact symbol
+# precomputed in the plan (p.T1x, p.T2x, …). The compact symbol already
+# contains the factor ``i`` of the derivative, so it replaces the ``im*ξ``
+# factor used by the standard spectral path.
+
+## 2D
+function computeDerivatives!(gf::GradientField2D, p::PlanCompactFFT2D, ϕt::AbstractArray)
+    pfft = p.fft
+    # x direction
+    mul_x!(pfft.ϕx_hat, pfft, ϕt)
+    pfft.a_tmp2x .= p.T1x .* pfft.ϕx_hat
+    ldiv_x!(gf.dx, pfft, pfft.a_tmp2x)
+    pfft.a_tmp2x .= p.T2x .* pfft.ϕx_hat
+    ldiv_x!(gf.ddx, pfft, pfft.a_tmp2x)
+    # y direction
+    mul_y!(pfft.ϕy_hat, pfft, ϕt)
+    pfft.a_tmp2y .= p.T1y .* pfft.ϕy_hat
+    ldiv_y!(gf.dy, pfft, pfft.a_tmp2y)
+    pfft.a_tmp2y .= p.T2y .* pfft.ϕy_hat
+    ldiv_y!(gf.ddy, pfft, pfft.a_tmp2y)
+    return nothing
+end
+
+function computeDerivatives!(gf::GradientRotField2D, p::PlanCompactFFT2D, ϕt::AbstractArray)
+    pfft = p.fft
+    grid = localgrid(pfft.pen_x, (pfft.f.g.x, pfft.f.g.y))
+    x, y = grid.x, grid.y
+    # x direction
+    mul_x!(pfft.ϕx_hat, pfft, ϕt)
+    pfft.a_tmp2x .= p.T1x .* pfft.ϕx_hat
+    ldiv_x!(gf.dx, pfft, pfft.a_tmp2x)
+    gf.rx .= y .* gf.dx
+    pfft.a_tmp2x .= p.T2x .* pfft.ϕx_hat
+    ldiv_x!(gf.ddx, pfft, pfft.a_tmp2x)
+    # y direction
+    mul_y!(pfft.ϕy_hat, pfft, ϕt)
+    pfft.a_tmp2y .= p.T1y .* pfft.ϕy_hat
+    ldiv_y!(gf.dy, pfft, pfft.a_tmp2y)
+    gf.ry .= -x .* gf.dy
+    pfft.a_tmp2y .= p.T2y .* pfft.ϕy_hat
+    ldiv_y!(gf.ddy, pfft, pfft.a_tmp2y)
+    return nothing
+end
+
+## 3D
+function computeDerivatives!(gf::GradientField3D, p::PlanCompactFFT3D, ϕt::AbstractArray)
+    pfft = p.fft
+    # x direction
+    mul_x!(pfft.ϕx_hat, pfft, ϕt)
+    pfft.a_tmp2x .= p.T1x .* pfft.ϕx_hat
+    ldiv_x!(gf.dx, pfft, pfft.a_tmp2x)
+    pfft.a_tmp2x .= p.T2x .* pfft.ϕx_hat
+    ldiv_x!(gf.ddx, pfft, pfft.a_tmp2x)
+    # y direction
+    mul_y!(pfft.ϕy_hat, pfft, ϕt)
+    pfft.a_tmp2y .= p.T1y .* pfft.ϕy_hat
+    ldiv_y!(gf.dy, pfft, pfft.a_tmp2y)
+    pfft.a_tmp2y .= p.T2y .* pfft.ϕy_hat
+    ldiv_y!(gf.ddy, pfft, pfft.a_tmp2y)
+    # z direction
+    mul_z!(pfft.ϕz_hat, pfft, ϕt)
+    pfft.a_tmp2z .= p.T1z .* pfft.ϕz_hat
+    ldiv_z!(gf.dz, pfft, pfft.a_tmp2z)
+    pfft.a_tmp2z .= p.T2z .* pfft.ϕz_hat
+    ldiv_z!(gf.ddz, pfft, pfft.a_tmp2z)
+    return nothing
+end
+
+function computeDerivatives!(gf::GradientRotField3D, p::PlanCompactFFT3D, ϕt::AbstractArray)
+    pfft = p.fft
+    grid = localgrid(pfft.pen_x, (pfft.f.g.x, pfft.f.g.y, pfft.f.g.z))
+    x, y = grid.x, grid.y
+    # x direction
+    mul_x!(pfft.ϕx_hat, pfft, ϕt)
+    pfft.a_tmp2x .= p.T1x .* pfft.ϕx_hat
+    ldiv_x!(gf.dx, pfft, pfft.a_tmp2x)
+    gf.rx .= y .* gf.dx
+    pfft.a_tmp2x .= p.T2x .* pfft.ϕx_hat
+    ldiv_x!(gf.ddx, pfft, pfft.a_tmp2x)
+    # y direction
+    mul_y!(pfft.ϕy_hat, pfft, ϕt)
+    pfft.a_tmp2y .= p.T1y .* pfft.ϕy_hat
+    ldiv_y!(gf.dy, pfft, pfft.a_tmp2y)
+    gf.ry .= -x .* gf.dy
+    pfft.a_tmp2y .= p.T2y .* pfft.ϕy_hat
+    ldiv_y!(gf.ddy, pfft, pfft.a_tmp2y)
+    # z direction
+    mul_z!(pfft.ϕz_hat, pfft, ϕt)
+    pfft.a_tmp2z .= p.T1z .* pfft.ϕz_hat
+    ldiv_z!(gf.dz, pfft, pfft.a_tmp2z)
+    pfft.a_tmp2z .= p.T2z .* pfft.ϕz_hat
+    ldiv_z!(gf.ddz, pfft, pfft.a_tmp2z)
+    return nothing
+end
+
 ## 2D
 function computeDerivatives!(gf::GradientField2D, p::AbstractCompactPlan, ϕt::AbstractArray)
     nx = p.ax.n

@@ -29,14 +29,20 @@ plain finite-difference plans, selected with `Plan(..., t=CompactPlan())`.
 ### Step 2 — Integration: `PlanCompact`
 - `src/Discretization/Plans.jl`:
   - `struct CompactPlan <: PlanType` (exported).
-  - `abstract type AbstractCompactPlan{N}` + `PlanCompact2D` / `PlanCompact3D`.
+  - `abstract type AbstractCompactPlan{N}` + `PlanCompact2D` / `PlanCompact3D`
+    (CPU Thomas path) + `PlanCompactFFT2D` / `PlanCompactFFT3D` (GPU spectral-compact
+    path, wrapping a `PlanFFT2D`/`PlanFFT3D` plus precomputed compact symbols).
   - `struct CompactAxis{R}`: precomputed multipliers for one axis
     (n, order, alpha, a, b, s, w, f, t, denom).
   - `compact_setup(n, Δ, order)`: builds the cyclic tridiagonal factorization
     plus the **precomputed correction vector** (RHS-independent — verified
     exact, diff = 0 on 50 random RHS).
-  - `Plan(f; t=CompactPlan())` branches for 2D and 3D (creates `pen_y`/`pen_z`
-    + scratch buffers).
+  - `compact_multiplier(ξ, Δ, order)`: the Fourier symbol of the compact stencil
+    (used by the GPU spectral-compact path).
+  - `Plan(f; t=CompactPlan())` branches for 2D and 3D, **auto-selecting the
+    backend** on `A` (the field array type): `A === Array` → Thomas
+    (`PlanCompact2D/3D`), otherwise → spectral-compact (`PlanCompactFFT2D/3D`).
+    The GPU branch requires a complex field (raises a clear error otherwise).
 
 ### Step 3 — `computeDerivatives!` dispatch
 - `src/NumModels/derivatives.jl`: "Compact Finite Difference" section.
@@ -45,15 +51,23 @@ plain finite-difference plans, selected with `Plan(..., t=CompactPlan())`.
   - `_compact_solve!`: two Thomas sweeps + cyclic correction (in place).
   - four `computeDerivatives!(gf, plan::AbstractCompactPlan, ϕt)` methods:
     `GradientField2D/3D` + `GradientRotField2D/3D` (rx = y·dx, ry = −x·dy).
+  - four `computeDerivatives!(gf, plan::PlanCompactFFT2D/3D, ϕt)` methods for the
+    GPU spectral-compact path (`mul_!`/`ldiv_!` with the precomputed compact
+    symbols `p.T1x`/`p.T2x`/…). The compact symbol already contains the factor `i`
+    of the derivative, so it replaces the `im*ξ` used by the spectral path.
   - Layout: x on the leading (local) dimension (full line, **no MPI
     communication**); y/z through `transpose!` (z → y → x, one permutation at
     a time).
 
 ### Step 4 — Package tests
-- `test/runtests.jl`: 4 compact testsets (same Fourier-mode protocol as
-  FFT/FD, `TOL_FD`):
-  - 2D rotation=true (6 tests), 2D rotation=false (4), 3D rotation=true (8),
+- `test/runtests.jl`:
+  - 4 compact CPU testsets (same Fourier-mode protocol as FFT/FD, `TOL_FD`):
+    2D rotation=true (6 tests), 2D rotation=false (4), 3D rotation=true (8),
     3D rotation=false (6).
+  - 1 `CompactPlan on GPU arrays` testset (skipped when no CUDA device):
+    2D GPU spectral-compact vs CPU Thomas on a non-constant field (all 4
+    derivatives < 1e-10), 3D GPU constant-field run of the full x/y/z chain
+    (derivatives ≈ 0), and the RealField-on-GPU error.
 - **Full suite: 0 failures.** Measured errors (mode k=(2,3[,4])):
   - 2D: dx/ddy ~ 4e-9/3e-9, rx/ry exact.
   - 3D: dx/ddx ~ 2.7e-8/1.7e-8, dz/ddz ~ 1.8e-6/1.1e-6 (6th order).
@@ -66,20 +80,41 @@ plain finite-difference plans, selected with `Plan(..., t=CompactPlan())`.
 - **Optimization**: the cyclic correction is precomputed once per axis
   (one `CompactAxis` per derivative order per axis), never recomputed per call.
 - **Periodic only**: the non-periodic one-sided boundaries are deferred.
+- **GPU backend**: rather than write a CUDA kernel for the (inherently
+  sequential) Thomas sweep, the periodic compact operator is evaluated as a
+  Fourier multiplier on the GPU (it is a circulant matrix). This reuses the
+  existing, already-GPU-native FFT machinery, is simpler, and is identical to
+  the Thomas result to machine precision. `CompactPlan` auto-selects: Thomas on
+  CPU, spectral-compact on GPU.
 
 ## Remaining (optional, deferred)
 - Public docs: document the `t=CompactPlan()` option, order 6, limits.
 - Non-periodic boundary case.
 
-## GPU (CUDA) support
+## GPU (CUDA) support — via the spectral-compact backend
 Verified on an RTX 3080 (`Grid(...; array_type=CuArray)`):
 - **FFT**: works (existing GPU examples).
 - **Finite difference (order 6)**: works; results are bit-identical to the CPU
   (row-slice operations are host-legal on GPU arrays).
-- **Compact**: **not supported** — the Thomas sweep needs scalar indexing on the
-  local line (`u[i]`), which GPU arrays reject from the host (`assertscalar`).
-  This is intrinsic to a sequential compact solve. `Plan(...; t=CompactPlan())`
-  on a GPU grid now raises a clear error at construction time (2D and 3D).
+- **Compact**: **works** — but not via the Thomas line-solve. The Thomas sweep
+  needs scalar indexing on the local line (`u[i]`), which GPU arrays reject
+  from the host (`assertscalar`), and it is intrinsic to a sequential compact
+  solve. Instead, `CompactPlan` on a GPU (any non-Array) grid builds the
+  **spectral-compact** backend:
+  - the periodic compact operator is a *circulant* pentadiagonal matrix, hence
+    a Fourier multiplier; the derivative is `IDFT(T(ξ)·FFT(ϕ))` with the compact
+    symbol `T` (`compact_multiplier` in `src/Discretization/Plans.jl`);
+  - it reuses the standard FFT plan machinery (`mul_x!`/`ldiv_x!`/`grid_x`/…),
+    which is fully GPU-native (cuFFT), so `computeDerivatives!` runs entirely on
+    device;
+  - it is **identical to the Thomas result to machine precision** (2D and 3D,
+    checked against the CPU Thomas path).
+  - `CompactPlan` auto-selects the backend: CPU `Array` → Thomas (fastest),
+    GPU/other → spectral-compact. See `PlanCompactFFT2D`/`PlanCompactFFT3D`.
+  - Limitation: like the standard `FFTPlan`, the GPU compact path requires a
+    **complex** field (the FFT scratch buffers are complex). A `RealField` on a
+    GPU grid raises a clear error at construction. On CPU, `CompactPlan` remains
+    generic over real and complex fields (Thomas path).
 
 ## Model compatibility (verified)
 Compact derivatives are wired **only** through `computeDerivatives!` (dispatch
@@ -126,9 +161,13 @@ spectral operators make them non-compact anyway).
 
 ## Files
 - `src/Discretization/Plans.jl` — `CompactPlan`, `CompactAxis`, `compact_setup`,
-  compact plans.
-- `src/NumModels/derivatives.jl` — line kernels + `computeDerivatives!` dispatch.
+  `compact_multiplier`, `PlanCompact2D/3D` (CPU) and `PlanCompactFFT2D/3D` (GPU),
+  and the auto-selecting `Plan(f; t=CompactPlan())` branch.
+- `src/NumModels/derivatives.jl` — line kernels + `computeDerivatives!` dispatch
+  (both the `AbstractCompactPlan`/Thomas and the `PlanCompactFFT*/3D`/spectral
+  methods).
 - `src/NumModels/GrossPitaevskii/crank-nicolson.jl` — `plantype=` keyword on the
   4 CN constructors.
-- `test/runtests.jl` — 4 compact testsets.
+- `test/runtests.jl` — 4 compact CPU testsets + 1 `CompactPlan on GPU arrays`
+  testset.
 - `benchmarks/bench_derivatives.jl` — FFT vs FD vs compact benchmark.

@@ -244,11 +244,15 @@ end
     @test relerr(gf.ddz, -kz^2 * ϕ)   < TOL_FD
 end
 
-@testset "CompactPlan rejects GPU arrays" begin
-    # The compact Thomas solve needs scalar indexing on the local line, which
-    # GPU arrays do not allow from the host. Plan() must reject a GPU grid with
-    # a clear error instead of a cryptic assertscalar deep in the kernel.
-    # Skipped when no CUDA device is available.
+# ==========================================================================
+# CompactPlan on GPU
+# ==========================================================================
+# On a GPU grid the compact Thomas solve cannot run (it needs scalar indexing
+# on the local line, which GPU arrays forbid from the host). Plan() therefore
+# builds the spectral-compact (Fourier-multiplier) backend instead, which is
+# GPU-native and identical to the Thomas result to machine precision.
+# Skipped when no CUDA device is available.
+@testset "CompactPlan on GPU arrays" begin
     have_gpu = try
         using CUDA
         CUDA.ndevices() > 0
@@ -257,11 +261,54 @@ end
     end
     if have_gpu
         using CUDA
-        fg2 = Field(Grid((16, 16), ((-4, 4), (-4, 4)); array_type=CuArray), ComplexField())
-        @test_throws ErrorException Plan(fg2; t=SuperFluids.CompactPlan())
-        fg3 = Field(Grid((16, 16, 16), ((-4, 4), (-4, 4), (-4, 4)); array_type=CuArray),
+        CUDA.device!(0)
+
+        # --- 2D: GPU spectral-compact vs CPU Thomas, non-constant field ---
+        nx, ny = 32, 24
+
+        fc = Field(Grid((nx, ny), ((-4, 4), (-4, 4))), ComplexField())
+        fc.ϕ .= exp.(1im * (0.5 .* fc.x .+ 0.7 .* fc.y)) .* (1.0 .+ 0.3 .* sin.(0.3 .* fc.x) .* cos.(0.4 .* fc.y))
+        gfc = GradientField(fc; rotation=false)
+        pc = Plan(fc; t=SuperFluids.CompactPlan())
+        @test isa(pc, SuperFluids.PlanCompact2D)
+        SuperFluids.computeDerivatives!(gfc, pc, fc.ϕ)
+
+        fg = Field(Grid((nx, ny), ((-4, 4), (-4, 4)); array_type=CuArray), ComplexField())
+        pg = Plan(fg; t=SuperFluids.CompactPlan())
+        @test isa(pg, SuperFluids.PlanCompactFFT2D)
+        fg.ϕ .= exp.(1im * (0.5 .* fg.x .+ 0.7 .* fg.y)) .* (1.0 .+ 0.3 .* sin.(0.3 .* fg.x) .* cos.(0.4 .* fg.y))
+        gfg = GradientField(fg; rotation=false)
+        SuperFluids.computeDerivatives!(gfg, pg, fg.ϕ)
+        CUDA.synchronize()
+
+        gpu_rel(a, b) =
+            sqrt(real(sum(abs.(collect(parent(a)) - parent(b)).^2))) /
+            sqrt(real(sum(abs.(parent(b)).^2)))
+        @test gpu_rel(gfg.dx, gfc.dx)  < 1e-10
+        @test gpu_rel(gfg.ddx, gfc.ddx) < 1e-10
+        @test gpu_rel(gfg.dy, gfc.dy)  < 1e-10
+        @test gpu_rel(gfg.ddy, gfc.ddy) < 1e-10
+
+        # --- 3D: GPU spectral-compact runs the full x/y/z chain ---
+        # A constant field has zero derivatives; this exercises the 3D FFT
+        # (with transposes) end to end on the device.
+        N3 = 16
+        fg3 = Field(Grid((N3, N3, N3), ((-4, 4), (-4, 4), (-4, 4)); array_type=CuArray),
                     ComplexField())
-        @test_throws ErrorException Plan(fg3; t=SuperFluids.CompactPlan())
+        fg3.ϕ .= 1.0 + 0.5im
+        pg3 = Plan(fg3; t=SuperFluids.CompactPlan())
+        @test isa(pg3, SuperFluids.PlanCompactFFT3D)
+        gfg3 = GradientField(fg3; rotation=false)
+        SuperFluids.computeDerivatives!(gfg3, pg3, fg3.ϕ)
+        CUDA.synchronize()
+        @test abs(sum(parent(gfg3.dx)))  < 1e-12
+        @test abs(sum(parent(gfg3.dz)))  < 1e-12
+        @test abs(sum(parent(gfg3.ddy))) < 1e-12
+        @test abs(sum(parent(gfg3.ddz))) < 1e-12
+
+        # --- RealField on GPU: clear error (mirrors the standard FFTPlan) ---
+        fr = Field(Grid((16, 16), ((-4, 4), (-4, 4)); array_type=CuArray), RealField())
+        @test_throws ErrorException Plan(fr; t=SuperFluids.CompactPlan())
     end
 end
 

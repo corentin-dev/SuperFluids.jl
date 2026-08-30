@@ -54,6 +54,38 @@ end
 
 """$(TYPEDSIGNATURES)
 
+Fourier symbol of the 6th-order periodic compact stencil, evaluated
+pointwise on the wavenumbers `ξ` (rad/m) at grid spacing `Δ`.
+
+The compact operator is a circulant pentadiagonal matrix (diagonal 1, first
+off-diagonal `a`, second `b`, corner `alpha`), so it is diagonalised by the
+discrete Fourier transform and is therefore a pure Fourier multiplier. That
+makes it trivially GPU-friendly (elementwise multiply after an FFT), in
+contrast with the equivalent Thomas line-solve, which needs scalar indexing
+and so cannot run on GPU arrays. The result is identical to the Thomas solve
+to machine precision (see the compact tests in `test/runtests.jl`).
+
+Symbols (θ = ξ·Δ, the dimensionless phase per bin):
+* `order=1`: `(2ia sinθ + 2ib sin2θ) / (1 + 2α cosθ)`, α=1/3, a=(7/9)/Δ, b=(1/36)/Δ
+* `order=2`: `(-4a sin²(θ/2) − 4b sin²θ) / (1 + 2α cosθ)`, α=2/11, a=(12/11)/Δ², b=(3/44)/Δ²
+"""
+function compact_multiplier(ξ, Δ, order)
+    θ = ξ .* Δ
+    α = order == 1 ? 1/3 : 2/11
+    denom = 1 .+ 2α .* cos.(θ)
+    if order == 1
+        a, b = (7/9)/Δ, (1/36)/Δ
+        return (2im * a * sin.(θ) .+ 2im * b * sin.(2θ)) ./ denom
+    elseif order == 2
+        a, b = (12/11)/Δ^2, (3/44)/Δ^2
+        return (-4a * sin.(θ ./ 2) .^ 2 .- 4b * sin.(θ) .^ 2) ./ denom
+    else
+        error("compact_multiplier: order must be 1 or 2")
+    end
+end
+
+"""$(TYPEDSIGNATURES)
+
 Build the precomputed multipliers for a compact finite-difference derivative
 along an axis of `n` points, spacing `Δ`, derivative `order` (1 or 2).
 
@@ -318,6 +350,67 @@ struct PlanCompact3D{N} <: AbstractCompactPlan{N}
 end
 
 """
+$(TYPEDEF)
+
+Spectral-compact (Fourier-multiplier) 2D plan.
+
+On GPU arrays the Thomas line-solve used by `PlanCompact2D` cannot run (it
+needs scalar indexing on the local line, which GPU arrays forbid from the
+host). This plan instead exploits the fact that the *periodic* compact
+operator is a circulant matrix, hence a Fourier multiplier: each derivative
+is `IDFT(T(ξ)·FFT(ϕ))` with `T` the compact symbol from
+[`compact_multiplier`](@ref). It reuses the standard FFT plan machinery
+(`mul_x!`/`ldiv_x!`/`grid_x`/…), which is fully GPU-native, and yields the
+same derivatives as the Thomas implementation to machine precision.
+
+Only complex fields are supported, because the FFT scratch buffers are
+complex.
+
+# Fields
+* `fft`: the underlying FFT plan providing the transforms, wavenumbers and
+  scratch buffers.
+"""
+struct PlanCompactFFT2D{N} <: AbstractCompactPlan{N}
+    "underlying FFT plan."
+    fft::PlanFFT2D{N}
+    "compact first-derivative Fourier symbol vs the ``x`` wavenumber."
+    T1x::AbstractVector
+    "compact second-derivative Fourier symbol vs the ``x`` wavenumber."
+    T2x::AbstractVector
+    "compact first-derivative Fourier symbol vs the ``y`` wavenumber."
+    T1y::AbstractVector
+    "compact second-derivative Fourier symbol vs the ``y`` wavenumber."
+    T2y::AbstractVector
+end
+
+"""
+$(TYPEDEF)
+
+3D analogue of `PlanCompactFFT2D`: a spectral-compact plan built from an
+underlying FFT plan (see `PlanCompactFFT2D` for the rationale).
+
+# Fields
+* `fft`: the underlying FFT plan providing the transforms, wavenumbers and
+  scratch buffers.
+"""
+struct PlanCompactFFT3D{N} <: AbstractCompactPlan{N}
+    "underlying FFT plan."
+    fft::PlanFFT3D{N}
+    "compact first-derivative Fourier symbol vs the ``x`` wavenumber."
+    T1x::AbstractVector
+    "compact second-derivative Fourier symbol vs the ``x`` wavenumber."
+    T2x::AbstractVector
+    "compact first-derivative Fourier symbol vs the ``y`` wavenumber."
+    T1y::AbstractVector
+    "compact second-derivative Fourier symbol vs the ``y`` wavenumber."
+    T2y::AbstractVector
+    "compact first-derivative Fourier symbol vs the ``z`` wavenumber."
+    T1z::AbstractVector
+    "compact second-derivative Fourier symbol vs the ``z`` wavenumber."
+    T2z::AbstractVector
+end
+
+"""
 $(TYPEDSIGNATURES)
 
 Returns a 2D plan. By default a FFT plan is returned.
@@ -374,19 +467,33 @@ function Plan(f::F;
                             ξx, ξy,
                             datax, datay)
     elseif typeof(t) == CompactPlan
-        if A !== Array
-            error("CompactPlan is not supported on GPU arrays (got $A). " *
-                  "The compact Thomas solve uses scalar indexing on the local line, " *
-                  "which GPU arrays do not allow from the host. Build the grid with " *
-                  "array_type=Array to use the compact scheme, or keep the GPU grid " *
-                  "and use FFTPlan()/FiniteDifferencePlan().")
+        if A === Array
+            # CPU: compact Thomas solve (fastest compact path on CPU).
+            ax = compact_setup(f.g.nx, f.g.Δx, 1)
+            a2x = compact_setup(f.g.nx, f.g.Δx, 2)
+            ay = compact_setup(f.g.ny, f.g.Δy, 1)
+            a2y = compact_setup(f.g.ny, f.g.Δy, 2)
+            ϕytmp = PencilArray{FFT}(undef, pen_y)
+            return PlanCompact2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp)
         end
-        ax = compact_setup(f.g.nx, f.g.Δx, 1)
-        a2x = compact_setup(f.g.nx, f.g.Δx, 2)
-        ay = compact_setup(f.g.ny, f.g.Δy, 1)
-        a2y = compact_setup(f.g.ny, f.g.Δy, 2)
-        ϕytmp = PencilArray{FFT}(undef, pen_y)
-        return PlanCompact2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp)
+        # GPU (or any non-Array backend): the Thomas line-solve needs scalar
+        # indexing on the local line, which GPU arrays forbid from the host.
+        # The periodic compact operator is a circulant matrix, hence a Fourier
+        # multiplier, so it is evaluated through the standard FFT machinery
+        # instead (see PlanCompactFFT2D).
+        if !(eltype(f.data[1]) <: Complex)
+            error("CompactPlan on a $(A) grid requires a complex field (RealField " *
+                  "is not supported, like the standard FFTPlan). Build the field " *
+                  "with ComplexField(), or use FFTPlan()/FiniteDifferencePlan().")
+        end
+        pfft = Plan(f; t=FFTPlan())
+        ξx = A(fftfreq(f.g.nx, 2π / f.g.Δx))
+        ξy = A(fftfreq(f.g.ny, 2π / f.g.Δy))
+        return PlanCompactFFT2D{N}(pfft,
+                                   compact_multiplier(ξx, f.g.Δx, 1),
+                                   compact_multiplier(ξx, f.g.Δx, 2),
+                                   compact_multiplier(ξy, f.g.Δy, 1),
+                                   compact_multiplier(ξy, f.g.Δy, 2))
     else
         # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)
@@ -460,22 +567,38 @@ function Plan(f::F;
                             ξx, ξy, ξz,
                             datax, datay, dataz)
     elseif typeof(t) == CompactPlan
-        if A !== Array
-            error("CompactPlan is not supported on GPU arrays (got $A). " *
-                  "The compact Thomas solve uses scalar indexing on the local line, " *
-                  "which GPU arrays do not allow from the host. Build the grid with " *
-                  "array_type=Array to use the compact scheme, or keep the GPU grid " *
-                  "and use FFTPlan()/FiniteDifferencePlan().")
+        if A === Array
+            # CPU: compact Thomas solve (fastest compact path on CPU).
+            ax = compact_setup(f.g.nx, f.g.Δx, 1)
+            a2x = compact_setup(f.g.nx, f.g.Δx, 2)
+            ay = compact_setup(f.g.ny, f.g.Δy, 1)
+            a2y = compact_setup(f.g.ny, f.g.Δy, 2)
+            az = compact_setup(f.g.nz, f.g.Δz, 1)
+            a2z = compact_setup(f.g.nz, f.g.Δz, 2)
+            ϕytmp = PencilArray{FFT}(undef, pen_y)
+            ϕztmp = PencilArray{FFT}(undef, pen_z)
+            return PlanCompact3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z, ϕytmp, ϕztmp)
         end
-        ax = compact_setup(f.g.nx, f.g.Δx, 1)
-        a2x = compact_setup(f.g.nx, f.g.Δx, 2)
-        ay = compact_setup(f.g.ny, f.g.Δy, 1)
-        a2y = compact_setup(f.g.ny, f.g.Δy, 2)
-        az = compact_setup(f.g.nz, f.g.Δz, 1)
-        a2z = compact_setup(f.g.nz, f.g.Δz, 2)
-        ϕytmp = PencilArray{FFT}(undef, pen_y)
-        ϕztmp = PencilArray{FFT}(undef, pen_z)
-        return PlanCompact3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z, ϕytmp, ϕztmp)
+        # GPU (or any non-Array backend): evaluate the periodic compact
+        # operator as a Fourier multiplier through the standard FFT machinery
+        # (the Thomas line-solve needs scalar indexing, unavailable on GPU).
+        # See PlanCompactFFT3D.
+        if !(eltype(f.data[1]) <: Complex)
+            error("CompactPlan on a $(A) grid requires a complex field (RealField " *
+                  "is not supported, like the standard FFTPlan). Build the field " *
+                  "with ComplexField(), or use FFTPlan()/FiniteDifferencePlan().")
+        end
+        pfft = Plan(f; t=FFTPlan())
+        ξx = A(fftfreq(f.g.nx, 2π / f.g.Δx))
+        ξy = A(fftfreq(f.g.ny, 2π / f.g.Δy))
+        ξz = A(fftfreq(f.g.nz, 2π / f.g.Δz))
+        return PlanCompactFFT3D{N}(pfft,
+                                   compact_multiplier(ξx, f.g.Δx, 1),
+                                   compact_multiplier(ξx, f.g.Δx, 2),
+                                   compact_multiplier(ξy, f.g.Δy, 1),
+                                   compact_multiplier(ξy, f.g.Δy, 2),
+                                   compact_multiplier(ξz, f.g.Δz, 1),
+                                   compact_multiplier(ξz, f.g.Δz, 2))
     else
         # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)

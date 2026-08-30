@@ -71,6 +71,16 @@ plain finite-difference plans, selected with `Plan(..., t=CompactPlan())`.
 - Public docs: document the `t=CompactPlan()` option, order 6, limits.
 - Non-periodic boundary case.
 
+## GPU (CUDA) support
+Verified on an RTX 3080 (`Grid(...; array_type=CuArray)`):
+- **FFT**: works (existing GPU examples).
+- **Finite difference (order 6)**: works; results are bit-identical to the CPU
+  (row-slice operations are host-legal on GPU arrays).
+- **Compact**: **not supported** — the Thomas sweep needs scalar indexing on the
+  local line (`u[i]`), which GPU arrays reject from the host (`assertscalar`).
+  This is intrinsic to a sequential compact solve. `Plan(...; t=CompactPlan())`
+  on a GPU grid now raises a clear error at construction time (2D and 3D).
+
 ## Model compatibility (verified)
 Compact derivatives are wired **only** through `computeDerivatives!` (dispatch
 on the plan type).

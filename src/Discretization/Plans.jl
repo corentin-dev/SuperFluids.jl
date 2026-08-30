@@ -374,6 +374,13 @@ function Plan(f::F;
                             ξx, ξy,
                             datax, datay)
     elseif typeof(t) == CompactPlan
+        if A !== Array
+            error("CompactPlan is not supported on GPU arrays (got $A). " *
+                  "The compact Thomas solve uses scalar indexing on the local line, " *
+                  "which GPU arrays do not allow from the host. Build the grid with " *
+                  "array_type=Array to use the compact scheme, or keep the GPU grid " *
+                  "and use FFTPlan()/FiniteDifferencePlan().")
+        end
         ax = compact_setup(f.g.nx, f.g.Δx, 1)
         a2x = compact_setup(f.g.nx, f.g.Δx, 2)
         ay = compact_setup(f.g.ny, f.g.Δy, 1)
@@ -453,6 +460,13 @@ function Plan(f::F;
                             ξx, ξy, ξz,
                             datax, datay, dataz)
     elseif typeof(t) == CompactPlan
+        if A !== Array
+            error("CompactPlan is not supported on GPU arrays (got $A). " *
+                  "The compact Thomas solve uses scalar indexing on the local line, " *
+                  "which GPU arrays do not allow from the host. Build the grid with " *
+                  "array_type=Array to use the compact scheme, or keep the GPU grid " *
+                  "and use FFTPlan()/FiniteDifferencePlan().")
+        end
         ax = compact_setup(f.g.nx, f.g.Δx, 1)
         a2x = compact_setup(f.g.nx, f.g.Δx, 2)
         ay = compact_setup(f.g.ny, f.g.Δy, 1)

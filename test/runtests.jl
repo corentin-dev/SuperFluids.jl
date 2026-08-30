@@ -244,6 +244,27 @@ end
     @test relerr(gf.ddz, -kz^2 * ϕ)   < TOL_FD
 end
 
+@testset "CompactPlan rejects GPU arrays" begin
+    # The compact Thomas solve needs scalar indexing on the local line, which
+    # GPU arrays do not allow from the host. Plan() must reject a GPU grid with
+    # a clear error instead of a cryptic assertscalar deep in the kernel.
+    # Skipped when no CUDA device is available.
+    have_gpu = try
+        using CUDA
+        CUDA.ndevices() > 0
+    catch
+        false
+    end
+    if have_gpu
+        using CUDA
+        fg2 = Field(Grid((16, 16), ((-4, 4), (-4, 4)); array_type=CuArray), ComplexField())
+        @test_throws ErrorException Plan(fg2; t=SuperFluids.CompactPlan())
+        fg3 = Field(Grid((16, 16, 16), ((-4, 4), (-4, 4), (-4, 4)); array_type=CuArray),
+                    ComplexField())
+        @test_throws ErrorException Plan(fg3; t=SuperFluids.CompactPlan())
+    end
+end
+
 # ==========================================================================
 # GP explicit Runge-Kutta (NumModelGPRK) — port of the reference GP_RK4
 # ==========================================================================

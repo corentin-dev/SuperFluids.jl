@@ -55,7 +55,7 @@ makedocs(; authors="Corentin Lothode <corentin.lothode@univ-rouen.fr> and contri
          sitename="SuperFluids.jl",
          format=Documenter.HTML(),
          doctest=false,
-         strict=false,
+         warnonly=true,   # old `strict=false`: never fail the build, only warn
          clean=true,
          modules=[SuperFluids],
          pages=pages)

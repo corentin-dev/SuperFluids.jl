@@ -107,7 +107,9 @@ plain finite-difference plans, selected with `Plan(..., t=CompactPlan())`.
   the physical model coefficient is applied by the model in `lapRot`.
 - **Optimization**: the cyclic correction is precomputed once per axis
   (one `CompactAxis` per derivative order per axis), never recomputed per call.
-- **Periodic only**: the non-periodic one-sided boundaries are deferred.
+- **Non-periodic (homogeneous Dirichlet) axes**: `CompactPlan(bcs=(0|1, ...))`
+  selects per axis between the periodic and the one-sided (GPS `cdl==2`) compact
+  operator; see `PLAN-compact-np.md`. Neumann is still to come.
 - **GPU backend (default): CUDA Thomas kernel.** A dedicated kernel solves the
   compact relation per line on the device (one thread per line, sequential
   sweep). It is dtype-agnostic (real *and* complex fields), needs no FFT
@@ -121,7 +123,7 @@ plain finite-difference plans, selected with `Plan(..., t=CompactPlan())`.
 
 ## Remaining (optional, deferred)
 - Public docs: document the `t=CompactPlan()` option, order 6, limits.
-- Non-periodic boundary case.
+- Non-periodic **Neumann** boundary (Dirichlet is done, see `PLAN-compact-np.md`).
 
 ## GPU (CUDA) support — via the CUDA Thomas kernel (default) or spectral (opt-in)
 Verified on an RTX 3080 (`Grid(...; array_type=CuArray)`):

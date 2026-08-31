@@ -4,7 +4,7 @@ Port of the GPS `cdl==2` one-sided compact operators (6th-order interior,
 Lele-style boundary relaxation), cross-checked against Xcompact3d
 (`derive.f90` `derx_11/12/21/22`).
 
-## Status (v1 DONE — homogeneous Dirichlet, CPU)
+## Status (v1 DONE — homogeneous Dirichlet, CPU; v2 DONE — CUDA NP)
 - `CompactAxisNP` + `compact_setup_np(n, Δ, order)` in `Plans.jl` (row-varying
   tridiagonal LHS + `s/w` Thomas factors, precomputed closure weights; 1st and
   2nd derivative).
@@ -12,16 +12,22 @@ Lele-style boundary relaxation), cross-checked against Xcompact3d
   `compact2line3!` on `c::CompactAxisNP` (plain Thomas, no cyclic correction),
   so the existing plan dispatch is unchanged (dispatch by axis type ⇒ mixed
   periodic/Dirichlet axes work in one plan).
+- CUDA: `CompactAxisGPU_np` + `compact_setup_np_gpu` + `_compact_cu_{1,2}k_{,3}_np!`
+  kernels (plain Thomas, one thread per line) in `compact_gpu.jl`, wired through
+  generic dispatchers `_compact_cu_{1,2}line{,3}!` on `AbstractCompactAxisGPU`
+  (so a GPU plan mixes periodic and bounded axes); the GPU plan now builds an
+  NP axis for any `bcs=1` axis.
 - API: `CompactPlan(bcs=(0|1, ...))` per axis — `0`/`:periodic`,
-  `1`/`:dirichlet`. `:auto`/`:thomas` build a CPU Thomas plan; `:spectral` + a
-  Dirichlet axis → error (a Fourier multiplier only exists for the periodic
-  circulant operator).
+  `1`/`:dirichlet`. `:auto`/`:thomas` build the Thomas plan (CPU or CUDA kernel);
+  `:spectral` + a Dirichlet axis → error (a Fourier multiplier only exists for
+  the periodic circulant operator).
 - Validated: 1D/2D/3D interior 6th-order convergence (vs analytic sin/cos field
   vanishing on the walls); mixed axes; coefficients byte-identical to the GPS
-  `cdl==2` blocks and consistent with Xcompact3d `ncl==2`; new testsets pass
-  with the full suite (CPU + GPU).
-- Remaining: (a) Neumann (`ncl==1`, Xcompact3d `derx_2x`, mirror symmetry),
-  (b) CUDA NP kernel (CPU-only for now, clear error on GPU for `bcs=1`).
+  `cdl==2` blocks and consistent with Xcompact3d `ncl==2`; GPU kernel vs CPU =
+  machine precision (∼1e-15..1e-13); new testsets (CPU + GPU) pass with the
+  full suite.
+- Remaining: Neumann (`ncl==1`, Xcompact3d `derx_2x`, mirror symmetry) — new
+  `bcs` entry `2`/`:neumann`.
 
 ## Why
 The compact scheme's original motivation in GPS was precisely to handle
@@ -70,8 +76,9 @@ non-periodic boundaries (periodic compact is just a slower FFT). This makes
   corner).
 - `compact_setup_np(n, Δ, order)`: builds the per-axis data (errors if
   `n < 8`). `compact_axis(n, Δ, order, bc)` selects periodic vs NP by BC.
-- Kernels: CPU `compact*line!` overloads (done); CUDA NP kernels (v2) —
-  `_compact_cu_1knp!` etc., one thread per line, plain Thomas.
+- Kernels: CPU `compact*line!` overloads (done); CUDA NP kernels (done) —
+  `_compact_cu_{1,2}k_{,3}_np!`, one thread per line, plain Thomas, uploaded via
+  `CompactAxisGPU_np` (device `s/w/sup` + closure scalars).
 - Plans: extended in place — `PlanCompact2D/3D` now carry
   `AbstractCompactAxis` per axis; `CompactPlan(bcs=...)` selects the axis
   constructor. (No separate `PlanCompactNP*` types.)
@@ -88,14 +95,14 @@ non-periodic boundaries (periodic compact is just a slower FFT). This makes
 - Homogeneous BCs only in v1 (GPS `cdl==2` is homogeneous; inhomogeneous
   would add the BC value to the RHS — deferred).
 
-## Scope (v1 = homogeneous Dirichlet, CPU; v2 = Neumann + CUDA)
+## Scope (v1 = homogeneous Dirichlet CPU; v2 = CUDA NP; v3 = Neumann)
 - v1 DONE: 2D + 3D, 1st + 2nd derivatives, homogeneous Dirichlet (GPS
   `cdl==2` / Xcompact3d `ncl==2`), CPU (Thomas). Mixed periodic/Dirichlet axes.
-- v2 (todo):
-  - Neumann (Xcompact3d `ncl==1`, `npaire==0` mirror branch): new LHS rows +
-    mirror-symmetric RHS rows, new `bcs` entry `2`/`:neumann`.
-  - CUDA NP kernel (one thread per line, plain Thomas — simpler than the
-    periodic kernel, no corner) to lift the CPU-only restriction.
+- v2 DONE: CUDA NP kernel (one thread per line, plain Thomas — simpler than the
+  periodic kernel, no corner); GPU plans now support Dirichlet axes, mixed with
+  periodic ones.
+- v3 (todo): Neumann (Xcompact3d `ncl==1`, `npaire==0` mirror branch): new LHS
+  rows + mirror-symmetric RHS rows, new `bcs` entry `2`/`:neumann` (CPU + CUDA).
 - Spectral backend: NOT available for NP (no transform diagonalizes it) —
   `backend=:spectral` + NP axes → clear error.
 - Model wiring: nothing new needed — `computeDerivatives!` is the only entry

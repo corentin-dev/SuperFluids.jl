@@ -640,13 +640,13 @@ struct PlanCompactGPU2D{N} <: AbstractCompactPlan{N}
     "pencil (or slab) in the ``y`` direction."
     pen_y::Any
     "compact multipliers for the first derivative along ``x`` (device)."
-    ax::CompactAxisGPU
+    ax::AbstractCompactAxisGPU
     "compact multipliers for the second derivative along ``x`` (device)."
-    a2x::CompactAxisGPU
+    a2x::AbstractCompactAxisGPU
     "compact multipliers for the first derivative along ``y`` (device)."
-    ay::CompactAxisGPU
+    ay::AbstractCompactAxisGPU
     "compact multipliers for the second derivative along ``y`` (device)."
-    a2y::CompactAxisGPU
+    a2y::AbstractCompactAxisGPU
     "temporary field distributed along ``y`` (input, transposed ``ϕ``)."
     ϕytmp::AbstractArray
     "temporary field distributed along ``y`` (first-derivative output)."
@@ -672,17 +672,17 @@ struct PlanCompactGPU3D{N} <: AbstractCompactPlan{N}
     "pencil (or slab) in the ``z`` direction."
     pen_z::Any
     "compact multipliers for the first derivative along ``x`` (device)."
-    ax::CompactAxisGPU
+    ax::AbstractCompactAxisGPU
     "compact multipliers for the second derivative along ``x`` (device)."
-    a2x::CompactAxisGPU
+    a2x::AbstractCompactAxisGPU
     "compact multipliers for the first derivative along ``y`` (device)."
-    ay::CompactAxisGPU
+    ay::AbstractCompactAxisGPU
     "compact multipliers for the second derivative along ``y`` (device)."
-    a2y::CompactAxisGPU
+    a2y::AbstractCompactAxisGPU
     "compact multipliers for the first derivative along ``z`` (device)."
-    az::CompactAxisGPU
+    az::AbstractCompactAxisGPU
     "compact multipliers for the second derivative along ``z`` (device)."
-    a2z::CompactAxisGPU
+    a2z::AbstractCompactAxisGPU
     "temporary field distributed along ``y`` (input, transposed ``ϕ``)."
     ϕytmp::AbstractArray
     "temporary field distributed along ``y`` (derivative output)."
@@ -766,18 +766,18 @@ function Plan(f::F;
             return PlanCompact2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp)
         end
         # GPU (or any non-Array backend).
-        # The non-periodic (Dirichlet) axes need the NP line kernel, which is
-        # CPU-only for now (v1).
-        if any(bc -> bc == 1, _compact_bcs(t, 2))
-            error("CompactPlan with Dirichlet axes (bcs=1) is not supported on a $(A) grid " *
-                  "yet (the non-periodic kernel is CPU-only). Use a CPU field, or keep " *
-                  "those axes periodic (bcs=0).")
-        end
         if t.backend === :spectral
             # Spectral path: the periodic compact operator is a circulant
             # matrix, hence a Fourier multiplier, evaluated through the
             # standard FFT machinery (see PlanCompactFFT2D). Requires a
-            # complex field, like the standard FFTPlan.
+            # complex field, like the standard FFTPlan, and periodic axes only
+            # (a bounded axis has no Fourier-multiplier form).
+            if any(bc -> bc == 1, _compact_bcs(t, 2))
+                error("CompactPlan(backend=:spectral) is only defined for periodic axes; " *
+                      "this plan has Dirichlet (non-periodic) axes, which have no " *
+                      "Fourier-multiplier form. Use the default backend (CUDA Thomas " *
+                      "kernel) instead.")
+            end
             if !(eltype(f.data[1]) <: Complex)
                 error("CompactPlan(backend=:spectral) on a $(A) grid requires a complex field " *
                       "(RealField is not supported, like the standard FFTPlan). Build the field " *
@@ -793,18 +793,23 @@ function Plan(f::F;
                                        compact_multiplier(ξy, f.g.Δy, 1),
                                        compact_multiplier(ξy, f.g.Δy, 2))
         end
-        # Default (:auto / :thomas): dedicated CUDA Thomas kernel. CUDA must
-        # be available (it is a hard dependency of this package, but the
-        # kernels are only compiled when it loads).
+        # Default (:auto / :thomas): dedicated CUDA Thomas kernel (periodic and
+        # Dirichlet axes alike). CUDA must be available (it is a hard
+        # dependency of this package, but the kernels are only compiled when it
+        # loads).
         if CUDA === nothing
             error("CompactPlan(backend=$(t.backend)) on a $(A) grid needs CUDA, " *
                   "which is not available in this build. Use CompactPlan(backend=:spectral) " *
-                  "(Fourier multiplier, complex fields only) instead.")
+                  "(Fourier multiplier, periodic complex fields only) instead.")
         end
-        ax = compact_setup_gpu(f.g.nx, f.g.Δx, 1)
-        a2x = compact_setup_gpu(f.g.nx, f.g.Δx, 2)
-        ay = compact_setup_gpu(f.g.ny, f.g.Δy, 1)
-        a2y = compact_setup_gpu(f.g.ny, f.g.Δy, 2)
+        bcx, bcy = _compact_bcs(t, 2)
+        function _gpu_axis(n, Δ, order, bc)
+            return bc == 1 ? compact_setup_np_gpu(n, Δ, order) : compact_setup_gpu(n, Δ, order)
+        end
+        ax = _gpu_axis(f.g.nx, f.g.Δx, 1, bcx)
+        a2x = _gpu_axis(f.g.nx, f.g.Δx, 2, bcx)
+        ay = _gpu_axis(f.g.ny, f.g.Δy, 1, bcy)
+        a2y = _gpu_axis(f.g.ny, f.g.Δy, 2, bcy)
         ϕytmp = PencilArray{FFT}(undef, pen_y)
         dytmp = PencilArray{FFT}(undef, pen_y)
         ddytmp = PencilArray{FFT}(undef, pen_y)
@@ -897,16 +902,15 @@ function Plan(f::F;
             return PlanCompact3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z, ϕytmp, ϕztmp)
         end
         # GPU (or any non-Array backend).
-        # The non-periodic (Dirichlet) axes need the NP line kernel, which is
-        # CPU-only for now (v1).
-        if any(bc -> bc == 1, _compact_bcs(t, 3))
-            error("CompactPlan with Dirichlet axes (bcs=1) is not supported on a $(A) grid " *
-                  "yet (the non-periodic kernel is CPU-only). Use a CPU field, or keep " *
-                  "those axes periodic (bcs=0).")
-        end
         if t.backend === :spectral
             # See the 2D dispatch: Fourier multiplier through the standard
-            # FFT machinery (complex fields only).
+            # FFT machinery (complex fields only), periodic axes only.
+            if any(bc -> bc == 1, _compact_bcs(t, 3))
+                error("CompactPlan(backend=:spectral) is only defined for periodic axes; " *
+                      "this plan has Dirichlet (non-periodic) axes, which have no " *
+                      "Fourier-multiplier form. Use the default backend (CUDA Thomas " *
+                      "kernel) instead.")
+            end
             if !(eltype(f.data[1]) <: Complex)
                 error("CompactPlan(backend=:spectral) on a $(A) grid requires a complex field " *
                       "(RealField is not supported, like the standard FFTPlan). Build the field " *
@@ -928,14 +932,18 @@ function Plan(f::F;
         if CUDA === nothing
             error("CompactPlan(backend=$(t.backend)) on a $(A) grid needs CUDA, " *
                   "which is not available in this build. Use CompactPlan(backend=:spectral) " *
-                  "(Fourier multiplier, complex fields only) instead.")
+                  "(Fourier multiplier, periodic complex fields only) instead.")
         end
-        ax = compact_setup_gpu(f.g.nx, f.g.Δx, 1)
-        a2x = compact_setup_gpu(f.g.nx, f.g.Δx, 2)
-        ay = compact_setup_gpu(f.g.ny, f.g.Δy, 1)
-        a2y = compact_setup_gpu(f.g.ny, f.g.Δy, 2)
-        az = compact_setup_gpu(f.g.nz, f.g.Δz, 1)
-        a2z = compact_setup_gpu(f.g.nz, f.g.Δz, 2)
+        bcx, bcy, bcz = _compact_bcs(t, 3)
+        function _gpu_axis(n, Δ, order, bc)
+            return bc == 1 ? compact_setup_np_gpu(n, Δ, order) : compact_setup_gpu(n, Δ, order)
+        end
+        ax = _gpu_axis(f.g.nx, f.g.Δx, 1, bcx)
+        a2x = _gpu_axis(f.g.nx, f.g.Δx, 2, bcx)
+        ay = _gpu_axis(f.g.ny, f.g.Δy, 1, bcy)
+        a2y = _gpu_axis(f.g.ny, f.g.Δy, 2, bcy)
+        az = _gpu_axis(f.g.nz, f.g.Δz, 1, bcz)
+        a2z = _gpu_axis(f.g.nz, f.g.Δz, 2, bcz)
         ϕytmp = PencilArray{FFT}(undef, pen_y)
         dytmp = PencilArray{FFT}(undef, pen_y)
         ddytmp = PencilArray{FFT}(undef, pen_y)

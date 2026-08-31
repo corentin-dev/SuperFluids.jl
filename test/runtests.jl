@@ -316,10 +316,12 @@ end
 # ==========================================================================
 # CompactPlan on GPU
 # ==========================================================================
-# On a GPU grid the compact Thomas solve cannot run (it needs scalar indexing
-# on the local line, which GPU arrays forbid from the host). Plan() therefore
-# builds the spectral-compact (Fourier-multiplier) backend instead, which is
-# GPU-native and identical to the Thomas result to machine precision.
+# On a GPU grid the compact scheme is solved by a dedicated CUDA Thomas kernel
+# (one thread per grid line): periodic axes use the cyclic-corrected Thomas
+# solve, Dirichlet axes the plain Thomas solve. Both agree with the CPU
+# Thomas implementation to machine precision (identical precomputed
+# coefficients). The :spectral backend (Fourier multiplier) remains an
+# explicit alternative for periodic complex fields.
 # Skipped when no CUDA device is available.
 @testset "CompactPlan on GPU arrays" begin
     have_gpu = try
@@ -396,6 +398,30 @@ end
         @test gpu_rel(gfg3.ddx, gfc3.ddx) < 1e-10
         @test gpu_rel(gfg3.ddy, gfc3.ddy) < 1e-10
         @test gpu_rel(gfg3.ddz, gfc3.ddz) < 1e-10
+
+        # --- 2D: GPU CUDA kernel for Dirichlet (non-periodic) axes vs CPU ---
+        # Same one-sided compact operator as the CPU path (plain Thomas, no
+        # cyclic correction). A Dirichlet field (sin, zero on the walls) is
+        # differentiated on GPU and CPU; the two must agree to machine
+        # precision (same coefficients, same kernel semantics).
+        cgx, cgy = π / 8, π / 8   # sin(π(x+4)/8) vanishes at x=±4
+        fd = Field(Grid((nx, ny), ((-4, 4), (-4, 4)); array_type=CuArray), ComplexField())
+        fd.ϕ .= sin.(cgx .* (fd.x .+ 4)) .* sin.(cgy .* (fd.y .+ 4))
+        gfd = GradientField(fd; rotation=false)
+        pdd = Plan(fd; t=SuperFluids.CompactPlan(bcs=(1, 1)))
+        @test isa(pdd.ax, SuperFluids.CompactAxisGPU_np)
+        @test isa(pdd.ay, SuperFluids.CompactAxisGPU_np)
+        SuperFluids.computeDerivatives!(gfd, pdd, fd.ϕ)
+        CUDA.synchronize()
+        fcd = Field(Grid((nx, ny), ((-4, 4), (-4, 4))), ComplexField())
+        fcd.ϕ .= sin.(cgx .* (fcd.x .+ 4)) .* sin.(cgy .* (fcd.y .+ 4))
+        gcd = GradientField(fcd; rotation=false)
+        pcd = Plan(fcd; t=SuperFluids.CompactPlan(bcs=(1, 1)))
+        SuperFluids.computeDerivatives!(gcd, pcd, fcd.ϕ)
+        @test gpu_rel(gfd.dx, gcd.dx)  < 1e-10
+        @test gpu_rel(gfd.dy, gcd.dy)  < 1e-10
+        @test gpu_rel(gfd.ddx, gcd.ddx) < 1e-10
+        @test gpu_rel(gfd.ddy, gcd.ddy) < 1e-10
 
         # --- Spectral backend still available (complex fields only) ---
         pgs = Plan(fg; t=SuperFluids.CompactPlan(backend=:spectral))

@@ -1,0 +1,9 @@
+# The CI image only needs the files the Dockerfile copies; exclude the rest
+# of the checkout from the build context.
+*
+!Dockerfile
+!Project.toml
+!Manifest.toml
+!src/
+!src/**
+!test/Project.toml

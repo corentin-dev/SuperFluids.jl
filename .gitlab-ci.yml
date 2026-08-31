@@ -29,34 +29,35 @@ build-image:
   script:
     - apt-get update -qq
     # --no-install-recommends + one automatic repair/retry: a postinst of a
-    # golang dependency of buildah has been observed failing once (mirror
-    # glitch); retry before giving up.
+    # golang dependency of buildah has been observed failing (mirror glitch).
+    # NOTE: the runner mounts /etc read-only, so any package trying to write
+    # there (e.g. containers-common's shortnames.conf) fails - harmless for
+    # us: buildah itself installs fine and all its config is passed through
+    # environment variables below (nothing is written under /etc).
     - >
-      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah skopeo
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah
       || { echo "=== apt failed, attempting a repair and one retry ===";
            dpkg --configure -a || true;
            apt-get -f install -y || true;
-           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah skopeo; }
+           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah; }
     - git config --global --add safe.directory "$(pwd)"
-    # The GitLab registry is signed by an internal CA the base image does not
-    # trust; skip TLS verification for it (standard workaround for an
-    # on-prem registry). Read by both buildah and skopeo.
+    # /etc is read-only in the runner pod: the containers-tooling config files
+    # are written into the project directory and pointed at with the standard
+    # environment variables (read by buildah). The registry is marked
+    # insecure: it is signed by an internal CA the base image does not trust
+    # (standard on-prem workaround).
     - |
-      mkdir -p /etc/containers
-      printf 'unqualified-search-registries = ["docker.io"]\n\n[[registry]]\n  prefix = "%s"\n  insecure = true\n' "$CI_REGISTRY" > /etc/containers/registries.conf
-      cat /etc/containers/registries.conf
+      mkdir -p containers
+      printf 'unqualified-search-registries = ["docker.io"]\n\n[[registry]]\n  prefix = "%s"\n  insecure = true\n' "$CI_REGISTRY" > containers/registries.conf
+      printf '[storage]\ndriver = "vfs"\nrootdir = "%s/bhroot"\n' "$CI_PROJECT_DIR" > containers/storage.conf
+      export CONTAINERS_REGISTRIES_CONF="$CI_PROJECT_DIR/containers/registries.conf"
+      export CONTAINERS_STORAGE_CONF="$CI_PROJECT_DIR/containers/storage.conf"
     - export TAG="sha-$CI_COMMIT_SHORT_SHA"
     - export FILEHASH=$(git ls-tree HEAD -- Dockerfile Project.toml Manifest.toml test/Project.toml | awk '{print $3}' | sha256sum | cut -d" " -f1)
     - buildah login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - |
-      # Storage driver fallback: overlay cannot always be used inside a k8s
-      # pod (overlay-on-overlay or no mount permission) -> fall back to vfs.
-      if ! buildah images >/dev/null 2>&1; then
-        printf '[storage]\ndriver = "vfs"\n' > /etc/containers/storage.conf
-      fi
-      if skopeo inspect "docker://$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
+      if buildah pull "$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
         echo "CI image inputs unchanged -> re-tag the existing image"
-        buildah pull "$CI_IMAGE:sha-$FILEHASH"
         buildah tag  "$CI_IMAGE:sha-$FILEHASH" "$CI_IMAGE:$TAG"
         buildah push "$CI_IMAGE:$TAG"
       else

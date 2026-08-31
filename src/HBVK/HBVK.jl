@@ -4,9 +4,9 @@ export HBVKParameters, NumModelHBVK
     HBVKParameters(; ν, νs, rb, ρn, ρs, ρt, filter)
 
 Parameters of the linear Hall–Vinen–Bekarevich–Khalatnikov (HVBK) two-fluid
-model as implemented in the `3dt-hvbk` spectral code (Zhang et al.): two
-incompressible velocity fields (normal `u_n` and superfluid `u_s`), each
-advecting its own vorticity, coupled by the **linear mutual friction**
+model: two incompressible velocity fields (normal `u_n` and superfluid
+`u_s`), each advecting its own vorticity, coupled by the **linear mutual
+friction**
 
 ```
 F = -½ rb |∇×u_s| (u_n - u_s)
@@ -18,9 +18,6 @@ F = -½ rb |∇×u_s| (u_n - u_s)
 viscosities, `rb` the (linear) mutual-friction coefficient, `ρn`,`ρs` the
 densities and `ρt` the total density (defaults to `ρn+ρs`). The friction is an
 internal force: the **total momentum** `ρn u_n + ρs u_s` is conserved.
-
-Port of `rhs.f90::calc_nlk` + `calcVelocity_forced_04.f90` (RK2) from the
-`3dt-hvbk` code.
 """
 mutable struct HBVKParameters <: AbstractParameters
     "normal-fluid kinematic viscosity ν_n."
@@ -68,8 +65,6 @@ type. The common time step `Δt` is integrated with `stepper` ∈ "RK1" or "RK2"
 Each fluid's viscous Laplacian is implicit via the exact spectral multiplier
 `exp(-ν Δt |k|²)`, and both fields are Helmholtz-projected (incompressible) and
 2/3-dealiased at every step.
-
-Port of the `3dt-hvbk` solver (Zhang et al.).
 """
 mutable struct NumModelHBVK{F,P,Plan} <: AbstractNumModel{F,P,Plan}
     "normal-fluid velocity field."

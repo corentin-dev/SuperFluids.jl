@@ -35,12 +35,11 @@ NumModelNSGP
 
 ### HVBK (linear Hall-Vinen-Bekarevich-Khalatnikov)
 
-The linear HVBK two-fluid model (port of the `3dt-hvbk` code, Zhang et al.): two
-incompressible velocity fields (normal and superfluid), each advecting its own
-vorticity, coupled by the **linear mutual friction**
-`F = −½ rb |∇×u_s| (u_n − u_s)` with density weighting `ρs/ρt` and `−ρn/ρt`
-(the total momentum is conserved). RK1/RK2, exact implicit viscous multiplier,
-Helmholtz projection and 2/3 dealiasing.
+The linear HVBK two-fluid model: two incompressible velocity fields (normal and
+superfluid), each advecting its own vorticity, coupled by the **linear mutual
+friction** `F = −½ rb |∇×u_s| (u_n − u_s)` with density weighting `ρs/ρt` and
+`−ρn/ρt` (the total momentum is conserved). RK1/RK2, exact implicit viscous
+multiplier, Helmholtz projection and 2/3 dealiasing.
 
 ```@docs
 HBVKParameters

@@ -27,10 +27,24 @@ build-image:
       when: manual
     - when: on_success
   script:
-    - apt-get update -qq && apt-get install -y --no-install-recommends git buildah skopeo && rm -rf /var/lib/apt/lists/*
-    # Git refuses operations on checkouts it does not "own" (recent git);
-    # needed before the git ls-tree hash computation below.
+    - apt-get update -qq
+    # --no-install-recommends + one automatic repair/retry: a postinst of a
+    # golang dependency of buildah has been observed failing once (mirror
+    # glitch); retry before giving up.
+    - >
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah skopeo
+      || { echo "=== apt failed, attempting a repair and one retry ===";
+           dpkg --configure -a || true;
+           apt-get -f install -y || true;
+           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah skopeo; }
     - git config --global --add safe.directory "$(pwd)"
+    # The GitLab registry is signed by an internal CA the base image does not
+    # trust; skip TLS verification for it (standard workaround for an
+    # on-prem registry). Read by both buildah and skopeo.
+    - |
+      mkdir -p /etc/containers
+      printf 'unqualified-search-registries = ["docker.io"]\n\n[[registry]]\n  prefix = "%s"\n  insecure = true\n' "$CI_REGISTRY" > /etc/containers/registries.conf
+      cat /etc/containers/registries.conf
     - export TAG="sha-$CI_COMMIT_SHORT_SHA"
     - export FILEHASH=$(git ls-tree HEAD -- Dockerfile Project.toml Manifest.toml test/Project.toml | awk '{print $3}' | sha256sum | cut -d" " -f1)
     - buildah login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"

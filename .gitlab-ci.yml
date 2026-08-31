@@ -10,15 +10,16 @@ variables:
   # ~/.julia cache instead of ~10 minutes of setup.
   CI_IMAGE: $CI_REGISTRY_IMAGE/ci
 
-# Builds (or re-tags) the CI image with buildah (daemonless, no docker-in-
-# docker: a regular pod can build and push with chroot isolation).
+# Builds (or re-tags) the CI image with buildah (daemonless; the
+# quay.io/buildah/stable job image carries buildah+skopeo, so no apt install
+# - which would otherwise break on the runner's read-only /etc).
 # A full build only happens when Dockerfile/Project.toml/Manifest.toml
 # change (content hash); otherwise the existing image is re-tagged for this
 # commit (pull + tag + push, a few seconds). The other jobs always reference
 # $CI_IMAGE:sha-$CI_COMMIT_SHORT_SHA. Manual (opt-in) in merge requests.
 build-image:
   stage: build
-  image: docker.io/library/ubuntu:26.04
+  image: quay.io/buildah/stable:latest
   variables:
     # chroot isolation: no user namespaces / no privileges needed (rootful).
     BUILDAH_ISOLATION: chroot
@@ -27,25 +28,11 @@ build-image:
       when: manual
     - when: on_success
   script:
-    - apt-get update -qq
-    # --no-install-recommends + one automatic repair/retry: a postinst of a
-    # golang dependency of buildah has been observed failing (mirror glitch).
-    # NOTE: the runner mounts /etc read-only, so any package trying to write
-    # there (e.g. containers-common's shortnames.conf) fails - harmless for
-    # us: buildah itself installs fine and all its config is passed through
-    # environment variables below (nothing is written under /etc).
-    - >
-      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah
-      || { echo "=== apt failed, attempting a repair and one retry ===";
-           dpkg --configure -a || true;
-           apt-get -f install -y || true;
-           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git buildah; }
-    - git config --global --add safe.directory "$(pwd)"
-    # /etc is read-only in the runner pod: the containers-tooling config files
-    # are written into the project directory and pointed at with the standard
-    # environment variables (read by buildah). The registry is marked
-    # insecure: it is signed by an internal CA the base image does not trust
-    # (standard on-prem workaround).
+    # The runner may mount /etc read-only: keep the containers-tooling config
+    # in the (writable) project directory and point buildah at it through the
+    # standard environment variables. The registry is marked insecure: it is
+    # signed by an internal CA the job image does not trust (standard on-prem
+    # workaround); storage is vfs under the project directory.
     - |
       mkdir -p containers
       printf 'unqualified-search-registries = ["docker.io"]\n\n[[registry]]\n  prefix = "%s"\n  insecure = true\n' "$CI_REGISTRY" > containers/registries.conf
@@ -53,13 +40,15 @@ build-image:
       export CONTAINERS_REGISTRIES_CONF="$CI_PROJECT_DIR/containers/registries.conf"
       export CONTAINERS_STORAGE_CONF="$CI_PROJECT_DIR/containers/storage.conf"
     - export TAG="sha-$CI_COMMIT_SHORT_SHA"
-    - export FILEHASH=$(git ls-tree HEAD -- Dockerfile Project.toml Manifest.toml test/Project.toml | awk '{print $3}' | sha256sum | cut -d" " -f1)
-    - buildah login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    # Content hash of the image inputs (no git needed): unchanged inputs
+    # re-tag the existing image instead of rebuilding.
+    - export FILEHASH=$(cat Dockerfile Project.toml Manifest.toml test/Project.toml | sha256sum | cut -d" " -f1)
+    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - |
       # Flags used in this runner's pod (same as the existing in-house
-      # buildah jobs): vfs storage as a flag (more reliable than the config
-      # file), seccomp unconfined (the pod's seccomp profile can otherwise
-      # block syscalls needed for the chroot build), docker image format.
+      # buildah jobs): vfs storage as a flag, seccomp unconfined (the pod's
+      # seccomp profile can otherwise block syscalls needed for the chroot
+      # build), docker image format.
       STORAGE="--storage-driver vfs"
       if buildah pull $STORAGE "$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
         echo "CI image inputs unchanged -> re-tag the existing image"

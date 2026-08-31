@@ -10,38 +10,46 @@ variables:
   # ~/.julia cache instead of ~10 minutes of setup.
   CI_IMAGE: $CI_REGISTRY_IMAGE/ci
 
-# Builds (or re-tags) the CI image, using a docker-in-docker sidecar.
-# A full build only happens when Dockerfile/Project.toml/Manifest.toml change
-# (content hash); otherwise the existing image is re-tagged for this commit
-# (pull + tag + push, a few seconds). The other jobs always reference
+# Builds (or re-tags) the CI image with buildah (daemonless, no docker-in-
+# docker: a regular pod can build and push with chroot isolation).
+# A full build only happens when Dockerfile/Project.toml/Manifest.toml
+# change (content hash); otherwise the existing image is re-tagged for this
+# commit (pull + tag + push, a few seconds). The other jobs always reference
 # $CI_IMAGE:sha-$CI_COMMIT_SHORT_SHA. Manual (opt-in) in merge requests.
 build-image:
   stage: build
-  image: docker:27
-  services:
-    - docker:27-dind
+  image: docker.io/library/ubuntu:26.04
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
+    # chroot isolation: no user namespaces / no privileges needed (rootful).
+    BUILDAH_ISOLATION: chroot
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: manual
     - when: on_success
   script:
+    - apt-get update -qq && apt-get install -y --no-install-recommends git buildah skopeo && rm -rf /var/lib/apt/lists/*
+    # Git refuses operations on checkouts it does not "own" (recent git);
+    # needed before the git ls-tree hash computation below.
+    - git config --global --add safe.directory "$(pwd)"
     - export TAG="sha-$CI_COMMIT_SHORT_SHA"
     - export FILEHASH=$(git ls-tree HEAD -- Dockerfile Project.toml Manifest.toml test/Project.toml | awk '{print $3}' | sha256sum | cut -d" " -f1)
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - buildah login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - |
-      if docker manifest inspect "$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
+      # Storage driver fallback: overlay cannot always be used inside a k8s
+      # pod (overlay-on-overlay or no mount permission) -> fall back to vfs.
+      if ! buildah images >/dev/null 2>&1; then
+        printf '[storage]\ndriver = "vfs"\n' > /etc/containers/storage.conf
+      fi
+      if skopeo inspect "docker://$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
         echo "CI image inputs unchanged -> re-tag the existing image"
-        docker pull "$CI_IMAGE:sha-$FILEHASH"
-        docker tag  "$CI_IMAGE:sha-$FILEHASH" "$CI_IMAGE:$TAG"
-        docker push "$CI_IMAGE:$TAG"
+        buildah pull "$CI_IMAGE:sha-$FILEHASH"
+        buildah tag  "$CI_IMAGE:sha-$FILEHASH" "$CI_IMAGE:$TAG"
+        buildah push "$CI_IMAGE:$TAG"
       else
         echo "Building the CI image (Dockerfile/Project/Manifest changed)"
-        docker build -t "$CI_IMAGE:sha-$FILEHASH" -t "$CI_IMAGE:$TAG" .
-        docker push "$CI_IMAGE:sha-$FILEHASH"
-        docker push "$CI_IMAGE:$TAG"
+        buildah bud -t "$CI_IMAGE:sha-$FILEHASH" -t "$CI_IMAGE:$TAG" .
+        buildah push "$CI_IMAGE:sha-$FILEHASH"
+        buildah push "$CI_IMAGE:$TAG"
       fi
 
 test:

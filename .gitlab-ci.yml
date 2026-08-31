@@ -1,54 +1,76 @@
 stages:
+  - build
   - test
   - deploy
 
-test:
-  image: docker.io/library/ubuntu:26.04
-  stage: test
+variables:
+  # CI image: built by the build-image job, tagged per commit. The image bakes
+  # in Julia 1.12.7, the project dependencies (precompiled) and the doc stack,
+  # so the jobs below only pay for a fast Pkg.instantiate() against the warm
+  # ~/.julia cache instead of ~10 minutes of setup.
+  CI_IMAGE: $CI_REGISTRY_IMAGE/ci
+
+# Builds (or re-tags) the CI image, using a docker-in-docker sidecar.
+# A full build only happens when Dockerfile/Project.toml/Manifest.toml change
+# (content hash); otherwise the existing image is re-tagged for this commit
+# (pull + tag + push, a few seconds). The other jobs always reference
+# $CI_IMAGE:sha-$CI_COMMIT_SHORT_SHA. Manual (opt-in) in merge requests.
+build-image:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - when: on_success
   script:
-    - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y libhdf5-openmpi-dev libopenmpi-dev
-    - echo "configure git"
-    - git config --global --add safe.directory "$(pwd)"   # repo location inside the runner (namespace-independent)
-    - echo "download julia 1.12.7"
-    - wget https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.7-linux-x86_64.tar.gz
-    - echo "untar archive"
-    - tar zxvf julia-1.12.7-linux-x86_64.tar.gz
-    - echo "copy to /opt"
-    - cp -r julia-1.12.7 /opt/
-    - echo "link to /usr"
-    - ln -s /opt/julia-1.12.7/bin/julia /usr/local/bin/julia
-    - echo "instantiate dependencies (MPI and HDF5 with system libraries)"
-    - julia -e 'ENV["JULIA_MPI_BINARY"]="system"; ENV["JULIA_HDF5_PATH"]="/usr/lib/x86_64-linux-gnu/hdf5/openmpi/"; using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.build()'
-    - echo "run unit tests"
+    - export TAG="sha-$CI_COMMIT_SHORT_SHA"
+    - export FILEHASH=$(git ls-tree HEAD -- Dockerfile Project.toml Manifest.toml test/Project.toml | awk '{print $3}' | sha256sum | cut -d" " -f1)
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - |
+      if docker manifest inspect "$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
+        echo "CI image inputs unchanged -> re-tag the existing image"
+        docker pull "$CI_IMAGE:sha-$FILEHASH"
+        docker tag  "$CI_IMAGE:sha-$FILEHASH" "$CI_IMAGE:$TAG"
+        docker push "$CI_IMAGE:$TAG"
+      else
+        echo "Building the CI image (Dockerfile/Project/Manifest changed)"
+        docker build -t "$CI_IMAGE:sha-$FILEHASH" -t "$CI_IMAGE:$TAG" .
+        docker push "$CI_IMAGE:sha-$FILEHASH"
+        docker push "$CI_IMAGE:$TAG"
+      fi
+
+test:
+  image: $CI_REGISTRY_IMAGE/ci:sha-$CI_COMMIT_SHORT_SHA
+  stage: test
+  needs: [build-image]
+  before_script:
+    # Git refuses operations on checkouts it does not "own" (recent git);
+    # $(pwd) keeps this namespace-independent.
+    - git config --global --add safe.directory "$(pwd)"
+  script:
+    # Deps are already installed + precompiled in the image; this only
+    # re-creates the environment record from the committed Manifests.
+    - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
+    - julia -e 'using Pkg; Pkg.activate("test"); Pkg.instantiate()'
     - julia --project test/runtests.jl
-  only:
-    - master
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 pages:
-  image: docker.io/library/ubuntu:26.04
+  image: $CI_REGISTRY_IMAGE/ci:sha-$CI_COMMIT_SHORT_SHA
   stage: deploy
+  needs: [build-image]
+  before_script:
+    - git config --global --add safe.directory "$(pwd)"
   script:
-    - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y libhdf5-openmpi-dev libopenmpi-dev
-    - echo "configure git"
-    - git config --global --add safe.directory "$(pwd)"   # repo location inside the runner (namespace-independent)
-    - echo "download julia 1.12.7"
-    - wget https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.7-linux-x86_64.tar.gz
-    - echo "untar archive"
-    - tar zxvf julia-1.12.7-linux-x86_64.tar.gz
-    - echo "copy to /opt"
-    - cp -r julia-1.12.7 /opt/
-    - echo "link to /usr"
-    - ln -s /opt/julia-1.12.7/bin/julia /usr/local/bin/julia
-    - echo "install dependencies for documentation"
-    - julia -e 'using Pkg; Pkg.add("Documenter"); Pkg.add("Literate"); Pkg.add("WGLMakie"); Pkg.add("JSServe"); Pkg.add("CairoMakie")'
-    - echo "install dependencies for MPI"
-    - julia -e 'using Pkg; Pkg.add("MPI"); Pkg.add("HDF5");'
-    - echo "build MPI and HDF5 with system libraries"
-    - julia -e 'ENV["JULIA_MPI_BINARY"]="system"; ENV["JULIA_HDF5_PATH"]="/usr/lib/x86_64-linux-gnu/hdf5/openmpi/"; using Pkg; Pkg.add("MPI"); Pkg.build("MPI"; verbose=true); using MPI; Pkg.add("HDF5");  Pkg.build("HDF5"; verbose=true)'
-    - echo "activate and instantiate"
-    - julia --project -e 'ENV["JULIA_MPI_BINARY"]="system"; ENV["JULIA_HDF5_PATH"]="/usr"; using Pkg; Pkg.activate("."); Pkg.instantiate()'
-    - echo "build documentation"
+    # Documentation stack (already cached/precompiled in the image).
+    - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.add(["Documenter","Literate","WGLMakie","JSServe","CairoMakie"])'
     - julia --project --color=yes docs/make.jl
     - echo "clean directory"
     - rm -rv docs/build/generated/res-* docs/build/generated/GPS.pvd
@@ -57,5 +79,5 @@ pages:
   artifacts:
     paths:
       - public
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

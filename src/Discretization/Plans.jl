@@ -1,11 +1,35 @@
+# CUDA (optional at load time): the GPU compact backend is a Thomas kernel
+# compiled by CUDA.jl. `using CUDA` re-exports the CUDACore pieces the kernel
+# file needs (@cuda, blockIdx/threadIdx/blockDim, CuArray). When CUDA cannot
+# be loaded (no driver, or a build without it), none of it is defined and
+# CompactPlan does not offer the GPU kernel backend.
+try
+    using CUDA
+catch
+    CUDA = nothing
+end
+if CUDA !== nothing
+    include("compact_gpu.jl")
+end
+
 "Abstract supertype for plan type."
 abstract type PlanType end
 "FFT plan"
 struct FFTPlan <: PlanType end
 "Finite difference plan"
 struct FiniteDifferencePlan <: PlanType end
-"Compact finite difference plan (6th-order periodic compact scheme)."
-struct CompactPlan <: PlanType end
+"Compact finite difference plan (6th-order periodic compact scheme).
+
+Backend selection (only relevant for GPU / non-Array grids):
+- `:auto` (default): Thomas on CPU, CUDA Thomas kernel on GPU;
+- `:thomas`: force the Thomas line-solve (CPU host loop or CUDA kernel);
+- `:spectral`: evaluate the operator as a Fourier multiplier (GPU, requires a
+  complex field; the fast periodic-only option)."
+struct CompactPlan{B} <: PlanType
+    "GPU backend: `:auto`, `:thomas` (CUDA kernel) or `:spectral` (Fourier multiplier)."
+    backend::B
+end
+CompactPlan(; backend::Symbol=:auto) = CompactPlan{typeof(backend)}(backend)
 
 export Plan, FFTPlan, FiniteDifferencePlan, CompactPlan
 
@@ -411,6 +435,89 @@ struct PlanCompactFFT3D{N} <: AbstractCompactPlan{N}
 end
 
 """
+$(TYPEDEF)
+
+GPU compact plan (CUDA Thomas kernel), 2D.
+
+The periodic compact relation is solved on the device with a dedicated
+kernel: one thread per grid line performs the Thomas forward sweep, the
+cyclic correction and the back substitution. The banded multipliers are
+precomputed per axis (`CompactAxisGPU`, device-side) so the kernel only
+runs the per-call elimination. `RealField` works as well as `ComplexField`
+(the kernel is dtype-agnostic), unlike the FFT-based plans.
+
+# Fields
+* `ax`, `a2x`, `ay`, `a2y`: per-axis compact multipliers (1st and 2nd
+  derivative), kept on the device.
+* `ϕytmp`, `dytmp`, `ddytmp`: preallocated scratch fields in the ``y``
+  layout used by the y-direction dispatch (avoids per-call GPU allocation).
+"""
+struct PlanCompactGPU2D{N} <: AbstractCompactPlan{N}
+    "reference to a field."
+    f::AbstractField2D
+    "pencil (or slab) in the ``x`` direction."
+    pen_x::Any
+    "pencil (or slab) in the ``y`` direction."
+    pen_y::Any
+    "compact multipliers for the first derivative along ``x`` (device)."
+    ax::CompactAxisGPU
+    "compact multipliers for the second derivative along ``x`` (device)."
+    a2x::CompactAxisGPU
+    "compact multipliers for the first derivative along ``y`` (device)."
+    ay::CompactAxisGPU
+    "compact multipliers for the second derivative along ``y`` (device)."
+    a2y::CompactAxisGPU
+    "temporary field distributed along ``y`` (input, transposed ``ϕ``)."
+    ϕytmp::AbstractArray
+    "temporary field distributed along ``y`` (first-derivative output)."
+    dytmp::AbstractArray
+    "temporary field distributed along ``y`` (second-derivative output)."
+    ddytmp::AbstractArray
+end
+
+"""
+$(TYPEDEF)
+
+3D analogue of `PlanCompactGPU2D` (see it for the rationale). The z
+direction is solved in the ``z`` layout and brought back through the ``y``
+layout, mirroring the CPU dispatch.
+"""
+struct PlanCompactGPU3D{N} <: AbstractCompactPlan{N}
+    "reference to a field."
+    f::AbstractField3D
+    "pencil (or slab) in the ``x`` direction."
+    pen_x::Any
+    "pencil (or slab) in the ``y`` direction."
+    pen_y::Any
+    "pencil (or slab) in the ``z`` direction."
+    pen_z::Any
+    "compact multipliers for the first derivative along ``x`` (device)."
+    ax::CompactAxisGPU
+    "compact multipliers for the second derivative along ``x`` (device)."
+    a2x::CompactAxisGPU
+    "compact multipliers for the first derivative along ``y`` (device)."
+    ay::CompactAxisGPU
+    "compact multipliers for the second derivative along ``y`` (device)."
+    a2y::CompactAxisGPU
+    "compact multipliers for the first derivative along ``z`` (device)."
+    az::CompactAxisGPU
+    "compact multipliers for the second derivative along ``z`` (device)."
+    a2z::CompactAxisGPU
+    "temporary field distributed along ``y`` (input, transposed ``ϕ``)."
+    ϕytmp::AbstractArray
+    "temporary field distributed along ``y`` (derivative output)."
+    dytmp::AbstractArray
+    "temporary field distributed along ``y`` (second-derivative output)."
+    ddytmp::AbstractArray
+    "temporary field distributed along ``z`` (input, transposed ``ϕ``)."
+    ϕztmp::AbstractArray
+    "temporary field distributed along ``z`` (first-derivative output)."
+    dztmp::AbstractArray
+    "temporary field distributed along ``z`` (second-derivative output)."
+    ddztmp::AbstractArray
+end
+
+"""
 $(TYPEDSIGNATURES)
 
 Returns a 2D plan. By default a FFT plan is returned.
@@ -466,7 +573,7 @@ function Plan(f::F;
                             plan_x, plan_y,
                             ξx, ξy,
                             datax, datay)
-    elseif typeof(t) == CompactPlan
+    elseif t isa CompactPlan
         if A === Array
             # CPU: compact Thomas solve (fastest compact path on CPU).
             ax = compact_setup(f.g.nx, f.g.Δx, 1)
@@ -476,24 +583,43 @@ function Plan(f::F;
             ϕytmp = PencilArray{FFT}(undef, pen_y)
             return PlanCompact2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp)
         end
-        # GPU (or any non-Array backend): the Thomas line-solve needs scalar
-        # indexing on the local line, which GPU arrays forbid from the host.
-        # The periodic compact operator is a circulant matrix, hence a Fourier
-        # multiplier, so it is evaluated through the standard FFT machinery
-        # instead (see PlanCompactFFT2D).
-        if !(eltype(f.data[1]) <: Complex)
-            error("CompactPlan on a $(A) grid requires a complex field (RealField " *
-                  "is not supported, like the standard FFTPlan). Build the field " *
-                  "with ComplexField(), or use FFTPlan()/FiniteDifferencePlan().")
+        # GPU (or any non-Array backend).
+        if t.backend === :spectral
+            # Spectral path: the periodic compact operator is a circulant
+            # matrix, hence a Fourier multiplier, evaluated through the
+            # standard FFT machinery (see PlanCompactFFT2D). Requires a
+            # complex field, like the standard FFTPlan.
+            if !(eltype(f.data[1]) <: Complex)
+                error("CompactPlan(backend=:spectral) on a $(A) grid requires a complex field " *
+                      "(RealField is not supported, like the standard FFTPlan). Build the field " *
+                      "with ComplexField(), or use the default backend (CUDA Thomas kernel, " *
+                      "which supports RealField), or FFTPlan()/FiniteDifferencePlan().")
+            end
+            pfft = Plan(f; t=FFTPlan())
+            ξx = A(fftfreq(f.g.nx, 2π / f.g.Δx))
+            ξy = A(fftfreq(f.g.ny, 2π / f.g.Δy))
+            return PlanCompactFFT2D{N}(pfft,
+                                       compact_multiplier(ξx, f.g.Δx, 1),
+                                       compact_multiplier(ξx, f.g.Δx, 2),
+                                       compact_multiplier(ξy, f.g.Δy, 1),
+                                       compact_multiplier(ξy, f.g.Δy, 2))
         end
-        pfft = Plan(f; t=FFTPlan())
-        ξx = A(fftfreq(f.g.nx, 2π / f.g.Δx))
-        ξy = A(fftfreq(f.g.ny, 2π / f.g.Δy))
-        return PlanCompactFFT2D{N}(pfft,
-                                   compact_multiplier(ξx, f.g.Δx, 1),
-                                   compact_multiplier(ξx, f.g.Δx, 2),
-                                   compact_multiplier(ξy, f.g.Δy, 1),
-                                   compact_multiplier(ξy, f.g.Δy, 2))
+        # Default (:auto / :thomas): dedicated CUDA Thomas kernel. CUDA must
+        # be available (it is a hard dependency of this package, but the
+        # kernels are only compiled when it loads).
+        if CUDA === nothing
+            error("CompactPlan(backend=$(t.backend)) on a $(A) grid needs CUDA, " *
+                  "which is not available in this build. Use CompactPlan(backend=:spectral) " *
+                  "(Fourier multiplier, complex fields only) instead.")
+        end
+        ax = compact_setup_gpu(f.g.nx, f.g.Δx, 1)
+        a2x = compact_setup_gpu(f.g.nx, f.g.Δx, 2)
+        ay = compact_setup_gpu(f.g.ny, f.g.Δy, 1)
+        a2y = compact_setup_gpu(f.g.ny, f.g.Δy, 2)
+        ϕytmp = PencilArray{FFT}(undef, pen_y)
+        dytmp = PencilArray{FFT}(undef, pen_y)
+        ddytmp = PencilArray{FFT}(undef, pen_y)
+        return PlanCompactGPU2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp, dytmp, ddytmp)
     else
         # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)
@@ -566,7 +692,7 @@ function Plan(f::F;
                             plan_x, plan_y, plan_z,
                             ξx, ξy, ξz,
                             datax, datay, dataz)
-    elseif typeof(t) == CompactPlan
+    elseif t isa CompactPlan
         if A === Array
             # CPU: compact Thomas solve (fastest compact path on CPU).
             ax = compact_setup(f.g.nx, f.g.Δx, 1)
@@ -579,26 +705,47 @@ function Plan(f::F;
             ϕztmp = PencilArray{FFT}(undef, pen_z)
             return PlanCompact3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z, ϕytmp, ϕztmp)
         end
-        # GPU (or any non-Array backend): evaluate the periodic compact
-        # operator as a Fourier multiplier through the standard FFT machinery
-        # (the Thomas line-solve needs scalar indexing, unavailable on GPU).
-        # See PlanCompactFFT3D.
-        if !(eltype(f.data[1]) <: Complex)
-            error("CompactPlan on a $(A) grid requires a complex field (RealField " *
-                  "is not supported, like the standard FFTPlan). Build the field " *
-                  "with ComplexField(), or use FFTPlan()/FiniteDifferencePlan().")
+        # GPU (or any non-Array backend).
+        if t.backend === :spectral
+            # See the 2D dispatch: Fourier multiplier through the standard
+            # FFT machinery (complex fields only).
+            if !(eltype(f.data[1]) <: Complex)
+                error("CompactPlan(backend=:spectral) on a $(A) grid requires a complex field " *
+                      "(RealField is not supported, like the standard FFTPlan). Build the field " *
+                      "with ComplexField(), or use the default backend (CUDA Thomas kernel, " *
+                      "which supports RealField), or FFTPlan()/FiniteDifferencePlan().")
+            end
+            pfft = Plan(f; t=FFTPlan())
+            ξx = A(fftfreq(f.g.nx, 2π / f.g.Δx))
+            ξy = A(fftfreq(f.g.ny, 2π / f.g.Δy))
+            ξz = A(fftfreq(f.g.nz, 2π / f.g.Δz))
+            return PlanCompactFFT3D{N}(pfft,
+                                       compact_multiplier(ξx, f.g.Δx, 1),
+                                       compact_multiplier(ξx, f.g.Δx, 2),
+                                       compact_multiplier(ξy, f.g.Δy, 1),
+                                       compact_multiplier(ξy, f.g.Δy, 2),
+                                       compact_multiplier(ξz, f.g.Δz, 1),
+                                       compact_multiplier(ξz, f.g.Δz, 2))
         end
-        pfft = Plan(f; t=FFTPlan())
-        ξx = A(fftfreq(f.g.nx, 2π / f.g.Δx))
-        ξy = A(fftfreq(f.g.ny, 2π / f.g.Δy))
-        ξz = A(fftfreq(f.g.nz, 2π / f.g.Δz))
-        return PlanCompactFFT3D{N}(pfft,
-                                   compact_multiplier(ξx, f.g.Δx, 1),
-                                   compact_multiplier(ξx, f.g.Δx, 2),
-                                   compact_multiplier(ξy, f.g.Δy, 1),
-                                   compact_multiplier(ξy, f.g.Δy, 2),
-                                   compact_multiplier(ξz, f.g.Δz, 1),
-                                   compact_multiplier(ξz, f.g.Δz, 2))
+        if CUDA === nothing
+            error("CompactPlan(backend=$(t.backend)) on a $(A) grid needs CUDA, " *
+                  "which is not available in this build. Use CompactPlan(backend=:spectral) " *
+                  "(Fourier multiplier, complex fields only) instead.")
+        end
+        ax = compact_setup_gpu(f.g.nx, f.g.Δx, 1)
+        a2x = compact_setup_gpu(f.g.nx, f.g.Δx, 2)
+        ay = compact_setup_gpu(f.g.ny, f.g.Δy, 1)
+        a2y = compact_setup_gpu(f.g.ny, f.g.Δy, 2)
+        az = compact_setup_gpu(f.g.nz, f.g.Δz, 1)
+        a2z = compact_setup_gpu(f.g.nz, f.g.Δz, 2)
+        ϕytmp = PencilArray{FFT}(undef, pen_y)
+        dytmp = PencilArray{FFT}(undef, pen_y)
+        ddytmp = PencilArray{FFT}(undef, pen_y)
+        ϕztmp = PencilArray{FFT}(undef, pen_z)
+        dztmp = PencilArray{FFT}(undef, pen_z)
+        ddztmp = PencilArray{FFT}(undef, pen_z)
+        return PlanCompactGPU3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z,
+                                   ϕytmp, dytmp, ddytmp, ϕztmp, dztmp, ddztmp)
     else
         # create arrays for Finite Difference
         ϕxtmp = PencilArray{FFT}(undef, pen_x)

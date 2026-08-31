@@ -551,6 +551,104 @@ function computeDerivatives!(gf::GradientRotField3D, p::AbstractCompactPlan, ϕt
     return nothing
 end
 
+# ==========================================================================
+# GPU compact (CUDA Thomas kernel) derivatives.
+#
+# These dispatch on the PlanCompactGPU* plan types. The kernel solves the
+# periodic compact relation along the leading dimension of a raw CuArray
+# (one thread per line); the y/z directions are handled with PencilArray
+# transposes that bring the derivative axis to the front, exactly like the
+# CPU compact dispatch. Scratch buffers are preallocated in the plan.
+# ==========================================================================
+
+## 2D
+function computeDerivatives!(gf::GradientField2D, p::PlanCompactGPU2D, ϕt::AbstractArray)
+    nx = p.ax.n
+    # x direction
+    _compact_cu_1line!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    _compact_cu_2line!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    _compact_cu_1line!(parent(p.dytmp), parent(p.ϕytmp), ny, p.ay)
+    _compact_cu_2line!(parent(p.ddytmp), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, p.dytmp)
+    transpose!(gf.ddy, p.ddytmp)
+    return nothing
+end
+
+function computeDerivatives!(gf::GradientRotField2D, p::PlanCompactGPU2D, ϕt::AbstractArray)
+    nx = p.ax.n
+    grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y))
+    x, y = grid.x, grid.y
+    # x direction
+    _compact_cu_1line!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    gf.rx .= y .* gf.dx
+    _compact_cu_2line!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    _compact_cu_1line!(parent(p.dytmp), parent(p.ϕytmp), ny, p.ay)
+    _compact_cu_2line!(parent(p.ddytmp), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, p.dytmp)
+    transpose!(gf.ddy, p.ddytmp)
+    gf.ry .= -x .* gf.dy
+    return nothing
+end
+
+## 3D
+function computeDerivatives!(gf::GradientField3D, p::PlanCompactGPU3D, ϕt::AbstractArray)
+    nx = p.ax.n
+    # x direction
+    _compact_cu_1line3!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    _compact_cu_2line3!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    _compact_cu_1line3!(parent(p.dytmp), parent(p.ϕytmp), ny, p.ay)
+    _compact_cu_2line3!(parent(p.ddytmp), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, p.dytmp)
+    transpose!(gf.ddy, p.ddytmp)
+    # z direction (z-layout <- y-layout, then back x-layout <- y-layout)
+    transpose!(p.ϕztmp, p.ϕytmp)
+    nz = p.az.n
+    _compact_cu_1line3!(parent(p.dztmp), parent(p.ϕztmp), nz, p.az)
+    _compact_cu_2line3!(parent(p.ddztmp), parent(p.ϕztmp), nz, p.a2z)
+    transpose!(p.dytmp, p.dztmp)
+    transpose!(p.ddytmp, p.ddztmp)
+    transpose!(gf.dz, p.dytmp)
+    transpose!(gf.ddz, p.ddytmp)
+    return nothing
+end
+
+function computeDerivatives!(gf::GradientRotField3D, p::PlanCompactGPU3D, ϕt::AbstractArray)
+    nx = p.ax.n
+    grid = localgrid(p.pen_x, (p.f.g.x, p.f.g.y, p.f.g.z))
+    x, y = grid.x, grid.y
+    # x direction
+    _compact_cu_1line3!(parent(gf.dx), parent(ϕt), nx, p.ax)
+    gf.rx .= y .* gf.dx
+    _compact_cu_2line3!(parent(gf.ddx), parent(ϕt), nx, p.a2x)
+    # y direction
+    transpose!(p.ϕytmp, ϕt)
+    ny = p.ay.n
+    _compact_cu_1line3!(parent(p.dytmp), parent(p.ϕytmp), ny, p.ay)
+    _compact_cu_2line3!(parent(p.ddytmp), parent(p.ϕytmp), ny, p.a2y)
+    transpose!(gf.dy, p.dytmp)
+    transpose!(gf.ddy, p.ddytmp)
+    gf.ry .= -x .* gf.dy
+    # z direction (z-layout <- y-layout, then back x-layout <- y-layout)
+    transpose!(p.ϕztmp, p.ϕytmp)
+    nz = p.az.n
+    _compact_cu_1line3!(parent(p.dztmp), parent(p.ϕztmp), nz, p.az)
+    _compact_cu_2line3!(parent(p.ddztmp), parent(p.ϕztmp), nz, p.a2z)
+    transpose!(p.dytmp, p.dztmp)
+    transpose!(p.ddytmp, p.ddztmp)
+    transpose!(gf.dz, p.dytmp)
+    transpose!(gf.ddz, p.ddytmp)
+    return nothing
+end
+
 # Finite difference helper functions
 function computedxddx!(ϕt::AbstractArray{A,2}, dx::AbstractArray{A,2},
                        ddx::AbstractArray{A,2}, Δx::Real; order::Integer=2) where {A}

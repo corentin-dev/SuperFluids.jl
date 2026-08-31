@@ -56,15 +56,22 @@ build-image:
     - export FILEHASH=$(git ls-tree HEAD -- Dockerfile Project.toml Manifest.toml test/Project.toml | awk '{print $3}' | sha256sum | cut -d" " -f1)
     - buildah login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - |
-      if buildah pull "$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
+      # Flags used in this runner's pod (same as the existing in-house
+      # buildah jobs): vfs storage as a flag (more reliable than the config
+      # file), seccomp unconfined (the pod's seccomp profile can otherwise
+      # block syscalls needed for the chroot build), docker image format.
+      STORAGE="--storage-driver vfs"
+      if buildah pull $STORAGE "$CI_IMAGE:sha-$FILEHASH" >/dev/null 2>&1; then
         echo "CI image inputs unchanged -> re-tag the existing image"
-        buildah tag  "$CI_IMAGE:sha-$FILEHASH" "$CI_IMAGE:$TAG"
-        buildah push "$CI_IMAGE:$TAG"
+        buildah tag  $STORAGE "$CI_IMAGE:sha-$FILEHASH" "$CI_IMAGE:$TAG"
+        buildah push $STORAGE "$CI_IMAGE:$TAG"
       else
         echo "Building the CI image (Dockerfile/Project/Manifest changed)"
-        buildah bud -t "$CI_IMAGE:sha-$FILEHASH" -t "$CI_IMAGE:$TAG" .
-        buildah push "$CI_IMAGE:sha-$FILEHASH"
-        buildah push "$CI_IMAGE:$TAG"
+        buildah bud $STORAGE --security-opt seccomp=unconfined --format docker \
+          --no-cache --pull-always --platform linux/amd64 \
+          -t "$CI_IMAGE:sha-$FILEHASH" -t "$CI_IMAGE:$TAG" .
+        buildah push $STORAGE "$CI_IMAGE:sha-$FILEHASH"
+        buildah push $STORAGE "$CI_IMAGE:$TAG"
       fi
 
 test:

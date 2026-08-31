@@ -51,7 +51,7 @@ if run_example
 end
 
 makedocs(; authors="Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
-         repo="https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl",
+         repo="https://plmlab.math.cnrs.fr/lothode/SuperFluids.jl",
          sitename="SuperFluids.jl",
          format=Documenter.HTML(),
          doctest=false,

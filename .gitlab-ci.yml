@@ -8,7 +8,7 @@ test:
   script:
     - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y libhdf5-openmpi-dev libopenmpi-dev
     - echo "configure git"
-    - git config --global --add safe.directory /builds/lmrs/num/SuperFluids.jl
+    - git config --global --add safe.directory "$(pwd)"   # repo location inside the runner (namespace-independent)
     - echo "download julia 1.12.7"
     - wget https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.7-linux-x86_64.tar.gz
     - echo "untar archive"
@@ -31,7 +31,7 @@ pages:
   script:
     - apt-get update -qq && apt-get install -y git curl wget && apt-get install -y libhdf5-openmpi-dev libopenmpi-dev
     - echo "configure git"
-    - git config --global --add safe.directory /builds/lmrs/num/SuperFluids.jl
+    - git config --global --add safe.directory "$(pwd)"   # repo location inside the runner (namespace-independent)
     - echo "download julia 1.12.7"
     - wget https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.7-linux-x86_64.tar.gz
     - echo "untar archive"

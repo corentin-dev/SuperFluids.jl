@@ -24,12 +24,35 @@ Backend selection (only relevant for GPU / non-Array grids):
 - `:auto` (default): Thomas on CPU, CUDA Thomas kernel on GPU;
 - `:thomas`: force the Thomas line-solve (CPU host loop or CUDA kernel);
 - `:spectral`: evaluate the operator as a Fourier multiplier (GPU, requires a
-  complex field; the fast periodic-only option)."
-struct CompactPlan{B} <: PlanType
+  complex field; the fast periodic-only option).
+
+Boundary conditions (`bcs`): a tuple of one entry per axis giving the
+condition on that axis — `0` (or `:periodic`) for the periodic compact
+scheme, `1` (or `:dirichlet`) for the homogeneous-Dirichlet non-periodic
+scheme (GPS `cdl==2` / Xcompact3d `ncl==2`). Defaults to all periodic. Axes
+may be mixed (e.g. `bcs=(1, 0)` bounds `x` and keeps `y` periodic)."
+struct CompactPlan{B,BCS} <: PlanType
     "GPU backend: `:auto`, `:thomas` (CUDA kernel) or `:spectral` (Fourier multiplier)."
     backend::B
+    "per-axis boundary condition: `0`/`:periodic` or `1`/`:dirichlet`."
+    bcs::BCS
 end
-CompactPlan(; backend::Symbol=:auto) = CompactPlan{typeof(backend)}(backend)
+function CompactPlan(; backend::Symbol=:auto, bcs = nothing)
+    b = bcs === nothing ? () : bcs
+    return CompactPlan{typeof(backend), typeof(b)}(backend, b)
+end
+
+# Normalise a single BC entry to an integer (0 periodic, 1 Dirichlet).
+function _bc_int(bc)
+    if bc == 0 || bc === :periodic
+        return 0
+    elseif bc == 1 || bc === :dirichlet
+        return 1
+    else
+        error("CompactPlan: unsupported boundary condition $(repr(bc)) " *
+              "(use 0/:periodic or 1/:dirichlet).")
+    end
+end
 
 export Plan, FFTPlan, FiniteDifferencePlan, CompactPlan
 
@@ -42,6 +65,9 @@ abstract type AbstractFDPlan{N} end
 "Abstract supertype for Compact Finite Difference plans."
 abstract type AbstractCompactPlan{N} end
 
+"Abstract supertype for per-axis compact multipliers (periodic or bounded)."
+abstract type AbstractCompactAxis{R} end
+
 """
 $(TYPEDEF)
 
@@ -53,7 +79,7 @@ precomputed here, so each evaluation only performs the stencil plus two sweeps.
 
 $(TYPEDFIELDS)
 """
-struct CompactAxis{R}
+struct CompactAxis{R} <: AbstractCompactAxis{R}
     "number of grid points along the axis."
     n::Int
     "derivative order (1 or 2)."
@@ -74,6 +100,63 @@ struct CompactAxis{R}
     t::Vector{R}
     "cyclic correction denominator."
     denom::R
+end
+
+"""
+$(TYPEDEF)
+
+Precomputed multipliers for the **non-periodic (homogeneous Dirichlet)** compact
+finite-difference derivative on one axis. Built by [`compact_setup_np`](@ref).
+
+The operator is the 6th-order compact derivative in the interior, with one-sided
+(boundary) and relaxed rows at the two ends so that the compact relation is
+closed without wrapping. Unlike the periodic case, the LHS is a plain
+(non-cyclic) tridiagonal matrix whose sub/super diagonals are row-varying near
+the boundary; it is solved with an ordinary Thomas sweep (no rank-1 cyclic
+correction). The stencil rows and the LHS diagonals are the GPS `cdl==2`
+operators, cross-checked with Xcompact3d (`ncl==2`).
+
+$(TYPEDFIELDS)
+"""
+struct CompactAxisNP{R} <: AbstractCompactAxis{R}
+    "number of grid points along the axis."
+    n::Int
+    "derivative order (1 or 2)."
+    order::Int
+    "interior compact coefficient (1/3 or 2/11)."
+    alpha::R
+    "interior stencil coefficient a."
+    a::R
+    "interior stencil coefficient b."
+    b::R
+    "one-sided 1st-derivative boundary weights (rows 1 and n)."
+    af1::R
+    bf1::R
+    cf1::R
+    afn::R
+    bfn::R
+    cfn::R
+    "relaxed 1st-derivative weight (rows 2 and n-1)."
+    af2::R
+    "one-sided 2nd-derivative boundary weights (rows 1 and n)."
+    as1::R
+    bs1::R
+    cs1::R
+    ds1::R
+    asn::R
+    bsn::R
+    csn::R
+    dsn::R
+    "relaxed 2nd-derivative weight (rows 2 and n-1)."
+    as2::R
+    "tridiagonal sub-diagonal (element (i, i-1), row-varying near the ends)."
+    sub::Vector{R}
+    "tridiagonal super-diagonal (element (i, i+1), row-varying near the ends)."
+    sup::Vector{R}
+    "Thomas forward multipliers."
+    s::Vector{R}
+    "reciprocals of the Thomas pivots."
+    w::Vector{R}
 end
 
 """$(TYPEDSIGNATURES)
@@ -167,6 +250,103 @@ function compact_setup(n::Int, Δ::Real, order::Int)
     end
     denom = one(R) + t[1] - alpha*t[n]
     return CompactAxis{R}(n, order, alpha, a, b, s, w, fv, t, denom)
+end
+
+"""$(TYPEDSIGNATURES)
+
+Build the precomputed multipliers for the **non-periodic (homogeneous
+Dirichlet)** compact derivative along an axis of `n` points, spacing `Δ`,
+derivative `order` (1 or 2).
+
+The interior is the same 6th-order compact stencil as [`compact_setup`](@ref).
+At each end, the two boundary rows use one-sided stencils and the two adjacent
+rows are relaxed (lower-order right-hand side with a modified LHS row), so the
+compact relation is closed without wrapping — the GPS `cdl==2` / Xcompact3d
+`ncl==2` operators:
+
+- 1st derivative (`α=1/3`, `a=(7/9)/Δ`, `b=(1/36)/Δ`):
+  row 1 `(−5u₁+4u₂+u₃)/2Δ`, row 2 `(3/4Δ)(u₃−u₁)`, mirrored rows `n-1`, `n`;
+  LHS sub/super diagonals `2, 1/4, α,…, α, 1/4, 2` (row-varying at the ends).
+- 2nd derivative (`α=2/11`, `a=(12/11)/Δ²`, `b=(3/44)/Δ²`):
+  row 1 `(13u₁−27u₂+15u₃−u₄)/Δ²`, row 2 `(6/5Δ²)(u₃−2u₂+u₁)`, mirrored;
+  LHS sub/super diagonals `11, 1/10, α,…, α, 1/10, 11`.
+
+The LHS is a plain tridiagonal matrix (no cyclic corner), so the Thomas
+factorization has no cyclic correction: the precomputed `s`, `w` suffice.
+"""
+function compact_setup_np(n::Int, Δ::Real, order::Int)
+    if n < 8
+        error("compact finite-difference scheme requires at least 8 points along the axis (got $n)")
+    end
+    R = eltype(Δ)
+    if order == 1
+        alpha = R(1)/R(3)
+        a = (R(7)/R(9))/Δ
+        b = (R(1)/R(36))/Δ
+        af1 = -R(5)/R(2)/Δ; bf1 = R(2)/Δ; cf1 = R(1)/R(2)/Δ
+        af2 = R(3)/R(4)/Δ
+        afn = -R(5)/R(2)/Δ; bfn = R(2)/Δ; cfn = R(1)/R(2)/Δ
+        as1 = zero(R); bs1 = zero(R); cs1 = zero(R); ds1 = zero(R)
+        asn = zero(R); bsn = zero(R); csn = zero(R); dsn = zero(R)
+        as2 = zero(R)
+        r1, r2, rn1, rn = R(2), R(1)/R(4), R(1)/R(4), R(2)
+    elseif order == 2
+        alpha = R(2)/R(11)
+        a = (R(12)/R(11))/Δ^2
+        b = (R(3)/R(44))/Δ^2
+        af1 = zero(R); bf1 = zero(R); cf1 = zero(R)
+        af2 = zero(R)
+        afn = zero(R); bfn = zero(R); cfn = zero(R)
+        as1 = R(13)/Δ^2; bs1 = -R(27)/Δ^2; cs1 = R(15)/Δ^2; ds1 = -R(1)/Δ^2
+        as2 = R(6)/R(5)/Δ^2
+        asn = R(13)/Δ^2; bsn = -R(27)/Δ^2; csn = R(15)/Δ^2; dsn = -R(1)/Δ^2
+        r1, r2, rn1, rn = R(11), R(1)/R(10), R(1)/R(10), R(11)
+    else
+        error("compact_setup_np: order must be 1 or 2")
+    end
+    # LHS tridiagonal, row-varying near the ends (homogeneous Dirichlet).
+    # sub[i] = element (i, i-1), sup[i] = element (i, i+1); diagonal = 1.
+    sub = fill(alpha, n); sup = fill(alpha, n)
+    sub[1] = zero(R); sup[1] = r1          # row 1 (one-sided)
+    sub[2] = r2;    sup[2] = r2            # row 2 (relaxed)
+    sup[n - 1] = rn1; sub[n - 1] = rn1     # row n-1 (relaxed)
+    sup[n] = zero(R); sub[n] = rn          # row n (one-sided)
+    # Plain (non-cyclic) Thomas factorization, GPS `prepare_compact`.
+    w = ones(R, n)                          # w = 1/c, c = 1 (diagonal)
+    s = zeros(R, n)
+    for i in 2:n
+        s[i] = sub[i] / w[i - 1]
+        w[i] = w[i] - sup[i - 1] * s[i]
+    end
+    for i in 1:n
+        w[i] = R(1) / w[i]
+    end
+    return CompactAxisNP{R}(n, order, alpha, a, b, af1, bf1, cf1, afn, bfn, cfn, af2,
+                            as1, bs1, cs1, ds1, asn, bsn, csn, dsn, as2,
+                            sub, sup, s, w)
+end
+
+"""$(TYPEDSIGNATURES)
+
+Build the per-axis compact multipliers for one axis of `n` points, spacing
+`Δ`, derivative `order` (1 or 2) and boundary condition `bc`
+(`0`/`:periodic` → [`compact_setup`](@ref), `1`/`:dirichlet` →
+[`compact_setup_np`](@ref)).
+"""
+function compact_axis(n::Int, Δ::Real, order::Int, bc)
+    return _bc_int(bc) == 1 ? compact_setup_np(n, Δ, order) : compact_setup(n, Δ, order)
+end
+
+"""$(TYPEDSIGNATURES)
+
+Resolve the `bcs` of a `CompactPlan` to a tuple of `dim` integers (one per
+axis, `0` periodic / `1` Dirichlet); an empty `bcs` means all periodic.
+"""
+function _compact_bcs(t::CompactPlan, dim::Int)
+    bcs = isempty(t.bcs) ? ntuple(i -> 0, Val(dim)) : t.bcs
+    length(bcs) == dim ||
+        error("CompactPlan: bcs must have one entry per axis ($dim), got $(length(bcs)).")
+    return ntuple(i -> _bc_int(bcs[i]), Val(dim))
 end
 
 """
@@ -328,13 +508,13 @@ struct PlanCompact2D{N} <: AbstractCompactPlan{N}
     "pencil (or slab) in the ``y`` direction."
     pen_y::Any
     "compact multipliers for the first derivative along ``x``."
-    ax::CompactAxis
+    ax::AbstractCompactAxis
     "compact multipliers for the second derivative along ``x``."
-    a2x::CompactAxis
+    a2x::AbstractCompactAxis
     "compact multipliers for the first derivative along ``y``."
-    ay::CompactAxis
+    ay::AbstractCompactAxis
     "compact multipliers for the second derivative along ``y``."
-    a2y::CompactAxis
+    a2y::AbstractCompactAxis
     "temporary field distributed along ``y``."
     ϕytmp::AbstractArray
 end
@@ -356,17 +536,17 @@ struct PlanCompact3D{N} <: AbstractCompactPlan{N}
     "pencil (or slab) in the ``z`` direction."
     pen_z::Any
     "compact multipliers for the first derivative along ``x``."
-    ax::CompactAxis
+    ax::AbstractCompactAxis
     "compact multipliers for the second derivative along ``x``."
-    a2x::CompactAxis
+    a2x::AbstractCompactAxis
     "compact multipliers for the first derivative along ``y``."
-    ay::CompactAxis
+    ay::AbstractCompactAxis
     "compact multipliers for the second derivative along ``y``."
-    a2y::CompactAxis
+    a2y::AbstractCompactAxis
     "compact multipliers for the first derivative along ``z``."
-    az::CompactAxis
+    az::AbstractCompactAxis
     "compact multipliers for the second derivative along ``z``."
-    a2z::CompactAxis
+    a2z::AbstractCompactAxis
     "temporary field distributed along ``y``."
     ϕytmp::AbstractArray
     "temporary field distributed along ``z``."
@@ -575,15 +755,24 @@ function Plan(f::F;
                             datax, datay)
     elseif t isa CompactPlan
         if A === Array
-            # CPU: compact Thomas solve (fastest compact path on CPU).
-            ax = compact_setup(f.g.nx, f.g.Δx, 1)
-            a2x = compact_setup(f.g.nx, f.g.Δx, 2)
-            ay = compact_setup(f.g.ny, f.g.Δy, 1)
-            a2y = compact_setup(f.g.ny, f.g.Δy, 2)
+            # CPU: compact Thomas solve (fastest compact path on CPU). Each axis
+            # is built for its boundary condition (periodic or Dirichlet).
+            bcx, bcy = _compact_bcs(t, 2)
+            ax = compact_axis(f.g.nx, f.g.Δx, 1, bcx)
+            a2x = compact_axis(f.g.nx, f.g.Δx, 2, bcx)
+            ay = compact_axis(f.g.ny, f.g.Δy, 1, bcy)
+            a2y = compact_axis(f.g.ny, f.g.Δy, 2, bcy)
             ϕytmp = PencilArray{FFT}(undef, pen_y)
             return PlanCompact2D{N}(f, pen_x, pen_y, ax, a2x, ay, a2y, ϕytmp)
         end
         # GPU (or any non-Array backend).
+        # The non-periodic (Dirichlet) axes need the NP line kernel, which is
+        # CPU-only for now (v1).
+        if any(bc -> bc == 1, _compact_bcs(t, 2))
+            error("CompactPlan with Dirichlet axes (bcs=1) is not supported on a $(A) grid " *
+                  "yet (the non-periodic kernel is CPU-only). Use a CPU field, or keep " *
+                  "those axes periodic (bcs=0).")
+        end
         if t.backend === :spectral
             # Spectral path: the periodic compact operator is a circulant
             # matrix, hence a Fourier multiplier, evaluated through the
@@ -694,18 +883,27 @@ function Plan(f::F;
                             datax, datay, dataz)
     elseif t isa CompactPlan
         if A === Array
-            # CPU: compact Thomas solve (fastest compact path on CPU).
-            ax = compact_setup(f.g.nx, f.g.Δx, 1)
-            a2x = compact_setup(f.g.nx, f.g.Δx, 2)
-            ay = compact_setup(f.g.ny, f.g.Δy, 1)
-            a2y = compact_setup(f.g.ny, f.g.Δy, 2)
-            az = compact_setup(f.g.nz, f.g.Δz, 1)
-            a2z = compact_setup(f.g.nz, f.g.Δz, 2)
+            # CPU: compact Thomas solve (fastest compact path on CPU). Each axis
+            # is built for its boundary condition (periodic or Dirichlet).
+            bcx, bcy, bcz = _compact_bcs(t, 3)
+            ax = compact_axis(f.g.nx, f.g.Δx, 1, bcx)
+            a2x = compact_axis(f.g.nx, f.g.Δx, 2, bcx)
+            ay = compact_axis(f.g.ny, f.g.Δy, 1, bcy)
+            a2y = compact_axis(f.g.ny, f.g.Δy, 2, bcy)
+            az = compact_axis(f.g.nz, f.g.Δz, 1, bcz)
+            a2z = compact_axis(f.g.nz, f.g.Δz, 2, bcz)
             ϕytmp = PencilArray{FFT}(undef, pen_y)
             ϕztmp = PencilArray{FFT}(undef, pen_z)
             return PlanCompact3D{N}(f, pen_x, pen_y, pen_z, ax, a2x, ay, a2y, az, a2z, ϕytmp, ϕztmp)
         end
         # GPU (or any non-Array backend).
+        # The non-periodic (Dirichlet) axes need the NP line kernel, which is
+        # CPU-only for now (v1).
+        if any(bc -> bc == 1, _compact_bcs(t, 3))
+            error("CompactPlan with Dirichlet axes (bcs=1) is not supported on a $(A) grid " *
+                  "yet (the non-periodic kernel is CPU-only). Use a CPU field, or keep " *
+                  "those axes periodic (bcs=0).")
+        end
         if t.backend === :spectral
             # See the 2D dispatch: Fourier multiplier through the standard
             # FFT machinery (complex fields only).

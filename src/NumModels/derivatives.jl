@@ -353,6 +353,113 @@ function _compact_solve!(r, n, c::CompactAxis)
     return r
 end
 
+"""$(TYPEDSIGNATURES)
+
+In-place plain tridiagonal solve for one **non-periodic** compact line `r`
+(already holding the stencil right-hand side), using the precomputed Thomas
+multipliers in `c`. No cyclic correction: the LHS is a plain tridiagonal
+matrix, so two sweeps (forward, backward) are enough.
+"""
+function _compact_solve_np!(r, n, c::CompactAxisNP)
+    s, w, sup = c.s, c.w, c.sup
+    @inbounds begin
+        for i in 2:n
+            r[i] -= r[i - 1] * s[i]
+        end
+        r[n] *= w[n]
+        for i in (n - 1):-1:1
+            r[i] = (r[i] - sup[i] * r[i + 1]) * w[i]
+        end
+    end
+    return r
+end
+
+# --- Non-periodic (homogeneous Dirichlet) compact line kernels --------------
+# Overloads of the `compact*line!` functions, selected by the per-axis type
+# (`CompactAxisNP`). Same structure as the periodic kernels, but the two end
+# rows use one-sided stencils and the adjacent rows are relaxed (see
+# `compact_setup_np`), and the solve is a plain tridiagonal Thomas (no cyclic
+# correction). The stencil is dtype-agnostic (real or complex fields). This is
+# what makes mixed axes (e.g. x periodic, y bounded) work: the plan dispatch
+# calls `compact1line!(…, p.ax)` and Julia picks the periodic or NP method
+# from the type of `p.ax`.
+
+function compact1line!(a_out, a_in, n, c::CompactAxisNP)
+    a, b = c.a, c.b
+    for j in axes(a_in, 2)
+        r = @view(a_out[:, j])
+        u = @view(a_in[:, j])
+        @inbounds begin
+            r[1] = c.af1 * u[1] + c.bf1 * u[2] + c.cf1 * u[3]
+            r[2] = c.af2 * (u[3] - u[1])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - u[i - 1]) + b * (u[i + 2] - u[i - 2])
+            end
+            r[n - 1] = c.af2 * (u[n] - u[n - 2])
+            r[n] = -c.afn * u[n] - c.bfn * u[n - 1] - c.cfn * u[n - 2]
+        end
+        _compact_solve_np!(r, n, c)
+    end
+    return nothing
+end
+
+function compact2line!(a_out, a_in, n, c::CompactAxisNP)
+    a, b = c.a, c.b
+    for j in axes(a_in, 2)
+        r = @view(a_out[:, j])
+        u = @view(a_in[:, j])
+        @inbounds begin
+            r[1] = c.as1 * u[1] + c.bs1 * u[2] + c.cs1 * u[3] + c.ds1 * u[4]
+            r[2] = c.as2 * (u[3] - 2u[2] + u[1])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - 2u[i] + u[i - 1]) + b * (u[i + 2] - 2u[i] + u[i - 2])
+            end
+            r[n - 1] = c.as2 * (u[n] - 2u[n - 1] + u[n - 2])
+            r[n] = c.asn * u[n] + c.bsn * u[n - 1] + c.csn * u[n - 2] + c.dsn * u[n - 3]
+        end
+        _compact_solve_np!(r, n, c)
+    end
+    return nothing
+end
+
+function compact1line3!(a_out, a_in, n, c::CompactAxisNP)
+    a, b = c.a, c.b
+    for k in axes(a_in, 3), j in axes(a_in, 2)
+        r = @view(a_out[:, j, k])
+        u = @view(a_in[:, j, k])
+        @inbounds begin
+            r[1] = c.af1 * u[1] + c.bf1 * u[2] + c.cf1 * u[3]
+            r[2] = c.af2 * (u[3] - u[1])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - u[i - 1]) + b * (u[i + 2] - u[i - 2])
+            end
+            r[n - 1] = c.af2 * (u[n] - u[n - 2])
+            r[n] = -c.afn * u[n] - c.bfn * u[n - 1] - c.cfn * u[n - 2]
+        end
+        _compact_solve_np!(r, n, c)
+    end
+    return nothing
+end
+
+function compact2line3!(a_out, a_in, n, c::CompactAxisNP)
+    a, b = c.a, c.b
+    for k in axes(a_in, 3), j in axes(a_in, 2)
+        r = @view(a_out[:, j, k])
+        u = @view(a_in[:, j, k])
+        @inbounds begin
+            r[1] = c.as1 * u[1] + c.bs1 * u[2] + c.cs1 * u[3] + c.ds1 * u[4]
+            r[2] = c.as2 * (u[3] - 2u[2] + u[1])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - 2u[i] + u[i - 1]) + b * (u[i + 2] - 2u[i] + u[i - 2])
+            end
+            r[n - 1] = c.as2 * (u[n] - 2u[n - 1] + u[n - 2])
+            r[n] = c.asn * u[n] + c.bsn * u[n - 1] + c.csn * u[n - 2] + c.dsn * u[n - 3]
+        end
+        _compact_solve_np!(r, n, c)
+    end
+    return nothing
+end
+
 # Spectral-compact (Fourier-multiplier) derivatives.
 #
 # These dispatch on the PlanCompactFFT* plan types (built for GPU / non-Array

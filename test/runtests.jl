@@ -3,7 +3,7 @@ using SuperFluids
 using PencilArrays: localgrid
 
 # Relative error helper: max|a-b| / max|b|
-relerr(a, b) = maximum(abs.(a .- b)) / maximum(abs.(b))
+relerr(a, b) = abs(maximum(abs.(a .- b))) / abs(maximum(abs.(b)))
 
 # Tolerances.
 # FFT is spectral -> exact at machine precision for resolved modes.
@@ -242,6 +242,75 @@ end
     @test relerr(gf.ddx, -kx^2 * ϕ)   < TOL_FD
     @test relerr(gf.ddy, -ky^2 * ϕ)   < TOL_FD
     @test relerr(gf.ddz, -kz^2 * ϕ)   < TOL_FD
+end
+
+# ==========================================================================
+# Compact non-periodic (homogeneous Dirichlet)  -- port of GPS cdl==2
+# ==========================================================================
+# The field is chosen to vanish on the bounded faces (sin(π(x+L/2)/L)), so the
+# homogeneous-Dirichlet boundary conditions are satisfied. The compact operator
+# is 6th order in the interior; the first/last two points are a decaying
+# boundary layer, so the derivatives are compared on an interior sub-block
+# (2 points trimmed on each bounded face).
+@testset "2D compact Dirichlet (non-periodic) derivatives" begin
+    n, L = 64, 4.0
+    c = π / L
+    field = Field(Grid((n, n), ((-L/2, L/2), (-L/2, L/2))), ComplexField())
+    sx = sin.(c * (reshape(field.x, :, 1) .+ L/2))
+    sy = sin.(c * (reshape(field.y, 1, :) .+ L/2))
+    cx_ = cos.(c * (reshape(field.x, :, 1) .+ L/2))
+    cy_ = cos.(c * (reshape(field.y, 1, :) .+ L/2))
+    field.ϕ .= sx * sy
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(1, 1)))
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    I = 3:(n - 2)
+    @test relerr(parent(gf.dx)[I, I],  (c * cx_ * sy)[I, I])    < TOL_FD
+    @test relerr(parent(gf.dy)[I, I],  (c * sx * cy_)[I, I])    < TOL_FD
+    @test relerr(parent(gf.ddx)[I, I], (-c^2 * sx * sy)[I, I])  < TOL_FD
+    @test relerr(parent(gf.ddy)[I, I], (-c^2 * sx * sy)[I, I])  < TOL_FD
+end
+
+@testset "2D compact mixed axes (x periodic, y Dirichlet)" begin
+    n, L = 64, 4.0
+    c, kp = π / L, 2π / L
+    field = Field(Grid((n, n), ((-L/2, L/2), (-L/2, L/2))), ComplexField())
+    sx = exp.(1im * kp * reshape(field.x, :, 1))     # periodic in x
+    sy = sin.(c * (reshape(field.y, 1, :) .+ L/2))   # Dirichlet in y
+    cy_ = cos.(c * (reshape(field.y, 1, :) .+ L/2))
+    field.ϕ .= sx * sy
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(0, 1)))
+    @assert isa(plan.ax, SuperFluids.CompactAxis)      # x -> periodic
+    @assert isa(plan.ay, SuperFluids.CompactAxisNP)    # y -> Dirichlet
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    I = 3:(n - 2)
+    # x is periodic and exact, and ∂x does not touch y -> exact everywhere
+    @test relerr(gf.dx, 1im * kp * sx * sy) < TOL_FD
+    # y is Dirichlet -> compare in the y interior (all x)
+    @test relerr(parent(gf.dy)[:, I],  (c * sx * cy_)[:, I])    < TOL_FD
+    @test relerr(parent(gf.ddy)[:, I], (-c^2 * sx * sy)[:, I])  < TOL_FD
+end
+
+@testset "3D compact Dirichlet (non-periodic) derivatives" begin
+    n, L = 40, 4.0
+    c = π / L
+    field = Field(Grid((n, n, n), ((-L/2, L/2), (-L/2, L/2), (-L/2, L/2))), ComplexField())
+    X = reshape(field.x, :, 1, 1); Y = reshape(field.y, 1, :, 1); Z = reshape(field.z, 1, 1, :)
+    sx = sin.(c * (X .+ L/2)); cx_ = cos.(c * (X .+ L/2))
+    sy = sin.(c * (Y .+ L/2)); cy_ = cos.(c * (Y .+ L/2))
+    sz = sin.(c * (Z .+ L/2)); cz_ = cos.(c * (Z .+ L/2))
+    field.ϕ .= sx .* sy .* sz
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(1, 1, 1)))
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    I = 3:(n - 2)
+    @test relerr(parent(gf.dx)[I, I, I],  (c * cx_ .* sy .* sz)[I, I, I])    < TOL_FD
+    @test relerr(parent(gf.dy)[I, I, I],  (c * sx .* cy_ .* sz)[I, I, I])    < TOL_FD
+    @test relerr(parent(gf.dz)[I, I, I],  (c * sx .* sy .* cz_)[I, I, I])    < TOL_FD
+    @test relerr(parent(gf.ddx)[I, I, I], (-c^2 * sx .* sy .* sz)[I, I, I])  < TOL_FD
+    @test relerr(parent(gf.ddy)[I, I, I], (-c^2 * sx .* sy .* sz)[I, I, I])  < TOL_FD
+    @test relerr(parent(gf.ddz)[I, I, I], (-c^2 * sx .* sy .* sz)[I, I, I])  < TOL_FD
 end
 
 # ==========================================================================

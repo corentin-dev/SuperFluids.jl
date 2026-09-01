@@ -72,10 +72,11 @@ test:
     # $(pwd) keeps this namespace-independent.
     - git config --global --add safe.directory "$(pwd)"
   script:
-    # Deps are already installed + precompiled in the image; this only
-    # re-creates the environment record from the committed Manifests.
+    # Deps are already installed + precompiled in the image. The test
+    # environment (test/Project.toml) resolves its path dependency on the
+    # package when julia is started with a file project under test/ (below),
+    # so there is nothing to instantiate here.
     - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
-    - julia -e 'using Pkg; Pkg.activate("test"); Pkg.instantiate()'
     - julia --project test/runtests.jl
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -89,7 +90,8 @@ pages:
     - git config --global --add safe.directory "$(pwd)"
   script:
     # Documentation stack (already cached/precompiled in the image).
-    - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.add(["Documenter","Literate","WGLMakie","JSServe","CairoMakie"])'
+    # Doc stack ships precompiled in the image; this is an idempotency guard.
+    - julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate(); Pkg.add(["Documenter","Literate","WGLMakie","JSServe","CairoMakie"]); Pkg.status()'
     - julia --project --color=yes docs/make.jl
     - echo "clean directory"
     - rm -rv docs/build/generated/res-* docs/build/generated/GPS.pvd

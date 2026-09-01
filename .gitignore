@@ -8,3 +8,6 @@ LocalPreferences.toml
 *.data
 alltab*
 clean.sh
+docs/build/
+docs/src/generated/
+docs/Manifest.toml

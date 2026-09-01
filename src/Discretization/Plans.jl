@@ -823,6 +823,16 @@ julia> plan = Plan(field, t=FFTPlan());
 julia> field = Field(grid, RealField());
 julia> plan = Plan(field, t=FiniteDifferencePlan());
 ```
+
+```jldoctest
+julia> field = Field(grid, ComplexField());
+julia> plan = Plan(field, t=CompactPlan());
+```
+
+```jldoctest
+julia> field = Field(grid, ComplexField());
+julia> plan = Plan(field, t=CompactPlan(bcs=(2, 0)));  # Neumann in x, periodic in y
+```
 """
 function Plan(f::F;
               t::PlanType=FFTPlan()) where {F<:AbstractField2D{N,FT,FFT,A}} where {N,FT,FFT,
@@ -949,6 +959,16 @@ julia> plan = Plan(field3, t=FFTPlan());
 ```jldoctest
 julia> field3 = Field(grid3, RealField());
 julia> plan = Plan(field3, t=FiniteDifferencePlan());
+```
+
+```jldoctest
+julia> field3 = Field(grid3, ComplexField());
+julia> plan = Plan(field3, t=CompactPlan());
+```
+
+```jldoctest
+julia> field3 = Field(grid3, ComplexField());
+julia> plan = Plan(field3, t=CompactPlan(bcs=(2, 0, 2)));  # Neumann in x, z
 ```
 """
 function Plan(f::F;

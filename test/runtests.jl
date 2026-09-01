@@ -314,6 +314,89 @@ end
 end
 
 # ==========================================================================
+# Compact non-periodic (homogeneous Neumann) -- even-mirror closure
+# ==========================================================================
+# The grid is periodic-style (the last point is x_n = L - dx, not L), so the
+# mirror is about the first/last GRID POINTS: the test field must be even about
+# x = 0 and x = x_n, i.e. cos(c x) with c = 2π/x_n. Then the exact derivative is
+# exact everywhere, including the walls (the 1st derivative vanishes there by
+# the Neumann condition, the 2nd is mirrored).
+@testset "2D compact Neumann (non-periodic) derivatives" begin
+    n, L = 64, 4.0
+    field = Field(Grid((n, n), ((0.0, L), (0.0, L))), ComplexField())
+    X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
+    c = 2π / vec(field.x)[end]      # even about x = 0 and x = x_n
+    field.ϕ .= cos.(c * X) * cos.(c * Y)
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(2, 2)))
+    @test isa(plan.ax, SuperFluids.CompactAxisNeu)
+    @test isa(plan.ay, SuperFluids.CompactAxisNeu)
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    @test relerr(parent(gf.dx),  (-c * sin.(c * X)) * cos.(c * Y))  < TOL_FD
+    @test relerr(parent(gf.dy),  cos.(c * X) * (-c * sin.(c * Y)))  < TOL_FD
+    @test relerr(parent(gf.ddx), (-c^2 * cos.(c * X)) * cos.(c * Y)) < TOL_FD
+    @test relerr(parent(gf.ddy), cos.(c * X) * (-c^2 * cos.(c * Y))) < TOL_FD
+    # the Neumann condition itself: the 1st derivative vanishes on the walls
+    @test maximum(abs.(parent(gf.dx)[1, :]))  < 1e-12
+    @test maximum(abs.(parent(gf.dx)[end, :])) < 1e-12
+    # 6th-order convergence of the interior error under refinement
+    errs = Float64[]
+    for m in (64, 128)
+        gm = Field(Grid((m, m), ((0.0, L), (0.0, L))), ComplexField())
+        Xm = reshape(vec(gm.x), :, 1); Ym = reshape(vec(gm.y), 1, :)
+        cm = 2π / vec(gm.x)[end]
+        gm.ϕ .= cos.(cm * Xm) * cos.(cm * Ym)
+        gfm = GradientField(gm; rotation=false)
+        pm = Plan(gm; t=SuperFluids.CompactPlan(bcs=(2, 2)))
+        SuperFluids.computeDerivatives!(gfm, pm, gm.ϕ)
+        ex = (-cm * sin.(cm * Xm)) * cos.(cm * Ym)
+        push!(errs, maximum(abs.(parent(gfm.dx)[3:m-2, 3:m-2] .- ex[3:m-2, 3:m-2])))
+    end
+    @test 5.5 < log2(errs[1] / errs[2]) < 6.5
+end
+
+@testset "2D compact mixed axes (x Neumann, y periodic)" begin
+    n, L = 64, 4.0
+    field = Field(Grid((n, n), ((0.0, L), (-L/2, L/2))), ComplexField())
+    X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
+    c = 2π / vec(field.x)[end]         # Neumann in x (even about the grid ends)
+    kp = 2π / L                        # periodic in y
+    field.ϕ .= cos.(c * X) * exp.(1im * kp * Y)
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(2, 0)))
+    @test isa(plan.ax, SuperFluids.CompactAxisNeu)   # x -> Neumann
+    @test isa(plan.ay, SuperFluids.CompactAxis)      # y -> periodic
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    # x is Neumann: exact everywhere, including the walls
+    @test relerr(parent(gf.dx),  (-c * sin.(c * X)) * exp.(1im * kp * Y))  < TOL_FD
+    @test relerr(parent(gf.ddx), (-c^2 * cos.(c * X)) * exp.(1im * kp * Y)) < TOL_FD
+    # y is periodic and exact, and ∂y does not touch x -> exact everywhere
+    @test relerr(parent(gf.dy),  cos.(c * X) .* (1im * kp * exp.(1im * kp * Y)))  < TOL_FD
+    @test relerr(parent(gf.ddy), cos.(c * X) .* (-(kp^2) * exp.(1im * kp * Y))) < TOL_FD
+end
+
+@testset "3D compact Neumann (non-periodic) derivatives" begin
+    n, L = 40, 4.0
+    field = Field(Grid((n, n, n), ((0.0, L), (0.0, L), (0.0, L))), ComplexField())
+    X = reshape(vec(field.x), :, 1, 1); Y = reshape(vec(field.y), 1, :, 1)
+    Z = reshape(vec(field.z), 1, 1, :)
+    c = 2π / vec(field.x)[end]
+    field.ϕ .= cos.(c * X) .* cos.(c * Y) .* cos.(c * Z)
+    gf = GradientField(field; rotation=false)
+    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(2, 2, 2)))
+    @test isa(plan.ax, SuperFluids.CompactAxisNeu)
+    @test isa(plan.ay, SuperFluids.CompactAxisNeu)
+    @test isa(plan.az, SuperFluids.CompactAxisNeu)
+    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    @test relerr(parent(gf.dx),  (-c * sin.(c * X)) .* cos.(c * Y) .* cos.(c * Z))  < TOL_FD
+    @test relerr(parent(gf.dy),  cos.(c * X) .* (-c * sin.(c * Y)) .* cos.(c * Z))  < TOL_FD
+    @test relerr(parent(gf.dz),  cos.(c * X) .* cos.(c * Y) .* (-c * sin.(c * Z)))  < TOL_FD
+    @test relerr(parent(gf.ddx), (-c^2 * cos.(c * X)) .* cos.(c * Y) .* cos.(c * Z)) < TOL_FD
+    @test relerr(parent(gf.ddy), cos.(c * X) .* (-c^2 * cos.(c * Y)) .* cos.(c * Z)) < TOL_FD
+    @test relerr(parent(gf.ddz), cos.(c * X) .* cos.(c * Y) .* (-c^2 * cos.(c * Z))) < TOL_FD
+end
+
+# ==========================================================================
 # CompactPlan on GPU
 # ==========================================================================
 # On a GPU grid the compact scheme is solved by a dedicated CUDA Thomas kernel

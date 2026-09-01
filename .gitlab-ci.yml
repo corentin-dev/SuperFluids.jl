@@ -35,8 +35,8 @@ build-image:
     # workaround); storage is vfs under the project directory.
     - |
       mkdir -p containers
-      printf 'unqualified-search-registries = ["docker.io"]\n\n[[registry]]\n  prefix = "%s"\n  insecure = true\n' "$CI_REGISTRY" > containers/registries.conf
-      printf '[storage]\ndriver = "vfs"\nrootdir = "%s/bhroot"\n' "$CI_PROJECT_DIR" > containers/storage.conf
+      printf 'unqualified-search-registries = ["docker.io"]\n\n[[registry]]\n  location = "%s"\n  insecure = true\n' "$CI_REGISTRY" > containers/registries.conf
+      printf '[storage]\ndriver = "vfs"\n' > containers/storage.conf
       export CONTAINERS_REGISTRIES_CONF="$CI_PROJECT_DIR/containers/registries.conf"
       export CONTAINERS_STORAGE_CONF="$CI_PROJECT_DIR/containers/storage.conf"
     - export TAG="sha-$CI_COMMIT_SHORT_SHA"

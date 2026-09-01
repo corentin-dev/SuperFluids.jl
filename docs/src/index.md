@@ -4,7 +4,7 @@ This is a package allowing simulation of superfluids. The first intention of thi
 
 In order to be parallel (distributed), this package exploits intensively `PencilArrays`. Most of the package is written using broadcast, and is compatible with both CPU arrays (`Array`) and CUDA arrays (`CuArray`). It was not tested for other array type, yet. Every array creation is inferred from the `Grid` array type.
 
-This package is authored by Corentin Lothodé, and largely inspired by GPS a Fortran program by Philippe Parnaudeau.
+This package is authored by Corentin Lothodé, and largely inspired by GPS, a Fortran program by Philippe Parnaudeau (Parnaudeau, Suzuki & Sac-Epée, ISC-2015, Research Posters Session).
 
 ## Installation
 

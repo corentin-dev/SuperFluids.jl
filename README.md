@@ -8,7 +8,7 @@ This is a package allowing simulation of superfluids. The first intention of thi
 
 In order to be parallel (distributed), this package exploits intensively `PencilArrays`. Most of the package is written using broadcast, and is compatible with both CPU arrays (`Array`) and CUDA arrays (`CuArray`). It was not tested for other array type, yet. Every array creation is inferred from the `Grid` array type.
 
-This package is authored by Corentin Lothodé, and largely inspired by GPS a Fortran program by Philippe Parnaudeau.
+This package is authored by Corentin Lothodé, and largely inspired by GPS, a Fortran program by Philippe Parnaudeau (see [Acknowledgements](#acknowledgements)).
 
 ## Models
 
@@ -53,3 +53,13 @@ To the same `LocalPreferences.toml`, you can add the following informations:
 libhdf5_path = "/usr/lib/libhdf5.so"
 libhdf5_hl_path = "/usr/lib/libhdf5_hl.so"
 ```
+
+## Acknowledgements
+
+This package is largely inspired by **GPS**, a Fortran program by Philippe Parnaudeau, and by the work it enabled:
+
+- P. Parnaudeau, A. Suzuki, and J.-M. Sac-Epée, "GPS: An efficient & spectrally accurate code for computing Gross-Pitaevskii equation", *ISC-2015, Research Posters Session*, 2015.
+- M. Brachet, G. Sadaka, Z. Zhang, V. Kalt, and I. Danaila, "Coupling Navier-Stokes and Gross-Pitaevskii equations for the numerical simulation of two-fluid quantum flows", *Journal of Computational Physics*, 488, 112193, 2023.
+- Z. Zhang, I. Danaila, E. Lévéque, and L. Danaila, "Higher-order statistics and intermittency of a two-fluid Hall–Vinen–Bekarevich–Khalatnikov quantum turbulent flow", *Journal of Fluid Mechanics*, 962, A22, 2023.
+
+The machine-readable version of these references is available in [`docs/references.bib`](docs/references.bib).

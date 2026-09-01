@@ -272,6 +272,81 @@ function _compact_cu_2k_np!(u, r, n, a, b, s, w, sup, as1, bs1, cs1, ds1, as2, a
     return
 end
 
+# --- Neumann (even-mirror) kernels ------------------------------------------
+# The right-hand side is the interior stencil on the even-mirrored field (no
+# one-sided weights); the solve is the plain Thomas sweep with the Neumann
+# LHS factors. Only `a`, `b` and the banded `s`/`w`/`sup` are per axis.
+
+function _compact_cu_1k_neu!(u, r, n, a, b, s, w, sup, L)
+    j = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    j > L && return
+    @inbounds begin
+        r[1, j] = zero(eltype(r))
+        r[2, j] = a * (u[3, j] - u[1, j]) + b * (u[4, j] - u[2, j])
+        for i in 3:(n - 2)
+            r[i, j] = a * (u[i + 1, j] - u[i - 1, j]) + b * (u[i + 2, j] - u[i - 2, j])
+        end
+        r[n - 1, j] = a * (u[n, j] - u[n - 2, j]) + b * (u[n - 1, j] - u[n - 3, j])
+        r[n, j] = zero(eltype(r))
+    end
+    _compact_cu_solve_np2!(r, n, j, s, w, sup)
+    return
+end
+
+function _compact_cu_2k_neu!(u, r, n, a, b, s, w, sup, L)
+    j = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    j > L && return
+    @inbounds begin
+        r[1, j] = 2a * (u[2, j] - u[1, j]) + 2b * (u[3, j] - u[1, j])
+        r[2, j] = a * (u[1, j] - 2u[2, j] + u[3, j]) + b * (u[4, j] - u[2, j])
+        for i in 3:(n - 2)
+            r[i, j] = a * (u[i + 1, j] - 2u[i, j] + u[i - 1, j]) + b * (u[i + 2, j] - 2u[i, j] + u[i - 2, j])
+        end
+        r[n - 1, j] = a * (u[n, j] - 2u[n - 1, j] + u[n - 2, j]) + b * (u[n - 3, j] - u[n - 1, j])
+        r[n, j] = 2a * (u[n - 1, j] - u[n, j]) + 2b * (u[n - 2, j] - u[n, j])
+    end
+    _compact_cu_solve_np2!(r, n, j, s, w, sup)
+    return
+end
+
+function _compact_cu_1k3_neu!(u, r, n, a, b, s, w, sup, L2, L3)
+    idx = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    L = L2 * L3
+    idx > L && return
+    j = (idx - 1) % L2 + 1
+    k = (idx - 1) ÷ L2 + 1
+    @inbounds begin
+        r[1, j, k] = zero(eltype(r))
+        r[2, j, k] = a * (u[3, j, k] - u[1, j, k]) + b * (u[4, j, k] - u[2, j, k])
+        for i in 3:(n - 2)
+            r[i, j, k] = a * (u[i + 1, j, k] - u[i - 1, j, k]) + b * (u[i + 2, j, k] - u[i - 2, j, k])
+        end
+        r[n - 1, j, k] = a * (u[n, j, k] - u[n - 2, j, k]) + b * (u[n - 1, j, k] - u[n - 3, j, k])
+        r[n, j, k] = zero(eltype(r))
+    end
+    _compact_cu_solve_np3!(r, n, j, k, s, w, sup)
+    return
+end
+
+function _compact_cu_2k3_neu!(u, r, n, a, b, s, w, sup, L2, L3)
+    idx = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    L = L2 * L3
+    idx > L && return
+    j = (idx - 1) % L2 + 1
+    k = (idx - 1) ÷ L2 + 1
+    @inbounds begin
+        r[1, j, k] = 2a * (u[2, j, k] - u[1, j, k]) + 2b * (u[3, j, k] - u[1, j, k])
+        r[2, j, k] = a * (u[1, j, k] - 2u[2, j, k] + u[3, j, k]) + b * (u[4, j, k] - u[2, j, k])
+        for i in 3:(n - 2)
+            r[i, j, k] = a * (u[i + 1, j, k] - 2u[i, j, k] + u[i - 1, j, k]) + b * (u[i + 2, j, k] - 2u[i, j, k] + u[i - 2, j, k])
+        end
+        r[n - 1, j, k] = a * (u[n, j, k] - 2u[n - 1, j, k] + u[n - 2, j, k]) + b * (u[n - 3, j, k] - u[n - 1, j, k])
+        r[n, j, k] = 2a * (u[n - 1, j, k] - u[n, j, k]) + 2b * (u[n - 2, j, k] - u[n, j, k])
+    end
+    _compact_cu_solve_np3!(r, n, j, k, s, w, sup)
+    return
+end
+
 function _compact_cu_1k3_np!(u, r, n, a, b, s, w, sup, af1, bf1, cf1, af2, afn, bfn, cfn, L2, L3)
     idx = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     L = L2 * L3
@@ -313,8 +388,7 @@ end
 # --- NP line drivers (dispatch on the axis type: NP vs periodic) ------------
 
 # Device-side per-axis non-periodic compact multipliers (Dirichlet).
-struct CompactAxisGPU_np <: AbstractCompactAxisGPU
-    "number of grid points along the axis."
+struct CompactAxisGPU_np <: AbstractCompactAxisGPU    "number of grid points along the axis."
     n::Int
     "interior stencil coefficient a."
     a::Float64
@@ -390,22 +464,104 @@ function compact_setup_np_gpu(n::Int, Δ::Real, order::Int)
                              c.as1, c.bs1, c.cs1, c.ds1, c.as2, c.asn, c.bsn, c.csn, c.dsn)
 end
 
+# Device-side per-axis non-periodic compact multipliers (Neumann, even mirror).
+struct CompactAxisGPU_neu <: AbstractCompactAxisGPU
+    "number of grid points along the axis."
+    n::Int
+    "interior stencil coefficient a."
+    a::Float64
+    "interior stencil coefficient b."
+    b::Float64
+    "Thomas forward multipliers (device)."
+    s::CuArray{Float64, 1}
+    "reciprocals of the Thomas pivots (device)."
+    w::CuArray{Float64, 1}
+    "tridiagonal super-diagonal (device)."
+    sup::CuArray{Float64, 1}
+end
+
+@inline function _compact_cu_1line_neu!(r, u, n, c::CompactAxisGPU_neu)
+    L = size(u, 2)
+    threads = 128
+    @cuda threads=threads blocks=(L + threads - 1) ÷ threads _compact_cu_1k_neu!(u, r, n, c.a, c.b, c.s, c.w, c.sup, L)
+    return
+end
+
+@inline function _compact_cu_2line_neu!(r, u, n, c::CompactAxisGPU_neu)
+    L = size(u, 2)
+    threads = 128
+    @cuda threads=threads blocks=(L + threads - 1) ÷ threads _compact_cu_2k_neu!(u, r, n, c.a, c.b, c.s, c.w, c.sup, L)
+    return
+end
+
+@inline function _compact_cu_1line3_neu!(r, u, n, c::CompactAxisGPU_neu)
+    L2, L3 = size(u, 2), size(u, 3)
+    L = L2 * L3
+    threads = 128
+    @cuda threads=threads blocks=(L + threads - 1) ÷ threads _compact_cu_1k3_neu!(u, r, n, c.a, c.b, c.s, c.w, c.sup, L2, L3)
+    return
+end
+
+@inline function _compact_cu_2line3_neu!(r, u, n, c::CompactAxisGPU_neu)
+    L2, L3 = size(u, 2), size(u, 3)
+    L = L2 * L3
+    threads = 128
+    @cuda threads=threads blocks=(L + threads - 1) ÷ threads _compact_cu_2k3_neu!(u, r, n, c.a, c.b, c.s, c.w, c.sup, L2, L3)
+    return
+end
+
+"""$(TYPEDSIGNATURES)
+
+Build the device-side non-periodic (Neumann) compact multipliers for one axis
+by reusing the CPU [`compact_setup_neu`](@ref) (identical coefficients) and
+uploading the banded vectors to the GPU.
+"""
+function compact_setup_neu_gpu(n::Int, Δ::Real, order::Int)
+    c = compact_setup_neu(n, Δ, order)
+    return CompactAxisGPU_neu(n, c.a, c.b,
+                              CuArray(c.s), CuArray(c.w), CuArray(c.sup))
+end
+
 # --- generic line drivers: dispatch on the axis type (periodic vs Dirichlet) --
 # The GPU `computeDerivatives!` dispatch calls these with a per-axis object, so
 # a single plan can mix periodic and bounded axes; the right kernel (periodic
 # Thomas + cyclic correction, or plain Thomas) is selected by the axis type.
 function _compact_cu_1line!(r, u, n, c::AbstractCompactAxisGPU)
-    return c isa CompactAxisGPU ? _compact_cu_1line_per!(r, u, n, c) : _compact_cu_1line_np!(r, u, n, c)
+    if c isa CompactAxisGPU
+        return _compact_cu_1line_per!(r, u, n, c)
+    elseif c isa CompactAxisGPU_neu
+        return _compact_cu_1line_neu!(r, u, n, c)
+    else
+        return _compact_cu_1line_np!(r, u, n, c)
+    end
 end
 
 function _compact_cu_2line!(r, u, n, c::AbstractCompactAxisGPU)
-    return c isa CompactAxisGPU ? _compact_cu_2line_per!(r, u, n, c) : _compact_cu_2line_np!(r, u, n, c)
+    if c isa CompactAxisGPU
+        return _compact_cu_2line_per!(r, u, n, c)
+    elseif c isa CompactAxisGPU_neu
+        return _compact_cu_2line_neu!(r, u, n, c)
+    else
+        return _compact_cu_2line_np!(r, u, n, c)
+    end
 end
 
 function _compact_cu_1line3!(r, u, n, c::AbstractCompactAxisGPU)
-    return c isa CompactAxisGPU ? _compact_cu_1line3_per!(r, u, n, c) : _compact_cu_1line3_np!(r, u, n, c)
+    if c isa CompactAxisGPU
+        return _compact_cu_1line3_per!(r, u, n, c)
+    elseif c isa CompactAxisGPU_neu
+        return _compact_cu_1line3_neu!(r, u, n, c)
+    else
+        return _compact_cu_1line3_np!(r, u, n, c)
+    end
 end
 
 function _compact_cu_2line3!(r, u, n, c::AbstractCompactAxisGPU)
-    return c isa CompactAxisGPU ? _compact_cu_2line3_per!(r, u, n, c) : _compact_cu_2line3_np!(r, u, n, c)
+    if c isa CompactAxisGPU
+        return _compact_cu_2line3_per!(r, u, n, c)
+    elseif c isa CompactAxisGPU_neu
+        return _compact_cu_2line3_neu!(r, u, n, c)
+    else
+        return _compact_cu_2line3_np!(r, u, n, c)
+    end
 end

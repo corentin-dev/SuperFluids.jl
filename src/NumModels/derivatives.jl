@@ -460,6 +460,110 @@ function compact2line3!(a_out, a_in, n, c::CompactAxisNP)
     return nothing
 end
 
+# --- Non-periodic (homogeneous Neumann) compact line kernels ----------------
+# Overloads on `CompactAxisNeu`. The boundary is closed by an even (Neumann)
+# mirror of the field about each wall, so the right-hand side is the interior
+# compact stencil evaluated on the mirrored field: no one-sided boundary
+# weights, only `a`/`b`. The 1st derivative is odd about the wall (it vanishes
+# there -> identity boundary rows, that is the Neumann condition); the 2nd is
+# even (mirrored coupling). The solve is the plain tridiagonal Thomas sweep.
+
+"""$(TYPEDSIGNATURES)
+
+In-place plain tridiagonal solve for one **non-periodic Neumann** compact line
+`r` (same sweeps as the Dirichlet NP solve; the axis type only carries the
+matching precomputed `s`/`w`/`sup`).
+"""
+function _compact_solve_neu!(r, n, c::CompactAxisNeu)
+    s, w, sup = c.s, c.w, c.sup
+    @inbounds begin
+        for i in 2:n
+            r[i] -= r[i - 1] * s[i]
+        end
+        r[n] *= w[n]
+        for i in (n - 1):-1:1
+            r[i] = (r[i] - sup[i] * r[i + 1]) * w[i]
+        end
+    end
+    return r
+end
+
+function compact1line!(a_out, a_in, n, c::CompactAxisNeu)
+    a, b = c.a, c.b
+    for j in axes(a_in, 2)
+        r = @view(a_out[:, j])
+        u = @view(a_in[:, j])
+        @inbounds begin
+            r[1] = zero(eltype(r))
+            r[2] = a * (u[3] - u[1]) + b * (u[4] - u[2])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - u[i - 1]) + b * (u[i + 2] - u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - u[n - 2]) + b * (u[n - 1] - u[n - 3])
+            r[n] = zero(eltype(r))
+        end
+        _compact_solve_neu!(r, n, c)
+    end
+    return nothing
+end
+
+function compact2line!(a_out, a_in, n, c::CompactAxisNeu)
+    a, b = c.a, c.b
+    for j in axes(a_in, 2)
+        r = @view(a_out[:, j])
+        u = @view(a_in[:, j])
+        @inbounds begin
+            r[1] = 2a * (u[2] - u[1]) + 2b * (u[3] - u[1])
+            r[2] = a * (u[1] - 2u[2] + u[3]) + b * (u[4] - u[2])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - 2u[i] + u[i - 1]) + b * (u[i + 2] - 2u[i] + u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - 2u[n - 1] + u[n - 2]) + b * (u[n - 3] - u[n - 1])
+            r[n] = 2a * (u[n - 1] - u[n]) + 2b * (u[n - 2] - u[n])
+        end
+        _compact_solve_neu!(r, n, c)
+    end
+    return nothing
+end
+
+function compact1line3!(a_out, a_in, n, c::CompactAxisNeu)
+    a, b = c.a, c.b
+    for k in axes(a_in, 3), j in axes(a_in, 2)
+        r = @view(a_out[:, j, k])
+        u = @view(a_in[:, j, k])
+        @inbounds begin
+            r[1] = zero(eltype(r))
+            r[2] = a * (u[3] - u[1]) + b * (u[4] - u[2])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - u[i - 1]) + b * (u[i + 2] - u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - u[n - 2]) + b * (u[n - 1] - u[n - 3])
+            r[n] = zero(eltype(r))
+        end
+        _compact_solve_neu!(r, n, c)
+    end
+    return nothing
+end
+
+function compact2line3!(a_out, a_in, n, c::CompactAxisNeu)
+    a, b = c.a, c.b
+    for k in axes(a_in, 3), j in axes(a_in, 2)
+        r = @view(a_out[:, j, k])
+        u = @view(a_in[:, j, k])
+        @inbounds begin
+            r[1] = 2a * (u[2] - u[1]) + 2b * (u[3] - u[1])
+            r[2] = a * (u[1] - 2u[2] + u[3]) + b * (u[4] - u[2])
+            for i in 3:(n - 2)
+                r[i] = a * (u[i + 1] - 2u[i] + u[i - 1]) + b * (u[i + 2] - 2u[i] + u[i - 2])
+            end
+            r[n - 1] = a * (u[n] - 2u[n - 1] + u[n - 2]) + b * (u[n - 3] - u[n - 1])
+            r[n] = 2a * (u[n - 1] - u[n]) + 2b * (u[n - 2] - u[n])
+        end
+        _compact_solve_neu!(r, n, c)
+    end
+    return nothing
+end
+
 # Spectral-compact (Fourier-multiplier) derivatives.
 #
 # These dispatch on the PlanCompactFFT* plan types (built for GPU / non-Array

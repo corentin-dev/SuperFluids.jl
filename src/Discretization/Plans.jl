@@ -29,12 +29,14 @@ Backend selection (only relevant for GPU / non-Array grids):
 Boundary conditions (`bcs`): a tuple of one entry per axis giving the
 condition on that axis — `0` (or `:periodic`) for the periodic compact
 scheme, `1` (or `:dirichlet`) for the homogeneous-Dirichlet non-periodic
-scheme (GPS `cdl==2` / Xcompact3d `ncl==2`). Defaults to all periodic. Axes
-may be mixed (e.g. `bcs=(1, 0)` bounds `x` and keeps `y` periodic)."
+scheme (GPS `cdl==2` / Xcompact3d `ncl==2`), `2` (or `:neumann`) for the
+homogeneous-Neumann scheme (even-mirror closure, Xcompact3d `ncl==1`).
+Defaults to all periodic. Axes may be mixed (e.g. `bcs=(1, 0)` bounds `x`
+and keeps `y` periodic)."
 struct CompactPlan{B,BCS} <: PlanType
     "GPU backend: `:auto`, `:thomas` (CUDA kernel) or `:spectral` (Fourier multiplier)."
     backend::B
-    "per-axis boundary condition: `0`/`:periodic` or `1`/`:dirichlet`."
+    "per-axis boundary condition: `0`/`:periodic`, `1`/`:dirichlet`, `2`/`:neumann`."
     bcs::BCS
 end
 function CompactPlan(; backend::Symbol=:auto, bcs = nothing)
@@ -42,15 +44,17 @@ function CompactPlan(; backend::Symbol=:auto, bcs = nothing)
     return CompactPlan{typeof(backend), typeof(b)}(backend, b)
 end
 
-# Normalise a single BC entry to an integer (0 periodic, 1 Dirichlet).
+# Normalise a single BC entry to an integer (0 periodic, 1 Dirichlet, 2 Neumann).
 function _bc_int(bc)
     if bc == 0 || bc === :periodic
         return 0
     elseif bc == 1 || bc === :dirichlet
         return 1
+    elseif bc == 2 || bc === :neumann
+        return 2
     else
         error("CompactPlan: unsupported boundary condition $(repr(bc)) " *
-              "(use 0/:periodic or 1/:dirichlet).")
+              "(use 0/:periodic, 1/:dirichlet or 2/:neumann).")
     end
 end
 
@@ -149,6 +153,41 @@ struct CompactAxisNP{R} <: AbstractCompactAxis{R}
     dsn::R
     "relaxed 2nd-derivative weight (rows 2 and n-1)."
     as2::R
+    "tridiagonal sub-diagonal (element (i, i-1), row-varying near the ends)."
+    sub::Vector{R}
+    "tridiagonal super-diagonal (element (i, i+1), row-varying near the ends)."
+    sup::Vector{R}
+    "Thomas forward multipliers."
+    s::Vector{R}
+    "reciprocals of the Thomas pivots."
+    w::Vector{R}
+end
+
+"""
+$(TYPEDEF)
+
+Precomputed multipliers for the **non-periodic (homogeneous Neumann)** compact
+finite-difference derivative on one axis. Built by [`compact_setup_neu`](@ref).
+
+The boundary is closed by an even (Neumann, `du/dn = 0`) mirror of the field
+about each wall, so the right-hand side is just the interior stencil evaluated
+on the mirrored field: only the interior coefficients `a`, `b` and the
+row-varying LHS (`sub`/`sup` plus the Thomas factors `s`/`w`) are stored —
+no one-sided boundary weights, unlike the Dirichlet path.
+
+$(TYPEDFIELDS)
+"""
+struct CompactAxisNeu{R} <: AbstractCompactAxis{R}
+    "number of grid points along the axis."
+    n::Int
+    "derivative order (1 or 2)."
+    order::Int
+    "interior compact coefficient (1/3 or 2/11)."
+    alpha::R
+    "interior stencil coefficient a."
+    a::R
+    "interior stencil coefficient b."
+    b::R
     "tridiagonal sub-diagonal (element (i, i-1), row-varying near the ends)."
     sub::Vector{R}
     "tridiagonal super-diagonal (element (i, i+1), row-varying near the ends)."
@@ -328,13 +367,79 @@ end
 
 """$(TYPEDSIGNATURES)
 
+Build the precomputed multipliers for the **non-periodic (homogeneous
+Neumann)** compact derivative along an axis of `n` points, spacing `Δ`,
+derivative `order` (1 or 2).
+
+The boundary is closed by an even (Neumann, `du/dn = 0`) mirror of the field
+about each wall: the field is even about the boundary node, so the 1st
+derivative is odd (it vanishes at the wall) and the 2nd derivative is even.
+Evaluating the *interior* 6th-order compact stencil on the mirrored field
+closes the system — no one-sided boundary stencils are needed (this is the
+Xcompact3d `ncl==1` operator, ported and validated by 6th-order convergence
+against an analytic Neumann field).
+
+Consequences for the row-varying LHS (tridiagonal, diagonal 1, off-diagonals
+`α` in the interior):
+* 1st derivative: the boundary rows are identity (`g_1 = r_1 = 0` and
+  `g_n = r_n = 0`), i.e. `sup[1] = sub[n] = 0` — that *is* the Neumann
+  condition. All other off-diagonals are `α`.
+* 2nd derivative: the boundary rows keep the mirrored coupling,
+  `g_1 + 2α g_2 = r_1` and `g_n + 2α g_{n-1} = r_n`, i.e.
+  `sup[1] = sub[n] = 2α`; all other off-diagonals are `α`.
+
+Solved by a plain (non-cyclic) Thomas sweep, exactly as the Dirichlet NP path
+([`compact_setup_np`](@ref)); the line kernels dispatch on this axis type.
+"""
+function compact_setup_neu(n::Int, Δ::Real, order::Int)
+    if n < 8
+        error("compact finite-difference scheme requires at least 8 points along the axis (got $n)")
+    end
+    R = eltype(Δ)
+    if order == 1
+        alpha = R(1)/R(3)
+        a = (R(7)/R(9))/Δ
+        b = (R(1)/R(36))/Δ
+    elseif order == 2
+        alpha = R(2)/R(11)
+        a = (R(12)/R(11))/Δ^2
+        b = (R(3)/R(44))/Δ^2
+    else
+        error("compact_setup_neu: order must be 1 or 2")
+    end
+    # LHS tridiagonal: α off-diagonals everywhere except the two boundary
+    # couplings, which depend on the derivative order (see docstring).
+    sub = fill(alpha, n); sup = fill(alpha, n)
+    if order == 1
+        sup[1] = zero(R); sub[n] = zero(R)   # 1st deriv: boundary rows identity
+    else
+        sup[1] = 2alpha; sub[n] = 2alpha     # 2nd deriv: mirrored coupling
+    end
+    # Plain (non-cyclic) Thomas factorization (same as the Dirichlet path).
+    w = ones(R, n)
+    s = zeros(R, n)
+    for i in 2:n
+        s[i] = sub[i] / w[i - 1]
+        w[i] = w[i] - sup[i - 1] * s[i]
+    end
+    for i in 1:n
+        w[i] = R(1) / w[i]
+    end
+    return CompactAxisNeu{R}(n, order, alpha, a, b, sub, sup, s, w)
+end
+
+"""$(TYPEDSIGNATURES)
+
 Build the per-axis compact multipliers for one axis of `n` points, spacing
 `Δ`, derivative `order` (1 or 2) and boundary condition `bc`
 (`0`/`:periodic` → [`compact_setup`](@ref), `1`/`:dirichlet` →
-[`compact_setup_np`](@ref)).
+[`compact_setup_np`](@ref), `2`/`:neumann` → [`compact_setup_neu`](@ref)).
 """
 function compact_axis(n::Int, Δ::Real, order::Int, bc)
-    return _bc_int(bc) == 1 ? compact_setup_np(n, Δ, order) : compact_setup(n, Δ, order)
+    bi = _bc_int(bc)
+    return bi == 1 ? compact_setup_np(n, Δ, order) :
+           bi == 2 ? compact_setup_neu(n, Δ, order) :
+                     compact_setup(n, Δ, order)
 end
 
 """$(TYPEDSIGNATURES)
@@ -772,9 +877,9 @@ function Plan(f::F;
             # standard FFT machinery (see PlanCompactFFT2D). Requires a
             # complex field, like the standard FFTPlan, and periodic axes only
             # (a bounded axis has no Fourier-multiplier form).
-            if any(bc -> bc == 1, _compact_bcs(t, 2))
+            if any(bc -> bc != 0, _compact_bcs(t, 2))
                 error("CompactPlan(backend=:spectral) is only defined for periodic axes; " *
-                      "this plan has Dirichlet (non-periodic) axes, which have no " *
+                      "this plan has non-periodic (Dirichlet or Neumann) axes, which have no " *
                       "Fourier-multiplier form. Use the default backend (CUDA Thomas " *
                       "kernel) instead.")
             end
@@ -804,7 +909,9 @@ function Plan(f::F;
         end
         bcx, bcy = _compact_bcs(t, 2)
         function _gpu_axis(n, Δ, order, bc)
-            return bc == 1 ? compact_setup_np_gpu(n, Δ, order) : compact_setup_gpu(n, Δ, order)
+            return bc == 1 ? compact_setup_np_gpu(n, Δ, order) :
+                   bc == 2 ? compact_setup_neu_gpu(n, Δ, order) :
+                             compact_setup_gpu(n, Δ, order)
         end
         ax = _gpu_axis(f.g.nx, f.g.Δx, 1, bcx)
         a2x = _gpu_axis(f.g.nx, f.g.Δx, 2, bcx)
@@ -905,9 +1012,9 @@ function Plan(f::F;
         if t.backend === :spectral
             # See the 2D dispatch: Fourier multiplier through the standard
             # FFT machinery (complex fields only), periodic axes only.
-            if any(bc -> bc == 1, _compact_bcs(t, 3))
+            if any(bc -> bc != 0, _compact_bcs(t, 3))
                 error("CompactPlan(backend=:spectral) is only defined for periodic axes; " *
-                      "this plan has Dirichlet (non-periodic) axes, which have no " *
+                      "this plan has non-periodic (Dirichlet or Neumann) axes, which have no " *
                       "Fourier-multiplier form. Use the default backend (CUDA Thomas " *
                       "kernel) instead.")
             end
@@ -936,7 +1043,9 @@ function Plan(f::F;
         end
         bcx, bcy, bcz = _compact_bcs(t, 3)
         function _gpu_axis(n, Δ, order, bc)
-            return bc == 1 ? compact_setup_np_gpu(n, Δ, order) : compact_setup_gpu(n, Δ, order)
+            return bc == 1 ? compact_setup_np_gpu(n, Δ, order) :
+                   bc == 2 ? compact_setup_neu_gpu(n, Δ, order) :
+                             compact_setup_gpu(n, Δ, order)
         end
         ax = _gpu_axis(f.g.nx, f.g.Δx, 1, bcx)
         a2x = _gpu_axis(f.g.nx, f.g.Δx, 2, bcx)

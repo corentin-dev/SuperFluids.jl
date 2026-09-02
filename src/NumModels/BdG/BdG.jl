@@ -244,9 +244,11 @@ Run the Bogoliubov-de Gennes eigensolve on the stationary state stored in
 compatibility with the standard solver loop.
 
 The full 2N×2N operator is applied matrix-free (`_bdg_apply!`) through an
-`Arpack.eigs` Krylov solve with `which = :SM` (smallest |ω|). `2·nev + 1`
+`Arpack.eigs` Krylov solve with `which = :SM` (smallest |ω|). `2·nev + 2`
 eigenvalues are requested so that, in addition to the desired lowest modes,
-the ω = 0 mode and at least one member of each ω ↔ −ω pair are captured;
+the ω = 0 modes and at least one member of each ω ↔ −ω pair are captured:
+the zero eigenspace is two-dimensional when `β = 0` (spanned by
+`(ψ, ψ*)` and `(ψ, −ψ*)`), so two slots are reserved for it.
 `bdg_output` then keeps the `n.nev` lowest positive-frequency physical modes
 (the positive-symplectic-norm member of each pair, minus the zero mode).
 """
@@ -260,7 +262,7 @@ function timeStep!(n::NumModelBdG)
         _bdg_apply!(n, out, x)
     end
 
-    nev2 = 2 * n.nev + 1
+    nev2 = 2 * n.nev + 2
     ew, ev = Arpack.eigs(lmap; nev=nev2, which=n.which,
                          tol=Float64(n.tol), ncv=min(max(nev2 + 5, 20), 2N - 2),
                          maxiter=n.restarts * 1000)

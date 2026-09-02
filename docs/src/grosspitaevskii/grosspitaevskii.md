@@ -2,9 +2,7 @@
 
 The [Gross-Pitaevskii equation](https://en.wikipedia.org/wiki/Gross%E2%80%93Pitaevskii_equation) is a nonlinear Schrödinger equation used to model Bose-Einstein condensates at $0\,\mathrm{K}$:
 
-$$
-i \dfrac{dϕ}{dt} = αΔϕ +  β |ϕ|²ϕ  + V(\vec{x})ϕ - i Ω L_z ϕ
-$$
+$$i \dfrac{dϕ}{dt} = αΔϕ +  β |ϕ|²ϕ  + V(\vec{x})ϕ - i Ω L_z ϕ$$
 
 with:
 

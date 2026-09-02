@@ -99,7 +99,7 @@ init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
 if mpi_topo.size == 1 # hide
-    volume(grid.x, grid.y, grid.z, abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
+    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
 end # hide
 
@@ -136,7 +136,7 @@ res[end]
 # Plot the solution
 
 if mpi_topo.size == 1 # hide
-    volume(grid.x, grid.y, grid.z, abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
+    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
 end # hide
 
@@ -184,7 +184,7 @@ res_insta[end]
 # Plot the solution.
 
 if mpi_topo.size == 1 # hide
-    volume(grid.x, grid.y, grid.z, abs2.(field_insta.ϕ); algorithm=:iso, isovalue=0.4,
+    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), abs2.(field_insta.ϕ); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
 end # hide
 

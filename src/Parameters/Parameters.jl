@@ -3,6 +3,7 @@ abstract type AbstractParameters end
 
 export GrossPitaevskiiParameters
 export NavierStokesParameters
+export BdGParameters
 
 """
 $(TYPEDEF)
@@ -103,3 +104,5 @@ function Base.show(io::IO, param::NavierStokesParameters)
                  "  ├─────── ∇⋅u = 0\n",
                  "  └─────── ν: $(param.ν) ρ: $(param.ρ)")
 end
+
+include("BdGParameters.jl")

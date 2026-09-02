@@ -1201,3 +1201,39 @@ end
         @test Pmax < 1e-12 * Pscale
     end
 end
+
+# ==========================================================================
+# Bogoliubov-de Gennes (matrix-free eigensolver)
+# ==========================================================================
+@testset "BdG anisotropic 2D harmonic oscillator: analytic spectrum (2D)" begin
+    # H = -0.5 ∇² + 0.5 x² + 1.0 y²  (PotentialQuadratic γx=1, γy=2) → ωx=1, ωy=√2.
+    # Exact ground state ψ ∝ exp(-ωx x²/2 - ωy y²/2), μ = E00 = (ωx+ωy)/2.
+    # With β=0 the BdG modes are ω = E - E00 = {ωx, ωy, 2ωx, ...} — all distinct,
+    # so this cleanly validates the matrix-free ARPACK solver, the zero-mode
+    # rejection and the symplectic normalization without any degenerate cluster.
+    grid = Grid((20, 20), ((-6.0, 6.0), (-6.0, 6.0)))
+    field = Field(grid, ComplexField())
+    X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
+    ωx, ωy = 1.0, sqrt(2.0)
+    field.ϕ .= exp.(-ωx * X.^2 / 2 .- ωy * Y.^2 / 2)
+    field.ϕ ./= sqrt(sum(abs2.(parent(field.ϕ))) * grid.Δx * grid.Δy)
+
+    pot = PotentialQuadratic(field; γx = ωx, γy = ωy^2)
+    param = BdGParameters(coeffΔ=-0.5, β=0.0, pot=pot, Ω=0.0)
+    n = NumModelBdG(field, param, 1, 1; nev=3)
+    SuperFluids.timeStep!(n)
+
+    # chemical potential = E00 = (ωx+ωy)/2
+    @test n.mu ≈ (ωx + ωy) / 2 atol=1e-3
+    # three positive-frequency modes, one per (ω, -ω) pair; zero mode dropped
+    @test length(n.ωs) == 3
+    expected = [ωx, ωy, 2ωx]   # 1.0, √2, 2.0
+    @test all(abs.(n.ωs .- expected) .< 1e-3)
+    @test all(n.ωs .> 0)
+    # symplectic normalization ‖u‖² - ‖v‖² = 1
+    dv = grid.Δx * grid.Δy
+    for j in eachindex(n.ωs)
+        s = (sum(abs2, n.us[j]) - sum(abs2, n.vs[j])) * dv
+        @test s ≈ 1.0 atol=1e-10
+    end
+end

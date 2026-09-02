@@ -1,40 +1,54 @@
 # SuperFluids.jl
 
-This is a package allowing simulation of superfluids. The first intention of this package is to solve the Gross-Pitaevskii equation to simulation Bose-Einstein Condensates. It evolved into a more advance package in order to solve Quantum-Turbulence. It now also solves the incompressible Navier-Stokes equations, the coupled Gross-Pitaevskii / Navier-Stokes two-fluid model of Parnaudeau et al. (NSGP), and the linear Hall-Vinen-Bekarevich-Khalatnikov (HVBK) two-fluid model. Derivatives are estimated through Fourier transformations or finite differences.
+**SuperFluids.jl** is a Julia package for simulating superfluids. It started as
+a Gross-Pitaevskii (GP) solver for Bose-Einstein condensates and has grown into
+a general library for quantum and classical fluids. It currently supports:
 
-In order to be parallel (distributed), this package exploits intensively `PencilArrays`. Most of the package is written using broadcast, and is compatible with both CPU arrays (`Array`) and CUDA arrays (`CuArray`). It was not tested for other array type, yet. Every array creation is inferred from the `Grid` array type.
+- **Gross-Pitaevskii** — imaginary-time solvers for stationary states and
+  real-time solvers for dynamical evolutions,
+- **Bogoliubov-de Gennes** — a matrix-free eigensolver for the linearized
+  excitations about a stationary GP state,
+- **Navier-Stokes** — the incompressible equations in 2D and 3D,
+- **Two-fluid models** — the coupled Gross-Pitaevskii / Navier-Stokes model
+  (NSGP) and the linear Hall-Vinen-Bekarevich-Khalatnikov model (HVBK).
 
-This package is authored by Corentin Lothodé, and largely inspired by GPS, a Fortran program by Philippe Parnaudeau (Parnaudeau, Suzuki & Sac-Epée, ISC-2015, Research Posters Session).
+Derivatives are computed with Fourier transforms or finite differences. The
+package is parallel (distributed) on top of [`PencilArrays`](https://github.com/PencilArrays/PencilArrays.jl); most of it is written with broadcasting and
+works on both CPU arrays (`Array`) and CUDA arrays (`CuArray`).
+
+This package is authored by Corentin Lothodé, and is largely inspired by
+**GPS**, a Fortran code by Philippe Parnaudeau.
 
 ## Installation
 
-For the moment, `SuperFluids.jl` is not in the julia registry. You need to get it by yourself:
+The package is not in the Julia registry. Add it from the repository:
 
 ```
 pkg> add https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl
 ```
 
-## Get sources
+or clone it and work from a local project:
 
-To get sources, you can clone the project:
-
-```
-git clone git@plmlab.math.cnrs.fr:lmrs/num/SuperFluids.jl.git
-```
-
-Start Julia :
 ```bash
+git clone git@plmlab.math.cnrs.fr:lmrs/num/SuperFluids.jl.git
+cd SuperFluids.jl
 julia --project=.
 ```
 
-Import package :
 ```julia-repl
 julia> using SuperFluids
 ```
 
-## Build documentation
+See the [Quick start](@ref) for a minimal Gross-Pitaevskii simulation, and the
+**Physic models** section for each model in detail:
+[Gross-Pitaevskii](grosspitaevskii/grosspitaevskii.md),
+[Bogoliubov-de Gennes](bdg.md) and
+[Navier-Stokes / two-fluid models](navierstokes.md).
 
-Simply run:
+## Building the documentation
+
 ```bash
 julia --project --color=yes docs/make.jl
 ```
+
+The generated site is written under `docs/build/`.

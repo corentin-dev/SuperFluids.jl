@@ -14,6 +14,7 @@ This package is authored by Corentin Lothodé, and largely inspired by GPS, a Fo
 ## Models
 
 - **Gross-Pitaevskii**: imaginary time (backward Euler, Crank-Nicolson, ADI) and real time (time-dependent Crank-Nicolson), plus an external-velocity solver. See `NumModelBackwardEuler`, `NumModelCrankNicolson`, `NumModelADI1`, `NumModelCrankNicolsonT`, `NumModelExternalVelocity`.
+- **Bogoliubov-de Gennes** (`NumModelBdG`): matrix-free eigensolver for the linearized excitations about a stationary GP state. The `2N x 2N` operator is applied through the derivative machinery (no dense matrix); the zero mode is rejected by overlap with `(ψ₀, ψ₀*)` and the modes are returned symplectically normalized.
 - **Navier-Stokes** (incompressible, 2D and 3D): semi-implicit RK4 solver `NumModelRK4Imp` (vorticity-advection form, exact implicit viscous multiplier, spectral Helmholtz projection).
 - **NSGP** (coupled GP/Navier-Stokes two-fluid model of Parnaudeau et al., `NumModelNSGP`): a non-stationary Gross-Pitaevskii equation for the superfluid wavefunction coupled, through the Coste coupling, to a forced Navier-Stokes equation for the normal fluid (one-way or two-way).
 - **HVBK** (linear two-fluid model, `NumModelHBVK`): two incompressible velocity fields coupled by the linear mutual friction `F = -1/2 rb |∇×u_s| (u_n - u_s)`, total momentum conserved.

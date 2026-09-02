@@ -1,20 +1,21 @@
 # Gross-Pitaevskii equation
 
-This section discuss a particular class of equation that can be used for superfluids. The [Gross-Pitaevskii equation](https://en.wikipedia.org/wiki/Gross%E2%80%93Pitaevskii_equation) is an idealized equation for particles at $0K$. It can be viewed as a particular non-linear Shrödinger equation.
+The [Gross-Pitaevskii equation](https://en.wikipedia.org/wiki/Gross%E2%80%93Pitaevskii_equation) is a nonlinear Schrödinger equation used to model Bose-Einstein condensates at $0\,\mathrm{K}$:
 
 $$
-i \dfrac{dϕ}{dt} = αΔϕ +  β |ϕ|²ϕ  + V(x⃗)ϕ - i Ω L_z ϕ
+i \dfrac{dϕ}{dt} = αΔϕ +  β |ϕ|²ϕ  + V(\vec{x})ϕ - i Ω L_z ϕ
 $$
 
 with:
 
-- $α$: `coeffΔ` by default it is $-\frac{1}{2}$, but can be anything (negative),
-- $β$: `β` it is the interaction coefficient,
-- $V(x⃗)$: `pot` a [potential](@ref Potential),
-- $Ω$: `Ω` the rotation coefficient along $z$ axis.
+- $α$: `coeffΔ` (default $-\frac{1}{2}$, must be negative),
+- $β$: `β`, the interaction coefficient,
+- $V(\vec{x})$: `pot`, a potential (see [Potentials](potential.md)),
+- $Ω$: `Ω`, the rotation coefficient about the $z$ axis.
 
-A particular equation is solved in the cas of stationary cases. A particular set of
-numerical scheme deals with the _imaginary_ time step Gross-Pitaevskii equation.
+Stationary states are obtained by evolving the equation in _imaginary_ time,
+which amounts to a gradient descent on the energy. The solvers used for this,
+as well as the real-time schemes, are described in the [Numerical schemes](nummodel.md) section.
 
 ## Parameters
 

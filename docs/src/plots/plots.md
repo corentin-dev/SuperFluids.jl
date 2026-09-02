@@ -1,21 +1,34 @@
-# Plots in SuperFluids.jl
+# Plots
 
-`SuperFluids.jl` uses `Makie.jl` in order to produce plots. For the moment, only 2D plots has been developped, with BEC applications in mind.
+`SuperFluids.jl` produces plots with [`Makie.jl`](https://makie.org/). Only 2D
+plots are currently available, aimed at Bose-Einstein-condensate applications
+(`plot = true` in `solve!` drives them).
 
-## Precompile Makie
+## Precompiling Makie (optional)
 
-To save time, you can precompile Makie :
+Makie is slow to precompile. To avoid the cost on every run, build a
+self-contained system image once:
+
 ```
-# precompilation de Makie
-] add PackageCompiler
+pkg> add PackageCompiler
+```
+
+```julia
 using PackageCompiler
-] activate .
-] add GLMakie
-create_sysimage(:GLMakie; sysimage_path="GLMakie.so")
+```
+
+```
+pkg> activate .
+pkg> add GLMakie
+```
+
+```julia
+create_sysimage(:GLMakie; sysimage_path = "GLMakie.so")
 exit()
 ```
 
-Then, you can start julia using :
-```
+then launch Julia with that image:
+
+```bash
 julia -q -JGLMakie.so --project=.
 ```

@@ -84,8 +84,7 @@ makie_style = "WGLMakie" # hide
 if makie_style == "WGLMakie" # hide
     using WGLMakie
     WGLMakie.activate!() # hide
-    using JSServe # hide
-    Page(; exportable=true, offline=true) # hide
+    WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 elseif makie_style == "GLMakie" # hide
     using GLMakie # hide
     GLMakie.activate!() # hide

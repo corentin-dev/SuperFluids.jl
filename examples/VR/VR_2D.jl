@@ -23,8 +23,8 @@ mpi_topo = SuperFluids.MPITopo1D()
 
 # You can change those values if you want PNG or GL plots
 
-#makie_style = "WGLMakie"
-makie_style = "GLMakie"
+makie_style = "WGLMakie"
+#makie_style = "GLMakie"
 #makie_style = "CairoMakie"
 
 if mpi_topo.size == 1 # hide
@@ -37,8 +37,7 @@ if use_plots # hide
     if makie_style == "WGLMakie"
         using WGLMakie
         WGLMakie.activate!()
-        using JSServe # hide
-        Page(; exportable=true, offline=true) # hide
+        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
     elseif makie_style == "GLMakie"
         using GLMakie
         GLMakie.activate!()

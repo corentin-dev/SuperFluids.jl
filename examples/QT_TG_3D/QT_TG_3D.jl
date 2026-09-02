@@ -41,8 +41,7 @@ if use_plots # hide
     if makie_style == "WGLMakie"
         using WGLMakie
         WGLMakie.activate!()
-        using JSServe # hide
-        Page(; exportable=true, offline=true) # hide
+        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
     elseif makie_style == "GLMakie"
         using GLMakie
         GLMakie.activate!()
@@ -99,7 +98,7 @@ init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
 if mpi_topo.size == 1 # hide
-    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
+    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field.ϕ)); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
 end # hide
 
@@ -136,14 +135,14 @@ res[end]
 # Plot the solution
 
 if mpi_topo.size == 1 # hide
-    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), abs2.(field.ϕ); algorithm=:iso, isovalue=0.4,
+    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field.ϕ)); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
 end # hide
 
 # Cut at ``z = π``:
 
 if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(field.ϕ[:, :, nz ÷ 2]))
+    surface(grid.x, grid.y, abs2.(parent(field.ϕ)[:, :, nz ÷ 2]))
 end # hide
 
 # ## Second step: unstationary restart
@@ -184,12 +183,12 @@ res_insta[end]
 # Plot the solution.
 
 if mpi_topo.size == 1 # hide
-    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), abs2.(field_insta.ϕ); algorithm=:iso, isovalue=0.4,
+    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field_insta.ϕ)); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
 end # hide
 
 # Cut at ``z = π``:
 
 if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(field_insta.ϕ[:, :, nz ÷ 2]))
+    surface(grid.x, grid.y, abs2.(parent(field_insta.ϕ)[:, :, nz ÷ 2]))
 end # hide

@@ -32,36 +32,12 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
-
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # ## Setup
 
@@ -111,24 +87,12 @@ model.ωs
 
 # First excitation $|u_1|^2$ (frequency $ω_1 ≈ ω_x = 1$):
 
-if use_plots
-    heatmap(grid.x, grid.y, abs2.(model.us[1]); colormap=:viridis)
-    current_axis().title[] = "|u₁|² — ω = " * string(round(model.ωs[1]; digits=4))
-    current_figure()
-end
+surface(grid.x, grid.y, abs2.(model.us[1]) * 4)
 
 # Second excitation $|u_2|^2$ (frequency $ω_2 ≈ ω_y = √2$):
 
-if use_plots
-    heatmap(grid.x, grid.y, abs2.(model.us[2]); colormap=:viridis)
-    current_axis().title[] = "|u₂|² — ω = " * string(round(model.ωs[2]; digits=4))
-    current_figure()
-end
+surface(grid.x, grid.y, abs2.(model.us[2]) * 4)
 
 # Third excitation $|u_3|^2$ (frequency $ω_3 ≈ 2ω_x = 2$):
 
-if use_plots
-    heatmap(grid.x, grid.y, abs2.(model.us[3]); colormap=:viridis)
-    current_axis().title[] = "|u₃|² — ω = " * string(round(model.ωs[3]; digits=4))
-    current_figure()
-end
+surface(grid.x, grid.y, abs2.(model.us[3]) * 4)

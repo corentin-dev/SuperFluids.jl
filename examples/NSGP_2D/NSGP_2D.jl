@@ -22,36 +22,12 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
-
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # ## Discretization
 
@@ -115,9 +91,7 @@ end # hide
 # We plot the initial superfluid density $|ψ|^2$ (the vortex core appears as a
 # dip in the middle):
 
-if use_plots
-    heatmap(grid.x, grid.y, abs2.(fgp.ϕ))
-end
+heatmap(grid.x, grid.y, abs2.(fgp.ϕ))
 
 # ## Time integration
 
@@ -128,6 +102,4 @@ res = solve!(model; plot=false)
 # We plot the normal-fluid vorticity after $t = 1$: the counter-rotating
 # interaction between the vortex and the background is visible:
 
-if use_plots
-    heatmap(grid.x, grid.y, normal_vorticity(fns))
-end
+heatmap(grid.x, grid.y, normal_vorticity(fns))

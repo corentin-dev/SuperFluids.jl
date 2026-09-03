@@ -16,36 +16,12 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
-
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # We setup the wanted discretization. We want $n_x \times n_y = 128\times 128$.
 # The domain bounds are set to $[0,2π]\times[0,2π]$.
@@ -63,7 +39,7 @@ field = Field(grid, ComplexField(); mpi_topo=mpi_topo)
 
 # We want to specify the healing length $ξ$ from the grid size.
 # Here $ξ=15Δx$. We determine the coefficient $α$ in front of $Δϕ$
-# and $β$ from this information. We force the distance $d_\\text{vor}$
+# and $β$ from this information. We force the distance $d_\text{vor}$
 # between the two vortices to be equal to 20 times the healing length $ξ$.
 
 ξ = 15.0 / minimum((nx, ny))
@@ -74,11 +50,7 @@ v₊ = (grid.Lx / 4 + grid.xmin, grid.Ly / 2 + d * ξ / 2 + grid.ymin, +1)
 v₋ = (grid.Lx / 4 + grid.xmin, grid.Ly / 2 - d * ξ / 2 + grid.ymin, -1)
 
 # We want to have a constant advection velocity:
-# $$ u⃗ = \\begin{pmatrix}
-# -α ( (1+\\cos(d_\\text{vor})) / \\sin(d_\\text{vor}) + d_\\text{vor} / π ) \\
-# 0
-# \\end{pmatrix}
-# $$
+# $$\vec{u} = \begin{pmatrix} -α\left( \dfrac{1 + \cos(d_{\text{vor}})}{\sin(d_{\text{vor}})} + \dfrac{d_{\text{vor}}}{π} \right) \\ 0 \end{pmatrix}$$
 # In order to obtain this velocity, we use a [`PotentialExternalVelocity`](@ref)
 # with a custom function called `uadv_function_VR_2D`:
 uadv_function_VR_2D = ((x, y) -> -coeffΔ * ((1 + cos(d * ξ)) / sin(d * ξ) + d * ξ / π),
@@ -96,7 +68,7 @@ param = GrossPitaevskiiParameters(; coeffΔ=coeffΔ,
 # We want to initialize properly a vortex pair.
 # First we create a function that gives the module with respect to the radius distance
 # from the vortex core.
-# $$f(r) = \\sqrt{ \\dfrac{ a₁ r² + a₂ r⁴ }{1 + b₁ r² + b₂ r⁴} } $$
+# $$f(r) = \sqrt{ \dfrac{ a_1 r^2 + a_2 r^4 }{1 + b_1 r^2 + b_2 r^4} }$$
 # We call it `ρ_vortex`:
 
 function ρ_vortex(r)
@@ -124,42 +96,27 @@ function init_VR_tanh(x, y, ξ, v₊, v₋, grid)
     return ρ * exp(im * θ)
 end
 
-function init_VR_exp(x, y, ξ, v₊, v₋, grid)
-    #if y -
-    return exp(im * x * 2π / grid.Lx)
-end
+f0(x, y) = init_VR_tanh(x, y, ξ, v₊, v₋, grid)
+@. field.ϕ = f0(field.x, field.y)
 
-# if((discretization_y_ddm(j) - ymin) < vortices(1, 2) .OR. (discretization_y_ddm(j) - ymin) > vortices(2, 2)) then
-#     phi_0(i, j, 1, 1) = 1.0d0
-#  else
-#     phi_0(i, j, 1, 1) = exp(uim*(discretization_x(i))*pi2/Lx)
-#  end if
+# The phase, with the two vortices (density dips) at $x = \pm 12.5$:
 
-# We create an alias in order to broadcast the function over the field:
-my_init = (x, y) -> init_VR_tanh(x, y, ξ, v₊, v₋, grid)
-my_init = (x, y) -> init_VR_exp(x, y, ξ, v₊, v₋, grid)
-@. field.ϕ = my_init(field.x, field.y)
-@. field.ϕ .= 1.0
-
-# We obtain the following phase:
-#if use_plots # hide
 contourf(grid.x, grid.y, atan.(imag.(field.ϕ), real.(field.ϕ)))
-# And module :
+
+# and the density $|ϕ|²$:
+
 contourf(grid.x, grid.y, abs2.(field.ϕ))
-#end # hide
 
 # To clean the solution a bit, we use the ARGLE scheme
 # using [`NumModelExternalVelocity`](@ref)
-# and $Δt=2.5×10⁻³$, $n_\\text{iter}=2000$:
+# and $Δt=2.5×10⁻³$, $n_\text{iter}=2000$:
 
 Δt = 0.0025
 niter = 2000
 freqbckp = 200
 nummodel = NumModelExternalVelocity(field, param, Δt, niter, freqbckp)
 res = solve!(nummodel; plot=false);
-if use_plots # hide
-    contourf(grid.x, grid.y, abs2.(field.ϕ))
-end # hide
+contourf(grid.x, grid.y, abs2.(field.ϕ))
 
 # ## Unsteady computation
 
@@ -186,6 +143,4 @@ nummodel_insta = NumModelADI2(field_insta, param_insta, Δt_insta, niter_insta,
 # And we start the solver.
 
 res_insta = solve!(nummodel_insta; istart=niter, plot=false);
-if use_plots # hide
-    contourf(grid.x, grid.y, abs2.(field_insta.ϕ))
-end # hide
+contourf(grid.x, grid.y, abs2.(field_insta.ϕ))

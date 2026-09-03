@@ -20,36 +20,12 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
-
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # ## Discretization
 
@@ -74,8 +50,8 @@ kx = 2π / grid.Lx; ky = 2π / grid.Ly
 
 # ## Parameters
 
-# [`HBVKParameters`](@ref): `ν` the normal viscosity, `νs` the (zero) superfluid
-# viscosity, `rb` the mutual-friction coefficient, `ρn`/`ρs` the two masses.
+# [`HBVKParameters`](@ref): `ν` the normal viscosity, `νs` the (negligible)
+# superfluid viscosity, `rb` the mutual-friction coefficient, `ρn`/`ρs` the two masses.
 
 param = HBVKParameters(; ν=0.01, νs=0.001, rb=1.5, ρn=1.0, ρs=1.0)
 
@@ -89,20 +65,25 @@ freqbckp = 100
 
 model = NumModelHBVK(fn, fs, param, Δt, niter, freqbckp; stepper="RK2")
 
-# The model stores the **scalar** (2D) vorticity of each fluid in
-# `model.un_vort[2]` and `model.us_vort[2]`. We plot them.
-#
+# The scalar (2D) vorticity is computed spectrally the same way as inside the
+# model — `ω = i(k_x u_y − k_y u_x)` — reusing the model's pre-allocated
+# spectral scratch buffers (reading them fresh, not the internal buffers that
+# are only filled during `solve!`):
+
+function vorticity(model, f, uhat, tmp, out) # hide
+    g = SuperFluids.spectral_grid(model.plan)
+    @. tmp[2] = 1im * (g.x * uhat[2] - g.y * uhat[1])
+    SuperFluids.ldiv_all!(out, model.plan, tmp)
+    return real(parent(out[2]))
+end # hide
+
 # Initial normal-fluid vorticity:
 
-if use_plots
-    heatmap(grid.x, grid.y, real(model.un_vort[2]))
-end
+heatmap(grid.x, grid.y, vorticity(model, model.fn, model.un_hat, model.tmp_hat, model.un_vort))
 
 # Initial superfluid vorticity:
 
-if use_plots
-    heatmap(grid.x, grid.y, real(model.us_vort[2]))
-end
+heatmap(grid.x, grid.y, vorticity(model, model.fs, model.us_hat, model.tmp_hat, model.us_vort))
 
 # ## Time integration
 
@@ -115,12 +96,8 @@ res = solve!(model; plot=false)
 
 # Final normal-fluid vorticity:
 
-if use_plots
-    heatmap(grid.x, grid.y, real(model.un_vort[2]))
-end
+heatmap(grid.x, grid.y, vorticity(model, model.fn, model.un_hat, model.tmp_hat, model.un_vort))
 
 # Final superfluid vorticity:
 
-if use_plots
-    heatmap(grid.x, grid.y, real(model.us_vort[2]))
-end
+heatmap(grid.x, grid.y, vorticity(model, model.fs, model.us_hat, model.tmp_hat, model.us_vort))

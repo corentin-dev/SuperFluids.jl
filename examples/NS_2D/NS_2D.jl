@@ -20,40 +20,16 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
-
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # ## Discretization
 
-# We discretize the periodic box ``[0,2π]\times[0,2π]`` with
+# We discretize the periodic box $[0,2π]\times[0,2π]$ with
 # $n_x \times n_y = 64\times 64$ points. For the Navier-Stokes equations the
 # unknown is a **vector** field `u = (ux, uy)`, stored in a complex field
 # (the FFT is a complex one):
@@ -67,15 +43,15 @@ field = Field(grid, ComplexField(); ndims=2)
 # The only physical parameter is the kinematic viscosity `ν`
 # (`ρ=1` is the default):
 
-param = NavierStokesParameters(; ν=0.01)
+param = NavierStokesParameters(; ν=0.1)
 
 # ## Solver
 
 # We instantiate [`NumModelRK4Imp`](@ref):
-# `Δt = 2×10⁻³`, `niter = 500` time steps (i.e. `t = 1`), a backup every 100 steps.
+# `Δt = 2×10⁻³`, `niter = 1000` time steps (i.e. `t = 2`), a backup every 100 steps.
 
 Δt = 0.002
-niter = 500
+niter = 1000
 freqbckp = 100
 
 n = NumModelRK4Imp(field, param, Δt, niter, freqbckp)
@@ -105,9 +81,9 @@ function vorticity2D(n) # hide
     return real(ω)
 end # hide
 
-if use_plots
-    heatmap(grid.x, grid.y, vorticity2D(n))
-end
+ω0 = vorticity2D(n)
+ωmax = maximum(abs.(ω0))  # hide  (fixed color range so the decay is visible)
+heatmap(grid.x, grid.y, ω0; colorrange=(-ωmax, ωmax))
 
 # ## Time integration
 
@@ -118,17 +94,14 @@ res = solve!(n; plot=false)
 # The kinetic energy $E = \tfrac12 \int |u|^2\,\mathrm{d}x\,\mathrm{d}y$
 # should decay monotonically. We plot it against the total number of time steps:
 
-if use_plots
-    lines([l[2] for l in res], [l[6] for l in res]; label="kinetic energy E")
-    axislegend()
-    current_figure()
-end
+e_plot = lines([l[2] for l in res], [l[6] for l in res]; label="kinetic energy E")
+axislegend()
+e_plot
 
 # ## Final state
 
-# After $t=1$ the vortex has decayed towards large scales.
-# We plot the final vorticity field:
+# After $t=2$ the kinetic energy has decayed by a factor $e^{-4νt} ≈ 0.45$
+# and the vortex towards large scales. We plot the final vorticity field
+# (same color range as the initial one, so the decay is visible):
 
-if use_plots
-    heatmap(grid.x, grid.y, vorticity2D(n))
-end
+heatmap(grid.x, grid.y, vorticity2D(n); colorrange=(-ωmax, ωmax))

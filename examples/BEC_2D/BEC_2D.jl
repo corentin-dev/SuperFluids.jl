@@ -143,7 +143,14 @@ param.pot = PotentialQuarticQuadratic(field; γx=0.0, γy=0.0, κ4=0.01)
 
 # Again, we solve the problem using [`solve!`](@ref):
 
-res_quad = solve!(nummodel; istart=niter, plot=false)
+if isfile("../../save/BEC_2D_quart-990.h5") && use_saves # hide
+    read!(nummodel.writers.writerList[2]; prefix="../../save/BEC_2D_quart", istep=990) # hide
+    nummodel.niter = 10 # hide
+    res_quad = solve!(nummodel; istart=990, plot=false) # hide
+    nummodel.niter = 1000 # hide
+else # hide
+    res_quad = solve!(nummodel; istart=niter, plot=false)
+end # hide
 res_quad[end]
 
 # We plot the solution:

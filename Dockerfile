@@ -17,8 +17,13 @@ ARG JULIA_VERSION=1.12.7
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends \
         git curl wget ca-certificates \
+        git-lfs \
         libhdf5-openmpi-dev libopenmpi-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# The doc build reads checkpoints from docs/save/ (git-LFS), so make sure the
+# checkout materialises LFS objects instead of leaving 131-byte pointers.
+RUN git lfs install --system
 
 RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-${JULIA_VERSION}-linux-x86_64.tar.gz \
     && tar -xzf julia-${JULIA_VERSION}-linux-x86_64.tar.gz -C /opt/ \

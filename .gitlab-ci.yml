@@ -88,6 +88,10 @@ pages:
   needs: [build-image]
   before_script:
     - git config --global --add safe.directory "$(pwd)"
+    # Materialise the doc checkpoints (docs/save/*.h5, git-LFS): the runner
+    # checkout may leave 131-byte LFS pointers, which would break the example
+    # restart-from-checkpoint (read!) and force a full recompute.
+    - git lfs install && git lfs pull
   script:
     # Documentation stack (already cached/precompiled in the image).
     # Doc stack ships precompiled in the image; this is an idempotency guard.

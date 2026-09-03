@@ -68,34 +68,15 @@ initField!(init)
 
 # ### Plot initial solution
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# For documentation purpose, we use `WGLMakie` # hide
-# that allows interactive javascript plots using WebGL, but you can also # hide
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie` # hide
-# for static image plots. # hide
-
-# You can change those values if you want PNG or GL plots # hide
-
-makie_style = "WGLMakie" # hide
-#makie_style = "GLMakie" # hide
-#makie_style = "CairoMakie" # hide
-
-if makie_style == "WGLMakie" # hide
-    using WGLMakie
-    WGLMakie.activate!() # hide
-    WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-elseif makie_style == "GLMakie" # hide
-    using GLMakie # hide
-    GLMakie.activate!() # hide
-elseif makie_style == "CairoMakie" # hide
-    using CairoMakie # hide
-    CairoMakie.activate!() # hide
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # We plot the initial solution:
 
-#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
 
 # The solver use implicit [`NumModelBackwardEuler`](@ref) scheme:
@@ -111,30 +92,43 @@ nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp; nkrylov=500
 
 # ### Run the first simulation
 
+# If a checkpoint exists (git-LFS `docs/save`), we restart from it so the page
+# does not have to recompute the full imaginary-time relaxation:
+
+use_saves = true # hide
+#if you want to re-run the page, change to false # hide
+
 # Launch the solver with [`solve!`](@ref):
-res = solve!(nummodel; plot=false)
+
+if isfile("../../save/BEC_2D_quad-990.h5") && use_saves # hide
+    read!(nummodel.writers.writerList[2]; prefix="../../save/BEC_2D_quad", istep=990) # hide
+    nummodel.niter = 10 # hide
+    res = solve!(nummodel; istart=990, plot=false) # hide
+    nummodel.niter = 1000 # hide
+else # hide
+    res = solve!(nummodel; plot=false)
+end # hide
 res[end]
 
 # We plot the convergence:
 
-lines(1:length(res), [l[6] for l in res]; label="Total energy")
+e_plot = lines(1:length(res), [l[6] for l in res]; label="Total energy")
 lines!(1:length(res), [l[3] for l in res]; label="Rotational energy")
 lines!(1:length(res), [l[4] for l in res]; label="Potential+kinetic energy")
 lines!(1:length(res), [l[5] for l in res]; label="Interaction energy")
 axislegend()
-current_figure()
+e_plot
 
 # Number of Krylov iteration per imaginary time step:
 
-lines(1:length(res), [l[1] for l in res]; label="Number of Krylov iterations")
+k_plot = lines(1:length(res), [l[1] for l in res]; label="Number of Krylov iterations")
 axislegend()
-current_figure()
+k_plot
 
 # ### Solution for the quadratic potential
 
 # We plot the solution:
 
-#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
 
 # ## Quartic potential
@@ -147,12 +141,11 @@ surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)
 
 param.pot = PotentialQuarticQuadratic(field; γx=0.0, γy=0.0, κ4=0.01)
 
-# Again, we solve the problem using ['solve!`](@ref):
+# Again, we solve the problem using [`solve!`](@ref):
 
 res_quad = solve!(nummodel; istart=niter, plot=false)
 res_quad[end]
 
 # We plot the solution:
 
-#surface(grid.x, grid.y, abs2.(field.ϕ),  axis=(type=Axis3, viewmode = :fit)) # hide
 surface(grid.x, grid.y, abs2.(field.ϕ) * 1000.0)

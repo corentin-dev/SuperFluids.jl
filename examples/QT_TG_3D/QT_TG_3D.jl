@@ -2,13 +2,16 @@
 #
 # ## Introduction
 #
-# To test quantum turbulence with this package, we chose to use an example from
+# To test quantum turbulence with this package, we first relax a Gross-Pitaevskii
+# field to a stationary state under a strong external flow, then restart an
+# unsteady simulation from it.
+#
 # We first load the package, in order to have all the constructors and functions available.
 
 using SuperFluids
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
-# In this case, run with `mpirun -np 4 julia --project example/QT_TG_3D/QT_TG_3D.jl`
+# In this case, run with `mpirun -np 4 julia --project examples/QT_TG_3D/QT_TG_3D.jl`
 # if $4$ is the desired number of processes.
 
 # Here, the topoology is a pencil topology, meaning that $y$ and $z$ directions can be
@@ -17,39 +20,18 @@ using SuperFluids
 
 mpi_topo = SuperFluids.MPITopo2D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
+# If a checkpoint exists (git-LFS `docs/save`), we restart from it so the page
+# does not have to recompute the full stationary relaxation:
 
 use_saves = true # hide
 #if you want to re-run the page, change to false # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
 
 # We setup the wanted discretization. We want $n_x \times n_y \times n_z = 128\times 128\times 128$.
 # The domain bounds are set to $[0,2\pi]\times[0,2\pi]\times[0,2\pi]$.
@@ -97,10 +79,8 @@ param = GrossPitaevskiiParameters(; coeffΔ=-0.075,
 init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
-if mpi_topo.size == 1 # hide
-    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field.ϕ)); algorithm=:iso, isovalue=0.4,
+volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field.ϕ)); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
-end # hide
 
 # The solver uses [`NumModelExternalVelocity`](@ref).
 # It uses the following scheme:
@@ -134,16 +114,12 @@ res[end]
 
 # Plot the solution
 
-if mpi_topo.size == 1 # hide
-    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field.ϕ)); algorithm=:iso, isovalue=0.4,
+volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field.ϕ)); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
-end # hide
 
 # Cut at ``z = π``:
 
-if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(parent(field.ϕ)[:, :, nz ÷ 2]))
-end # hide
+surface(grid.x, grid.y, abs2.(parent(field.ϕ)[:, :, nz ÷ 2]))
 
 # ## Second step: unstationary restart
 
@@ -182,13 +158,9 @@ res_insta[end]
 
 # Plot the solution.
 
-if mpi_topo.size == 1 # hide
-    volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field_insta.ϕ)); algorithm=:iso, isovalue=0.4,
+volume((first(grid.x), last(grid.x)), (first(grid.y), last(grid.y)), (first(grid.z), last(grid.z)), parent(abs2.(field_insta.ϕ)); algorithm=:iso, isovalue=0.4,
            isorange=0.2)
-end # hide
 
 # Cut at ``z = π``:
 
-if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(parent(field_insta.ϕ)[:, :, nz ÷ 2]))
-end # hide
+surface(grid.x, grid.y, abs2.(parent(field_insta.ϕ)[:, :, nz ÷ 2]))

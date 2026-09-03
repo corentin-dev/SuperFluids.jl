@@ -2,56 +2,29 @@
 #
 # ## Introduction
 #
-# To test quantum turbulence with this package, we chose to use an example from
+# To test quantum turbulence with this package, we first relax a Gross-Pitaevskii
+# field to a stationary state under a strong external flow, then restart an
+# unsteady simulation from it.
+#
 # We first load the package, in order to have all the constructors and functions available.
 
 using SuperFluids
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
-# In this case, run with `mpirun -np 4 julia --project example/QT_TG_3D/QT_TG_3D.jl`
+# In this case, run with `mpirun -np 4 julia --project examples/QT_TG_2D/QT_TG_2D.jl`
 # if ``4`` is the desired number of processes.
-
-# !!!note
-#     This example, due to the way plots are done, is only valid for `mpirun -np 1`.
 
 # Here, the topoology is a slab topology, meaning that ``y`` direction can be
 # decomposed. The slab is transposed for some operations (FFT, finite differences, etc).
 
 mpi_topo = SuperFluids.MPITopo1D()
 
-# We use [`Makie`](https://makie.juliaplots.org/stable/) for plots. For documentation purpose, we use `WGLMakie`
-# that allows interactive javascript plots using WebGL, but you can also
-# use `GLMakie` for interactive plots on your computer, or `CairoMakie`
-# for static image plots.
+# We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
+# which produces interactive WebGL plots in the documentation) for the plots:
 
-# You can change those values if you want PNG or GL plots
-
-makie_style = "WGLMakie"
-#makie_style = "GLMakie"
-#makie_style = "CairoMakie"
-
-if mpi_topo.size == 1 # hide
-    use_plots = true # hide
-else # hide
-    use_plots = false # hide
-end # hide
-
-use_saves = true # hide
-#if you want to re-run the page, change to false # hide
-
-if use_plots # hide
-    if makie_style == "WGLMakie"
-        using WGLMakie
-        WGLMakie.activate!()
-        WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
-    elseif makie_style == "GLMakie"
-        using GLMakie
-        GLMakie.activate!()
-    elseif makie_style == "CairoMakie"
-        using CairoMakie
-        CairoMakie.activate!()
-    end
-end # hide
+using WGLMakie # hide
+WGLMakie.activate!() # hide
+WGLMakie.Bonito.Page(; exportable=true, offline=true) # hide
 
 # We setup the wanted discretization. We want ``n_x \times n_y = 128\times 128``.
 # The domain bounds are set to ``[0,2\pi]\times[0,2\pi]``.
@@ -95,9 +68,7 @@ param = GrossPitaevskiiParameters(; coeffΔ=-0.05,
 init = InitExternalVelocity(field, param.coeffΔ, param.β)
 initField!(init)
 
-if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(field.ϕ))
-end # hide
+surface(grid.x, grid.y, abs2.(field.ϕ))
 
 # The solver uses [`NumModelExternalVelocity`](@ref).
 # It uses the following scheme:
@@ -124,15 +95,11 @@ res[end]
 
 # Convergence of energy
 
-if mpi_topo.rank == 0 # hide
-    lines([l[2] for l in res], [l[6] for l in res])
-end # hide
+lines([l[2] for l in res], [l[6] for l in res])
 
 # Plot the solution
 
-if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(field.ϕ))
-end # hide
+surface(grid.x, grid.y, abs2.(field.ϕ))
 
 # ## Second step: unstationary restart
 
@@ -164,12 +131,8 @@ res_insta[end]
 
 # Total energy should be (almost) constant in this case:
 
-if mpi_topo.rank == 0 # hide
-    lines([l[2] for l in res_insta], [l[6] for l in res_insta])
-end # hide
+lines([l[2] for l in res_insta], [l[6] for l in res_insta])
 
 # Plot the solution.
 
-if mpi_topo.size == 1 # hide
-    surface(grid.x, grid.y, abs2.(field_insta.ϕ))
-end # hide
+surface(grid.x, grid.y, abs2.(field_insta.ϕ))

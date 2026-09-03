@@ -8,9 +8,6 @@ using SuperFluids
 # In this case, run with `mpirun -np 4 julia --project example/QT_TG_3D/QT_TG_3D.jl`
 # if ``4`` is the desired number of processes.
 
-# !!!note
-#     This example, due to the way plots are done, is only valid for `mpirun -np 1`.
-
 # Here, the topoology is a slab topology, meaning that ``y`` direction can be
 # decomposed. The slab is transposed for some operations (FFT, finite differences, etc).
 

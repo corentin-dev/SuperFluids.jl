@@ -27,9 +27,6 @@ using SuperFluids
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 1 julia --project examples/BDG/BDG_2D.jl`
 
-# !!!note
-#     This example, due to the way plots are done, is only valid for `mpirun -np 1`.
-
 mpi_topo = SuperFluids.MPITopo1D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,

@@ -1,11 +1,11 @@
 using Documenter
 using Literate
-using SuperFluids
+using SuperfluidDynamics
 using MPI
 
 MPI.Init()
-DocMeta.setdocmeta!(SuperFluids, :DocTestSetup,
-                    :(using SuperFluids;
+DocMeta.setdocmeta!(SuperfluidDynamics, :DocTestSetup,
+                    :(using SuperfluidDynamics;
                       grid = Grid((32, 32), ((-12, 12), (-12, 12)));
                       field = Field(grid, ComplexField()); 
                       grid3 = Grid((32, 32, 32), ((-12,  12), (-12,  12), (-12,  12)));
@@ -60,8 +60,8 @@ if run_example
 end
 
 makedocs(; authors="Corentin Lothode <corentin.lothode@univ-rouen.fr> and contributors.",
-         repo="https://plmlab.math.cnrs.fr/lothode/SuperFluids.jl",
-         sitename="SuperFluids.jl",
+         repo="https://plmlab.math.cnrs.fr/lothode/SuperfluidDynamics.jl",
+         sitename="SuperfluidDynamics.jl",
          # `prettyurls=false`: page `foo.html` (not `foo/index.html`) so the
          # per-page Bonito/JSServe assets are referenced with a stable relative
          # path. `size_threshold=nothing`: the interactive WebGL figures are
@@ -70,7 +70,7 @@ makedocs(; authors="Corentin Lothode <corentin.lothode@univ-rouen.fr> and contri
          doctest=false,
          warnonly=true,   # old `strict=false`: never fail the build, only warn
          clean=true,
-         modules=[SuperFluids],
+         modules=[SuperfluidDynamics],
          pages=pages)
 
 # Documenter can also automatically deploy documentation to gh-pages.

@@ -10,12 +10,12 @@
 
 # We first load the package, in order to have all the constructors and functions available.
 
-using SuperFluids
+using SuperfluidDynamics
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 4 julia --project examples/HVBK_2D/HVBK_2D.jl`
 
-mpi_topo = SuperFluids.MPITopo1D()
+mpi_topo = SuperfluidDynamics.MPITopo1D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
 # which produces interactive WebGL plots in the documentation) for the plots:
@@ -68,9 +68,9 @@ model = NumModelHBVK(fn, fs, param, Δt, niter, freqbckp; stepper="RK2")
 # are only filled during `solve!`):
 
 function vorticity(model, f, uhat, tmp, out) # hide
-    g = SuperFluids.spectral_grid(model.plan)
+    g = SuperfluidDynamics.spectral_grid(model.plan)
     @. tmp[2] = 1im * (g.x * uhat[2] - g.y * uhat[1])
-    SuperFluids.ldiv_all!(out, model.plan, tmp)
+    SuperfluidDynamics.ldiv_all!(out, model.plan, tmp)
     return real(parent(out[2]))
 end # hide
 

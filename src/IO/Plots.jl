@@ -1,7 +1,7 @@
 module Plots
 
-using ..SuperFluids
-import ..SuperFluids: AbstractField, AbstractField2D, AbstractField3D
+using ..SuperfluidDynamics
+import ..SuperfluidDynamics: AbstractField, AbstractField2D, AbstractField3D
 
 export updatePlot!, createPlot!, Plot
 

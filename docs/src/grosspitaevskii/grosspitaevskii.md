@@ -26,17 +26,17 @@ GrossPitaevskiiParameters(; :: Real, :: Real, :: AbstractPotential, :: Real)
 ### Structure
 
 ```@docs
-SuperFluids.GrossPitaevskiiParameters
+SuperfluidDynamics.GrossPitaevskiiParameters
 ```
 
 ## Energy
 
 ```@docs
-SuperFluids.energy
+SuperfluidDynamics.energy
 ```
 
 ## Utilities
 
 ```@docs
-SuperFluids.lapRot
+SuperfluidDynamics.lapRot
 ```

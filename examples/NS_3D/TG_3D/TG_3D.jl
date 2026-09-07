@@ -1,4 +1,4 @@
-using SuperFluids
+using SuperfluidDynamics
 
 # =====================================================================
 # 3D Navier-Stokes — Taylor-Green vortex, semi-implicit RK4
@@ -44,6 +44,6 @@ res = solve!(nummodel; plot=false)
 # diagnostics: final energy and divergence
 E0 = res[1][4]
 E = res[end][4]
-d = SuperFluids.divergence(nummodel)
+d = SuperfluidDynamics.divergence(nummodel)
 println("E0 = $(E0), E = $(E), decay = $(E / E0)")
 println("max |div u| = $(maximum(abs.(parent(d))))")

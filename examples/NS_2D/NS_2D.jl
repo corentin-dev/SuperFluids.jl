@@ -10,12 +10,12 @@
 
 # We first load the package, in order to have all the constructors and functions available.
 
-using SuperFluids
+using SuperfluidDynamics
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 4 julia --project examples/NS_2D/NS_2D.jl`
 
-mpi_topo = SuperFluids.MPITopo1D()
+mpi_topo = SuperfluidDynamics.MPITopo1D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
 # which produces interactive WebGL plots in the documentation) for the plots:
@@ -70,11 +70,11 @@ taylor_green!(field, grid.x, grid.y)
 # ``\hat{ω} = i (k_x \hat{u}_y - k_y \hat{u}_x)`` then an inverse FFT:
 
 function vorticity2D(n) # hide
-    g = SuperFluids.spectral_grid(n.plan)
-    SuperFluids.mul_all!(n.u_hat, n.plan, n.f.u)
+    g = SuperfluidDynamics.spectral_grid(n.plan)
+    SuperfluidDynamics.mul_all!(n.u_hat, n.plan, n.f.u)
     ω_hat = @. 1im * (g.x * n.u_hat[2] - g.y * n.u_hat[1])
     ω = similar(n.f.ux)
-    SuperFluids.ldiv_all!(ω, n.plan, ω_hat)
+    SuperfluidDynamics.ldiv_all!(ω, n.plan, ω_hat)
     return real(ω)
 end # hide
 

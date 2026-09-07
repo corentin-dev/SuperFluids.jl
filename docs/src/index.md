@@ -1,6 +1,6 @@
-# SuperFluids.jl
+# SuperfluidDynamics.jl
 
-**SuperFluids.jl** is a Julia package for simulating superfluids. It started as
+**SuperfluidDynamics.jl** is a Julia package for simulating superfluids. It started as
 a Gross-Pitaevskii (GP) solver for Bose-Einstein condensates and has grown into
 a general library for quantum and classical fluids. It currently supports:
 
@@ -24,19 +24,19 @@ This package is authored by Corentin Lothodé, and is largely inspired by
 The package is not in the Julia registry. Add it from the repository:
 
 ```
-pkg> add https://plmlab.math.cnrs.fr/lmrs/num/SuperFluids.jl
+pkg> add https://plmlab.math.cnrs.fr/lmrs/num/SuperfluidDynamics.jl
 ```
 
 or clone it and work from a local project:
 
 ```bash
-git clone git@plmlab.math.cnrs.fr:lmrs/num/SuperFluids.jl.git
-cd SuperFluids.jl
+git clone git@plmlab.math.cnrs.fr:lmrs/num/SuperfluidDynamics.jl.git
+cd SuperfluidDynamics.jl
 julia --project=.
 ```
 
 ```julia-repl
-julia> using SuperFluids
+julia> using SuperfluidDynamics
 ```
 
 See the [Quick start](@ref) for a minimal Gross-Pitaevskii simulation, and the

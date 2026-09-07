@@ -1,6 +1,6 @@
 # Plots
 
-`SuperFluids.jl` produces plots with [`Makie.jl`](https://makie.org/). Only 2D
+`SuperfluidDynamics.jl` produces plots with [`Makie.jl`](https://makie.org/). Only 2D
 plots are currently available, aimed at Bose-Einstein-condensate applications
 (`plot = true` in `solve!` drives them).
 

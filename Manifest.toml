@@ -891,7 +891,7 @@ deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "7.8.3+2"
 
-[[deps.SuperFluids]]
+[[deps.SuperfluidDynamics]]
 deps = ["AbstractFFTs", "Arpack", "CUDA", "DocStringExtensions", "FFTW", "HDF5", "LinearAlgebra", "MPI", "MPIPreferences", "PencilArrays", "Preferences", "Requires", "WriteVTK"]
 path = "."
 uuid = "7b6395f6-f378-46b0-9ce4-4708ac745388"

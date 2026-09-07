@@ -1,6 +1,6 @@
 # # 2D Vortex Pair
 
-using SuperFluids
+using SuperfluidDynamics
 
 # ## Discretization
 
@@ -11,7 +11,7 @@ using SuperFluids
 # Here, the topoology is a slab topology, meaning that ``y`` direction can be
 # decomposed. The slab is transposed for some operations (FFT, finite differences, etc).
 
-mpi_topo = SuperFluids.MPITopo1D()
+mpi_topo = SuperfluidDynamics.MPITopo1D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
 # which produces interactive WebGL plots in the documentation) for the plots:

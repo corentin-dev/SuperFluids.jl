@@ -1,9 +1,9 @@
-using SuperFluids
+using SuperfluidDynamics
 
 # using DataFrames
 # using CSV
 
-mpi_topo = SuperFluids.MPITopo1D();
+mpi_topo = SuperfluidDynamics.MPITopo1D();
 
 # simulation parameters
 nx = 128

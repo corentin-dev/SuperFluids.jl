@@ -26,20 +26,20 @@ InitGauss
 ### Initializer functions
 
 ```@docs
-initField!(::SuperFluids.InitThomasFermi{F}) where {F<:SuperFluids.AbstractField2D}
-initField!(::SuperFluids.InitThomasFermi{F}) where {F<:SuperFluids.AbstractField3D}
+initField!(::SuperfluidDynamics.InitThomasFermi{F}) where {F<:SuperfluidDynamics.AbstractField2D}
+initField!(::SuperfluidDynamics.InitThomasFermi{F}) where {F<:SuperfluidDynamics.AbstractField3D}
 ```
 
 ### Constructors
 
 ```@docs
-InitThomasFermi(:: F,:: Real;:: Real, :: Real, :: Real) where {F<:SuperFluids.AbstractField}
+InitThomasFermi(:: F,:: Real;:: Real, :: Real, :: Real) where {F<:SuperfluidDynamics.AbstractField}
 ```
 
 ### Structures
 
 ```@docs
-SuperFluids.InitThomasFermi
+SuperfluidDynamics.InitThomasFermi
 ```
 
 ## Gauss
@@ -47,20 +47,20 @@ SuperFluids.InitThomasFermi
 ### Initializer functions
 
 ```@docs
-initField!(::SuperFluids.InitGauss{F}) where {F<:SuperFluids.AbstractField2D}
-initField!(::SuperFluids.InitGauss{F}) where {F<:SuperFluids.AbstractField3D}
+initField!(::SuperfluidDynamics.InitGauss{F}) where {F<:SuperfluidDynamics.AbstractField2D}
+initField!(::SuperfluidDynamics.InitGauss{F}) where {F<:SuperfluidDynamics.AbstractField3D}
 ```
 
 ### Constructors
 
 ```@docs
-InitGauss(::F; ::Real, :: Real) where {F<:SuperFluids.AbstractField}
+InitGauss(::F; ::Real, :: Real) where {F<:SuperfluidDynamics.AbstractField}
 ```
 
 ### Structures
 
 ```@docs
-SuperFluids.InitGauss
+SuperfluidDynamics.InitGauss
 ```
 
 ## External velocity
@@ -68,17 +68,17 @@ SuperFluids.InitGauss
 ### Initializer functions
 
 ```@docs
-initField!(::InitExternalVelocity{F}) where {F<:SuperFluids.AbstractField2D}
+initField!(::InitExternalVelocity{F}) where {F<:SuperfluidDynamics.AbstractField2D}
 ```
 
 ### Constructors
 
 ```@docs
-InitExternalVelocity(:: F,:: Real,:: Real) where {F<:SuperFluids.AbstractField}
+InitExternalVelocity(:: F,:: Real,:: Real) where {F<:SuperfluidDynamics.AbstractField}
 ```
 
 ### Structures
 
 ```@docs
-SuperFluids.InitExternalVelocity
+SuperfluidDynamics.InitExternalVelocity
 ```

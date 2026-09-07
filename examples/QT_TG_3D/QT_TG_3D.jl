@@ -8,7 +8,7 @@
 #
 # We first load the package, in order to have all the constructors and functions available.
 
-using SuperFluids
+using SuperfluidDynamics
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 4 julia --project examples/QT_TG_3D/QT_TG_3D.jl`
@@ -18,7 +18,7 @@ using SuperFluids
 # decomposed (if $n_\text{proc}$ is not prime). The pencil is transposed for some operations
 # (FFT, finite differences, etc).
 
-mpi_topo = SuperFluids.MPITopo2D()
+mpi_topo = SuperfluidDynamics.MPITopo2D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
 # which produces interactive WebGL plots in the documentation) for the plots:

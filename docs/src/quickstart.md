@@ -4,7 +4,7 @@ In order to have any simulation, you need to create a `Grid` and a `Field`. Then
 
 First, you need to start by importing the package:
 ```julia-repl
-julia> using SuperFluids
+julia> using SuperfluidDynamics
 ```
 
 Specify the grid resolution, and bounds of the box. You can then create a grid:

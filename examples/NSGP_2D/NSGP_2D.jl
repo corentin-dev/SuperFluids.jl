@@ -12,12 +12,12 @@
 
 # We first load the package, in order to have all the constructors and functions available.
 
-using SuperFluids
+using SuperfluidDynamics
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 4 julia --project examples/NSGP_2D/NSGP_2D.jl`
 
-mpi_topo = SuperFluids.MPITopo1D()
+mpi_topo = SuperfluidDynamics.MPITopo1D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
 # which produces interactive WebGL plots in the documentation) for the plots:
@@ -75,13 +75,13 @@ model = NumModelNSGP(fgp, fns, param, Δt, niter, freqbckp; stepper="RK2Imp")
 # using a standalone [`Plan`](@ref):
 
 function normal_vorticity(fns) # hide
-    pl = SuperFluids.Plan(fns)
-    g = SuperFluids.spectral_grid(pl)
+    pl = SuperfluidDynamics.Plan(fns)
+    g = SuperfluidDynamics.spectral_grid(pl)
     uhat = [similar(fns.ux) for _ in 1:2]
-    SuperFluids.mul_all!(uhat, pl, fns.u)
+    SuperfluidDynamics.mul_all!(uhat, pl, fns.u)
     ωh = @. 1im * (g.x * uhat[2] - g.y * uhat[1])
     ω = similar(fns.ux)
-    SuperFluids.ldiv_all!(ω, pl, ωh)
+    SuperfluidDynamics.ldiv_all!(ω, pl, ωh)
     return real(ω)
 end # hide
 

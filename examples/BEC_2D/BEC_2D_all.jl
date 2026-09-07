@@ -1,6 +1,6 @@
-using SuperFluids
+using SuperfluidDynamics
 
-mpi_topo = SuperFluids.MPITopo1D();
+mpi_topo = SuperfluidDynamics.MPITopo1D();
 
 # simulation parameters
 nx = 128

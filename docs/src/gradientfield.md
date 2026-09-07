@@ -14,17 +14,17 @@ GradientField
 ## Structures
 
 ```@docs
-SuperFluids.GradientField2D
+SuperfluidDynamics.GradientField2D
 ```
 
 ```@docs
-SuperFluids.GradientRotField2D
+SuperfluidDynamics.GradientRotField2D
 ```
 
 ```@docs
-SuperFluids.GradientField3D
+SuperfluidDynamics.GradientField3D
 ```
 
 ```@docs
-SuperFluids.GradientRotField3D
+SuperfluidDynamics.GradientRotField3D
 ```

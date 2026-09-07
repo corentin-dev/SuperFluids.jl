@@ -22,7 +22,7 @@ include("derivatives.jl")
 
 function solve!(n::AbstractNumModel; istart=1, plot=false)
     if plot
-        @eval using SuperFluids.Plots
+        @eval using SuperfluidDynamics.Plots
         p = Plot(n.f)
         createPlot!(p)
     end

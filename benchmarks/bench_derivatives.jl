@@ -15,7 +15,7 @@
 #
 # Run:  julia --project=. -t1 -O3 benchmarks/bench_derivatives.jl
 
-using SuperFluids
+using SuperfluidDynamics
 using Printf: @printf, @sprintf
 using PencilArrays: parent, transpose!
 
@@ -114,9 +114,9 @@ const FLOP = Dict(
 
 # Low-level FD call for an arbitrary order, with pre-allocated y scratch.
 function fd_lowlevel!(gf, plan, field, scratch1, scratch2, order)
-    SuperFluids.computedxddx!(parent(field.ϕ), parent(gf.dx), parent(gf.ddx), field.g.Δx; order=order)
+    SuperfluidDynamics.computedxddx!(parent(field.ϕ), parent(gf.dx), parent(gf.ddx), field.g.Δx; order=order)
     transpose!(plan.ϕytmp, field.ϕ)
-    SuperFluids.computedyddy!(parent(plan.ϕytmp), parent(scratch1), parent(scratch2), field.g.Δy; order=order)
+    SuperfluidDynamics.computedyddy!(parent(plan.ϕytmp), parent(scratch1), parent(scratch2), field.g.Δy; order=order)
     transpose!(gf.dy, scratch1); transpose!(gf.ddy, scratch2)
     return nothing
 end
@@ -138,17 +138,17 @@ function main()
         d1x, d2x, d1y, d2y = exact_fields(field)
         gf = GradientField(field; rotation=false)
         plan_fft = Plan(field)
-        plan_fd = Plan(field; t=SuperFluids.FiniteDifferencePlan())
-        plan_cp = Plan(field; t=SuperFluids.CompactPlan())
+        plan_fd = Plan(field; t=SuperfluidDynamics.FiniteDifferencePlan())
+        plan_cp = Plan(field; t=SuperfluidDynamics.CompactPlan())
         s1 = similar(plan_fd.ϕytmp); s2 = similar(plan_fd.ϕytmp)
 
         # FFT
-        cFFT = () -> SuperFluids.computeDerivatives!(gf, plan_fft, field.ϕ)
+        cFFT = () -> SuperfluidDynamics.computeDerivatives!(gf, plan_fft, field.ϕ)
         cFFT(); e = max_err(gf, d1x, d2x, d1y, d2y)
         R["FFT"][N] = (e, bench_min(cFFT))
 
         # FD6 (default, high-level API)
-        cFD6 = () -> SuperFluids.computeDerivatives!(gf, plan_fd, field.ϕ)
+        cFD6 = () -> SuperfluidDynamics.computeDerivatives!(gf, plan_fd, field.ϕ)
         cFD6(); e = max_err(gf, d1x, d2x, d1y, d2y)
         R["FD6"][N] = (e, bench_min(cFD6))
 
@@ -158,7 +158,7 @@ function main()
         R["FD8"][N] = (e, bench_min(cFD8))
 
         # CP6 (high-level API)
-        cCP6 = () -> SuperFluids.computeDerivatives!(gf, plan_cp, field.ϕ)
+        cCP6 = () -> SuperfluidDynamics.computeDerivatives!(gf, plan_cp, field.ϕ)
         cCP6(); e = max_err(gf, d1x, d2x, d1y, d2y)
         R["CP6"][N] = (e, bench_min(cCP6))
     end

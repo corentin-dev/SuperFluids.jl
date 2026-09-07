@@ -5,13 +5,13 @@
 
 # We first load the package, in order to have all the constructors and functions available.
 
-using SuperFluids
+using SuperfluidDynamics
 
 # ## Quadratic potential
 
 # ### Discretization
 
-# We setup the wanted discretization. `SuperFluids` uses only regular rectangular grids in order to use either FFT or finite differences.
+# We setup the wanted discretization. `SuperfluidDynamics` uses only regular rectangular grids in order to use either FFT or finite differences.
 
 # For this case, we want $n_x \times n_y = 128\times 128$.
 # The domain bounds are set to $[-12,12]\times[-12,12]$.
@@ -87,7 +87,7 @@ freqbckp = 10
 nummodel = NumModelBackwardEuler(field, param, Δt, niter, freqbckp; nkrylov=500,
                                  tolkrylov=1e-6)
 
-# Many other solvers exists in `SuperFluids`, and you can check the example `BEC_2D_all.jl` to see
+# Many other solvers exists in `SuperfluidDynamics`, and you can check the example `BEC_2D_all.jl` to see
 # how to use them.
 
 # ### Run the first simulation

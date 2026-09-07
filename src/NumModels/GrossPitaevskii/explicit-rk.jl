@@ -62,7 +62,7 @@ function NumModelGPRK(f::AbstractField,
     writer = WriterVTK(f); saver = WriterSave(f)
     writers = WriterCollection([writer, saver])
     bfun() = similar(f.ϕ)
-    npen = getfield(SuperFluids, :last_pencil)(plan)
+    npen = getfield(SuperfluidDynamics, :last_pencil)(plan)
     shat = PencilArray{eltype(f.ϕ)}(undef, npen)
     return NumModelGPRK{typeof(f),typeof(param),typeof(plan)}(
         f, gf, param, Δt, niter, freqbckp, stepper, plan, writers,
@@ -133,7 +133,7 @@ explicit step to control the high-frequency round-off growth that explicit
 Runge-Kutta methods exhibit on the dispersive Gross-Pitaevskii spectrum.
 """
 function _gp_dealias!(n::NumModelGPRK)
-    gridξ = getfield(SuperFluids, :spectral_grid)(n.plan)
+    gridξ = getfield(SuperfluidDynamics, :spectral_grid)(n.plan)
     mul_all!(n.shat, n.plan, n.f.ϕ)
     if ndims(gridξ) == 3
         func = x -> x^2

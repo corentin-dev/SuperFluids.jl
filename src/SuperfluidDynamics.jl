@@ -1,4 +1,4 @@
-module SuperFluids
+module SuperfluidDynamics
 
 using Preferences, MPIPreferences
 using DocStringExtensions

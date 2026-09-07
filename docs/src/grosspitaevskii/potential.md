@@ -15,5 +15,5 @@ PotentialQuarticQuadratic
 ## Extending to a custom potentials
 
 ```@docs
-SuperFluids.AbstractPotential
+SuperfluidDynamics.AbstractPotential
 ```

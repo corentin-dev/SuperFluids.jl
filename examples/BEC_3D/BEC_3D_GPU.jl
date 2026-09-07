@@ -1,4 +1,4 @@
-using SuperFluids
+using SuperfluidDynamics
 using CUDA
 
 # simulation parameters
@@ -10,7 +10,7 @@ xrange = (-12, 12)
 yrange = (-12, 12)
 zrange = (-12, 12)
 
-mpi_topo = SuperFluids.MPITopo2D();
+mpi_topo = SuperfluidDynamics.MPITopo2D();
 
 # creating a grid
 grid = Grid((nx, ny, nz), (xrange, yrange, zrange); array_type=CuArray)

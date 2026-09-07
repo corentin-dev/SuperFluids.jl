@@ -1,5 +1,5 @@
 using Test
-using SuperFluids
+using SuperfluidDynamics
 using PencilArrays: localgrid
 
 # Relative error helper: max|a-b| / max|b|
@@ -39,7 +39,7 @@ end
     kx, ky = set_mode_2d!(field, 2, 3)
     gf = GradientField(field; rotation=true)
     plan = Plan(field)
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FFT
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FFT
@@ -59,7 +59,7 @@ end
     kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
     gf = GradientField(field; rotation=true)
     plan = Plan(field)
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FFT
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FFT
@@ -79,7 +79,7 @@ end
     kx, ky = set_mode_2d!(field, 2, 3)
     gf = GradientField(field; rotation=false)
     plan = Plan(field)
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FFT
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FFT
@@ -95,7 +95,7 @@ end
     kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
     gf = GradientField(field; rotation=false)
     plan = Plan(field)
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FFT
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FFT
@@ -113,8 +113,8 @@ end
     X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
     kx, ky = set_mode_2d!(field, 2, 3)
     gf = GradientField(field; rotation=true)
-    plan = Plan(field; t=SuperFluids.FiniteDifferencePlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.FiniteDifferencePlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -131,8 +131,8 @@ end
     field = Field(Grid((128, 128), ((-12, 12), (-12, 12))), ComplexField())
     kx, ky = set_mode_2d!(field, 2, 3)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.FiniteDifferencePlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.FiniteDifferencePlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -147,8 +147,8 @@ end
     field = Field(Grid((64, 64, 64), ((-12, 12), (-12, 12), (-12, 12))), ComplexField())
     kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
     gf = GradientField(field; rotation=true)
-    plan = Plan(field; t=SuperFluids.FiniteDifferencePlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.FiniteDifferencePlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -165,8 +165,8 @@ end
     field = Field(Grid((64, 64, 64), ((-12, 12), (-12, 12), (-12, 12))), ComplexField())
     kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.FiniteDifferencePlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.FiniteDifferencePlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -187,8 +187,8 @@ end
     X = reshape(vec(field.x), :, 1); Y = reshape(vec(field.y), 1, :)
     kx, ky = set_mode_2d!(field, 2, 3)
     gf = GradientField(field; rotation=true)
-    plan = Plan(field; t=SuperFluids.CompactPlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -202,8 +202,8 @@ end
     field = Field(Grid((128, 128), ((-12, 12), (-12, 12))), ComplexField())
     kx, ky = set_mode_2d!(field, 2, 3)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -216,8 +216,8 @@ end
     X = reshape(vec(field.x), :, 1, 1); Y = reshape(vec(field.y), 1, :, 1)
     kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
     gf = GradientField(field; rotation=true)
-    plan = Plan(field; t=SuperFluids.CompactPlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -233,8 +233,8 @@ end
     field = Field(Grid((64, 64, 64), ((-12, 12), (-12, 12), (-12, 12))), ComplexField())
     kx, ky, kz = set_mode_3d!(field, 2, 3, 4)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan())
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan())
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     ϕ = field.ϕ
     @test relerr(gf.dx,  1im * kx * ϕ) < TOL_FD
     @test relerr(gf.dy,  1im * ky * ϕ) < TOL_FD
@@ -262,8 +262,8 @@ end
     cy_ = cos.(c * (reshape(field.y, 1, :) .+ L/2))
     field.ϕ .= sx * sy
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(1, 1)))
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan(bcs=(1, 1)))
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     I = 3:(n - 2)
     @test relerr(parent(gf.dx)[I, I],  (c * cx_ * sy)[I, I])    < TOL_FD
     @test relerr(parent(gf.dy)[I, I],  (c * sx * cy_)[I, I])    < TOL_FD
@@ -280,10 +280,10 @@ end
     cy_ = cos.(c * (reshape(field.y, 1, :) .+ L/2))
     field.ϕ .= sx * sy
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(0, 1)))
-    @assert isa(plan.ax, SuperFluids.CompactAxis)      # x -> periodic
-    @assert isa(plan.ay, SuperFluids.CompactAxisNP)    # y -> Dirichlet
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan(bcs=(0, 1)))
+    @assert isa(plan.ax, SuperfluidDynamics.CompactAxis)      # x -> periodic
+    @assert isa(plan.ay, SuperfluidDynamics.CompactAxisNP)    # y -> Dirichlet
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     I = 3:(n - 2)
     # x is periodic and exact, and ∂x does not touch y -> exact everywhere
     @test relerr(gf.dx, 1im * kp * sx * sy) < TOL_FD
@@ -302,8 +302,8 @@ end
     sz = sin.(c * (Z .+ L/2)); cz_ = cos.(c * (Z .+ L/2))
     field.ϕ .= sx .* sy .* sz
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(1, 1, 1)))
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan(bcs=(1, 1, 1)))
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     I = 3:(n - 2)
     @test relerr(parent(gf.dx)[I, I, I],  (c * cx_ .* sy .* sz)[I, I, I])    < TOL_FD
     @test relerr(parent(gf.dy)[I, I, I],  (c * sx .* cy_ .* sz)[I, I, I])    < TOL_FD
@@ -328,10 +328,10 @@ end
     c = 2π / vec(field.x)[end]      # even about x = 0 and x = x_n
     field.ϕ .= cos.(c * X) * cos.(c * Y)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(2, 2)))
-    @test isa(plan.ax, SuperFluids.CompactAxisNeu)
-    @test isa(plan.ay, SuperFluids.CompactAxisNeu)
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan(bcs=(2, 2)))
+    @test isa(plan.ax, SuperfluidDynamics.CompactAxisNeu)
+    @test isa(plan.ay, SuperfluidDynamics.CompactAxisNeu)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     @test relerr(parent(gf.dx),  (-c * sin.(c * X)) * cos.(c * Y))  < TOL_FD
     @test relerr(parent(gf.dy),  cos.(c * X) * (-c * sin.(c * Y)))  < TOL_FD
     @test relerr(parent(gf.ddx), (-c^2 * cos.(c * X)) * cos.(c * Y)) < TOL_FD
@@ -347,8 +347,8 @@ end
         cm = 2π / vec(gm.x)[end]
         gm.ϕ .= cos.(cm * Xm) * cos.(cm * Ym)
         gfm = GradientField(gm; rotation=false)
-        pm = Plan(gm; t=SuperFluids.CompactPlan(bcs=(2, 2)))
-        SuperFluids.computeDerivatives!(gfm, pm, gm.ϕ)
+        pm = Plan(gm; t=SuperfluidDynamics.CompactPlan(bcs=(2, 2)))
+        SuperfluidDynamics.computeDerivatives!(gfm, pm, gm.ϕ)
         ex = (-cm * sin.(cm * Xm)) * cos.(cm * Ym)
         push!(errs, maximum(abs.(parent(gfm.dx)[3:m-2, 3:m-2] .- ex[3:m-2, 3:m-2])))
     end
@@ -363,10 +363,10 @@ end
     kp = 2π / L                        # periodic in y
     field.ϕ .= cos.(c * X) * exp.(1im * kp * Y)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(2, 0)))
-    @test isa(plan.ax, SuperFluids.CompactAxisNeu)   # x -> Neumann
-    @test isa(plan.ay, SuperFluids.CompactAxis)      # y -> periodic
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan(bcs=(2, 0)))
+    @test isa(plan.ax, SuperfluidDynamics.CompactAxisNeu)   # x -> Neumann
+    @test isa(plan.ay, SuperfluidDynamics.CompactAxis)      # y -> periodic
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     # x is Neumann: exact everywhere, including the walls
     @test relerr(parent(gf.dx),  (-c * sin.(c * X)) * exp.(1im * kp * Y))  < TOL_FD
     @test relerr(parent(gf.ddx), (-c^2 * cos.(c * X)) * exp.(1im * kp * Y)) < TOL_FD
@@ -383,11 +383,11 @@ end
     c = 2π / vec(field.x)[end]
     field.ϕ .= cos.(c * X) .* cos.(c * Y) .* cos.(c * Z)
     gf = GradientField(field; rotation=false)
-    plan = Plan(field; t=SuperFluids.CompactPlan(bcs=(2, 2, 2)))
-    @test isa(plan.ax, SuperFluids.CompactAxisNeu)
-    @test isa(plan.ay, SuperFluids.CompactAxisNeu)
-    @test isa(plan.az, SuperFluids.CompactAxisNeu)
-    SuperFluids.computeDerivatives!(gf, plan, field.ϕ)
+    plan = Plan(field; t=SuperfluidDynamics.CompactPlan(bcs=(2, 2, 2)))
+    @test isa(plan.ax, SuperfluidDynamics.CompactAxisNeu)
+    @test isa(plan.ay, SuperfluidDynamics.CompactAxisNeu)
+    @test isa(plan.az, SuperfluidDynamics.CompactAxisNeu)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.ϕ)
     @test relerr(parent(gf.dx),  (-c * sin.(c * X)) .* cos.(c * Y) .* cos.(c * Z))  < TOL_FD
     @test relerr(parent(gf.dy),  cos.(c * X) .* (-c * sin.(c * Y)) .* cos.(c * Z))  < TOL_FD
     @test relerr(parent(gf.dz),  cos.(c * X) .* cos.(c * Y) .* (-c * sin.(c * Z)))  < TOL_FD
@@ -423,16 +423,16 @@ end
         fc = Field(Grid((nx, ny), ((-4, 4), (-4, 4))), ComplexField())
         fc.ϕ .= exp.(1im * (0.5 .* fc.x .+ 0.7 .* fc.y)) .* (1.0 .+ 0.3 .* sin.(0.3 .* fc.x) .* cos.(0.4 .* fc.y))
         gfc = GradientField(fc; rotation=false)
-        pc = Plan(fc; t=SuperFluids.CompactPlan())
-        @test isa(pc, SuperFluids.PlanCompact2D)
-        SuperFluids.computeDerivatives!(gfc, pc, fc.ϕ)
+        pc = Plan(fc; t=SuperfluidDynamics.CompactPlan())
+        @test isa(pc, SuperfluidDynamics.PlanCompact2D)
+        SuperfluidDynamics.computeDerivatives!(gfc, pc, fc.ϕ)
 
         fg = Field(Grid((nx, ny), ((-4, 4), (-4, 4)); array_type=CuArray), ComplexField())
-        pg = Plan(fg; t=SuperFluids.CompactPlan())
-        @test isa(pg, SuperFluids.PlanCompactGPU2D)
+        pg = Plan(fg; t=SuperfluidDynamics.CompactPlan())
+        @test isa(pg, SuperfluidDynamics.PlanCompactGPU2D)
         fg.ϕ .= exp.(1im * (0.5 .* fg.x .+ 0.7 .* fg.y)) .* (1.0 .+ 0.3 .* sin.(0.3 .* fg.x) .* cos.(0.4 .* fg.y))
         gfg = GradientField(fg; rotation=false)
-        SuperFluids.computeDerivatives!(gfg, pg, fg.ϕ)
+        SuperfluidDynamics.computeDerivatives!(gfg, pg, fg.ϕ)
         CUDA.synchronize()
 
         gpu_rel(a, b) =
@@ -445,17 +445,17 @@ end
 
         # --- 2D: RealField works with the CUDA Thomas backend ---
         fr = Field(Grid((nx, ny), ((-4, 4), (-4, 4)); array_type=CuArray), RealField())
-        pr = Plan(fr; t=SuperFluids.CompactPlan())
-        @test isa(pr, SuperFluids.PlanCompactGPU2D)
+        pr = Plan(fr; t=SuperfluidDynamics.CompactPlan())
+        @test isa(pr, SuperfluidDynamics.PlanCompactGPU2D)
         fr.ϕ .= sin.(0.3 .* fr.x) .* cos.(0.4 .* fr.y)
         gfr = GradientField(fr; rotation=false)
-        SuperFluids.computeDerivatives!(gfr, pr, fr.ϕ)
+        SuperfluidDynamics.computeDerivatives!(gfr, pr, fr.ϕ)
         CUDA.synchronize()
         fr_c = Field(Grid((nx, ny), ((-4, 4), (-4, 4))), RealField())
         fr_c.ϕ .= sin.(0.3 .* fr_c.x) .* cos.(0.4 .* fr_c.y)
-        pc_r = Plan(fr_c; t=SuperFluids.CompactPlan())
+        pc_r = Plan(fr_c; t=SuperfluidDynamics.CompactPlan())
         gfc_r = GradientField(fr_c; rotation=false)
-        SuperFluids.computeDerivatives!(gfc_r, pc_r, fr_c.ϕ)
+        SuperfluidDynamics.computeDerivatives!(gfc_r, pc_r, fr_c.ϕ)
         @test gpu_rel(gfr.dx, gfc_r.dx) < 1e-10
         @test gpu_rel(gfr.ddy, gfc_r.ddy) < 1e-10
 
@@ -463,18 +463,18 @@ end
         N3 = 16
         fg3 = Field(Grid((N3, N3, N3), ((-4, 4), (-4, 4), (-4, 4)); array_type=CuArray),
                     ComplexField())
-        pg3 = Plan(fg3; t=SuperFluids.CompactPlan())
-        @test isa(pg3, SuperFluids.PlanCompactGPU3D)
+        pg3 = Plan(fg3; t=SuperfluidDynamics.CompactPlan())
+        @test isa(pg3, SuperfluidDynamics.PlanCompactGPU3D)
         fg3.ϕ .= exp.(1im * (0.3 .* fg3.x .+ 0.5 .* fg3.y .+ 0.7 .* fg3.z))
         gfg3 = GradientField(fg3; rotation=false)
-        SuperFluids.computeDerivatives!(gfg3, pg3, fg3.ϕ)
+        SuperfluidDynamics.computeDerivatives!(gfg3, pg3, fg3.ϕ)
         CUDA.synchronize()
         # Compare against the CPU Thomas implementation on the same field.
         fc3 = Field(Grid((N3, N3, N3), ((-4, 4), (-4, 4), (-4, 4))), ComplexField())
         fc3.ϕ .= exp.(1im * (0.3 .* fc3.x .+ 0.5 .* fc3.y .+ 0.7 .* fc3.z))
-        pc3 = Plan(fc3; t=SuperFluids.CompactPlan())
+        pc3 = Plan(fc3; t=SuperfluidDynamics.CompactPlan())
         gfc3 = GradientField(fc3; rotation=false)
-        SuperFluids.computeDerivatives!(gfc3, pc3, fc3.ϕ)
+        SuperfluidDynamics.computeDerivatives!(gfc3, pc3, fc3.ϕ)
         @test gpu_rel(gfg3.dx, gfc3.dx)  < 1e-10
         @test gpu_rel(gfg3.dy, gfc3.dy)  < 1e-10
         @test gpu_rel(gfg3.dz, gfc3.dz)  < 1e-10
@@ -491,25 +491,25 @@ end
         fd = Field(Grid((nx, ny), ((-4, 4), (-4, 4)); array_type=CuArray), ComplexField())
         fd.ϕ .= sin.(cgx .* (fd.x .+ 4)) .* sin.(cgy .* (fd.y .+ 4))
         gfd = GradientField(fd; rotation=false)
-        pdd = Plan(fd; t=SuperFluids.CompactPlan(bcs=(1, 1)))
-        @test isa(pdd.ax, SuperFluids.CompactAxisGPU_np)
-        @test isa(pdd.ay, SuperFluids.CompactAxisGPU_np)
-        SuperFluids.computeDerivatives!(gfd, pdd, fd.ϕ)
+        pdd = Plan(fd; t=SuperfluidDynamics.CompactPlan(bcs=(1, 1)))
+        @test isa(pdd.ax, SuperfluidDynamics.CompactAxisGPU_np)
+        @test isa(pdd.ay, SuperfluidDynamics.CompactAxisGPU_np)
+        SuperfluidDynamics.computeDerivatives!(gfd, pdd, fd.ϕ)
         CUDA.synchronize()
         fcd = Field(Grid((nx, ny), ((-4, 4), (-4, 4))), ComplexField())
         fcd.ϕ .= sin.(cgx .* (fcd.x .+ 4)) .* sin.(cgy .* (fcd.y .+ 4))
         gcd = GradientField(fcd; rotation=false)
-        pcd = Plan(fcd; t=SuperFluids.CompactPlan(bcs=(1, 1)))
-        SuperFluids.computeDerivatives!(gcd, pcd, fcd.ϕ)
+        pcd = Plan(fcd; t=SuperfluidDynamics.CompactPlan(bcs=(1, 1)))
+        SuperfluidDynamics.computeDerivatives!(gcd, pcd, fcd.ϕ)
         @test gpu_rel(gfd.dx, gcd.dx)  < 1e-10
         @test gpu_rel(gfd.dy, gcd.dy)  < 1e-10
         @test gpu_rel(gfd.ddx, gcd.ddx) < 1e-10
         @test gpu_rel(gfd.ddy, gcd.ddy) < 1e-10
 
         # --- Spectral backend still available (complex fields only) ---
-        pgs = Plan(fg; t=SuperFluids.CompactPlan(backend=:spectral))
-        @test isa(pgs, SuperFluids.PlanCompactFFT2D)
-        @test_throws ErrorException Plan(fr; t=SuperFluids.CompactPlan(backend=:spectral))
+        pgs = Plan(fg; t=SuperfluidDynamics.CompactPlan(backend=:spectral))
+        @test isa(pgs, SuperfluidDynamics.PlanCompactFFT2D)
+        @test_throws ErrorException Plan(fr; t=SuperfluidDynamics.CompactPlan(backend=:spectral))
     end
 end
 
@@ -533,7 +533,7 @@ end
         param = GrossPitaevskiiParameters(coeffΔ=coeffΔ, β=0.0, Ω=0.0, pot=pot)
         n = NumModelGPRK(field, param, T / nsteps, nsteps, 1; stepper=stepper)
         for _ in 1:nsteps
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
         end
         exf = Field(grid, ComplexField())
         Xe = reshape(vec(exf.x), :, 1); Ye = reshape(vec(exf.y), 1, :)
@@ -566,7 +566,7 @@ end
         nsteps = round(Int, T / dt)
         n = NumModelGPRK(field, param, dt, nsteps, 1; stepper=stepper)
         for _ in 1:nsteps
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
         end
         m1 = sum(abs.(parent(field.ϕ)) .^ 2)
         return abs(m1 - m0) / m0
@@ -592,9 +592,9 @@ end
     # mul_all! outputs in the last direction's layout (pen_z for 3D); ldiv_all!
     # takes that back to pen_x. So FFT forward into uz_hat (pen_z), inverse
     # into a fresh pen_x field.
-    SuperFluids.mul_all!(plan.uz_hat, plan, field.u)
-    back = SuperFluids.similar_data(field.u)
-    SuperFluids.ldiv_all!(back, plan, plan.uz_hat)
+    SuperfluidDynamics.mul_all!(plan.uz_hat, plan, field.u)
+    back = SuperfluidDynamics.similar_data(field.u)
+    SuperfluidDynamics.ldiv_all!(back, plan, plan.uz_hat)
     @test relerr(back[1], field.ux) < TOL_FFT
     @test relerr(back[2], field.uy) < TOL_FFT
     @test relerr(back[3], field.uz) < TOL_FFT
@@ -622,7 +622,7 @@ end
     ωz_ref =  ky * sin.(ky*Y)
     gf = GradientField(field; rotation=false, laplacian=false, vorticity=true)
     plan = Plan(field)
-    SuperFluids.computeDerivatives!(gf, plan, field.u)
+    SuperfluidDynamics.computeDerivatives!(gf, plan, field.u)
     ω = gf.ω
     @test length(gf.ωdata) == 3
     @test relerr(ω[1], ωx_ref) < TOL_FFT
@@ -648,7 +648,7 @@ end
 # spectral divergence of a velocity given as a Vector{PencilArray} in the
 # last-pencil layout:  div = max |imag(i k · û)|. Dimension-agnostic (2D/3D).
 function div_max(n, u_hat)
-    gridξ = SuperFluids.spectral_grid(n.plan)
+    gridξ = SuperfluidDynamics.spectral_grid(n.plan)
     d = similar(u_hat[1])
     @. d = gridξ[1] * u_hat[1]
     for i in 2:ndims(gridξ)
@@ -668,14 +668,14 @@ end
         parent(field.u[c]) .= ComplexF64.(randn(size(parent(field.u[c])))) +
             1im * ComplexF64.(randn(size(parent(field.u[c]))))
     end
-    SuperFluids.mul_all!(n.u_hat, n.plan, field.u)
+    SuperfluidDynamics.mul_all!(n.u_hat, n.plan, field.u)
     d0 = div_max(n, n.u_hat)
     @test d0 > 10  # a random field is not divergence-free
-    SuperFluids.project!(n, n.u_hat)
+    SuperfluidDynamics.project!(n, n.u_hat)
     @test div_max(n, n.u_hat) < 1e-10 * d0  # divergence removed
     # idempotency: projecting again changes nothing (to roundoff)
     u_before = copy(n.u_hat[1])
-    SuperFluids.project!(n, n.u_hat)
+    SuperfluidDynamics.project!(n, n.u_hat)
     @test maximum(abs.(parent(n.u_hat[1]) .- parent(u_before))) <
           1e-12 * maximum(abs.(parent(u_before)))
 end
@@ -688,7 +688,7 @@ end
     field = Field(grid, ComplexField(); ndims=3)
     n = NumModelRK4Imp(field, NavierStokesParameters(; ν=0.01), 0.01, 1, 1)
     taylor_green!(field, grid.x, grid.y, grid.z)
-    SuperFluids.mul_all!(n.u_hat, n.plan, field.u)
+    SuperfluidDynamics.mul_all!(n.u_hat, n.plan, field.u)
     @test div_max(n, n.u_hat) < 1e-10
 end
 
@@ -708,7 +708,7 @@ end
         for c in 1:3
             parent(field.u[c]) .*= A
         end
-        E_num = SuperFluids.energy(n)[2]
+        E_num = SuperfluidDynamics.energy(n)[2]
         E_ana = 0.5 * A^2 * grid.Lx * grid.Ly * grid.Lz / 8 * (1 + (grid.Ly / grid.Lx)^2)
         @test abs(E_num - E_ana) / E_ana < 1e-12
     end
@@ -749,7 +749,7 @@ end
         field.uz .= û[3] * ph
         u0 = [copy(parent(field.ux)), copy(parent(field.uy)), copy(parent(field.uz))]
         for _ in 1:Nsteps
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
         end
         decay = exp(-ν * knorm^2 * Nsteps * Δt)
         for c in 1:3
@@ -779,7 +779,7 @@ end
             parent(field.u[c]) .*= A
         end
         for _ in 1:Int(t_final / dt)
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
         end
         return [parent(field.ux), parent(field.uy), parent(field.uz)]
     end
@@ -808,16 +808,16 @@ end
     Δt, Nsteps = 0.02, 40
     n = NumModelRK4Imp(field, NavierStokesParameters(; ν=0.01), Δt, Nsteps, 1)
     taylor_green!(field, grid.x, grid.y, grid.z)
-    E0 = SuperFluids.energy(n)[2]
+    E0 = SuperfluidDynamics.energy(n)[2]
     Emax = E0
     for _ in 1:Nsteps
-        SuperFluids.timeStep!(n)
-        E = SuperFluids.energy(n)[2]
+        SuperfluidDynamics.timeStep!(n)
+        E = SuperfluidDynamics.energy(n)[2]
         Emax = max(Emax, E)
         # divergence of the *current* u_hat (kept by timeStep!) stays ~0
         @test div_max(n, n.u_hat) < 1e-8 * maximum(abs.(parent(n.u_hat[1])))
     end
-    E = SuperFluids.energy(n)[2]
+    E = SuperfluidDynamics.energy(n)[2]
     @test E < E0          # viscosity damps the flow
     @test E > 0.5 * E0    # ... but not by an unphysical amount in 0.8s
     @test Emax < 1.01 * E0  # no blow-up
@@ -839,9 +839,9 @@ end
     plan = Plan(field)
     # mul_all! outputs in the last direction's layout (pen_y for 2D); ldiv_all!
     # takes that back to pen_x.
-    SuperFluids.mul_all!(plan.uy_hat, plan, field.u)
-    back = SuperFluids.similar_data(field.u)
-    SuperFluids.ldiv_all!(back, plan, plan.uy_hat)
+    SuperfluidDynamics.mul_all!(plan.uy_hat, plan, field.u)
+    back = SuperfluidDynamics.similar_data(field.u)
+    SuperfluidDynamics.ldiv_all!(back, plan, plan.uy_hat)
     @test relerr(back[1], field.ux) < TOL_FFT
     @test relerr(back[2], field.uy) < TOL_FFT
 end
@@ -857,14 +857,14 @@ end
         parent(field.u[c]) .= ComplexF64.(randn(size(parent(field.u[c])))) +
             1im * ComplexF64.(randn(size(parent(field.u[c]))))
     end
-    SuperFluids.mul_all!(n.u_hat, n.plan, field.u)
+    SuperfluidDynamics.mul_all!(n.u_hat, n.plan, field.u)
     d0 = div_max(n, n.u_hat)
     @test d0 > 1  # a random field is not divergence-free
-    SuperFluids.project!(n, n.u_hat)
+    SuperfluidDynamics.project!(n, n.u_hat)
     @test div_max(n, n.u_hat) < 1e-10 * d0  # divergence removed
     # idempotency: projecting again changes nothing (to roundoff)
     u_before = copy(n.u_hat[1])
-    SuperFluids.project!(n, n.u_hat)
+    SuperfluidDynamics.project!(n, n.u_hat)
     @test maximum(abs.(parent(n.u_hat[1]) .- parent(u_before))) <
           1e-12 * maximum(abs.(parent(u_before)))
 end
@@ -877,7 +877,7 @@ end
     field = Field(grid, ComplexField(); ndims=2)
     n = NumModelRK4Imp(field, NavierStokesParameters(; ν=0.01), 0.01, 1, 1)
     taylor_green!(field, grid.x, grid.y)
-    SuperFluids.mul_all!(n.u_hat, n.plan, field.u)
+    SuperfluidDynamics.mul_all!(n.u_hat, n.plan, field.u)
     @test div_max(n, n.u_hat) < 1e-10
 end
 
@@ -897,7 +897,7 @@ end
         for c in 1:2
             parent(field.u[c]) .*= A
         end
-        E_num = SuperFluids.energy(n)[2]
+        E_num = SuperfluidDynamics.energy(n)[2]
         E_ana = 0.5 * A^2 * grid.Lx * grid.Ly / 4 * (1 + (grid.Ly / grid.Lx)^2)
         @test abs(E_num - E_ana) / E_ana < 1e-12
     end
@@ -923,7 +923,7 @@ end
         field.uy .= 0
         u0 = copy(parent(field.ux))
         for _ in 1:Nsteps
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
         end
         decay = exp(-ν * ky^2 * Nsteps * Δt)
         err = maximum(abs.(parent(field.ux) .- decay * u0)) / maximum(abs.(u0))
@@ -964,7 +964,7 @@ end
         field.ux .= A * ux0
         field.uy .= A * uy0
         for _ in 1:Int(t_final / dt)
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
         end
         return [parent(field.ux), parent(field.uy)]
     end
@@ -994,16 +994,16 @@ end
     Δt, Nsteps = 0.02, 40
     n = NumModelRK4Imp(field, NavierStokesParameters(; ν=0.01), Δt, Nsteps, 1)
     taylor_green!(field, grid.x, grid.y)
-    E0 = SuperFluids.energy(n)[2]
+    E0 = SuperfluidDynamics.energy(n)[2]
     Emax = E0
     for _ in 1:Nsteps
-        SuperFluids.timeStep!(n)
-        E = SuperFluids.energy(n)[2]
+        SuperfluidDynamics.timeStep!(n)
+        E = SuperfluidDynamics.energy(n)[2]
         Emax = max(Emax, E)
         # divergence of the *current* u_hat (kept by timeStep!) stays ~0
         @test div_max(n, n.u_hat) < 1e-8 * maximum(abs.(parent(n.u_hat[1])))
     end
-    E = SuperFluids.energy(n)[2]
+    E = SuperfluidDynamics.energy(n)[2]
     @test E < E0          # viscosity damps the flow
     @test E > 0.5 * E0    # ... but not by an unphysical amount in 0.8s
     @test Emax < 1.01 * E0  # no blow-up
@@ -1031,7 +1031,7 @@ end
     p = NSGPParameters(; α=α, ν=0.0, β=1.0, ρn=0.5, ρs=0.5,
                        Btab=0.4, Bptab=0.1, ξ=1.0, ε2=0.05, one_way=true)
     n = NumModelNSGP(fgp, fns, p, 0.01, 1, 1; stepper="RK2Imp")
-    SuperFluids.compute_u_adv_Fns!(n, n.phihat, n.u_hat)
+    SuperfluidDynamics.compute_u_adv_Fns!(n, n.phihat, n.u_hat)
     usx = real.(collect(n.us_phys[1])); usy = real.(collect(n.us_phys[2]))
     r_s = sqrt.(r2 .+ 1e-8)
     mag = sqrt.(usx .^ 2 .+ usy .^ 2)
@@ -1063,16 +1063,16 @@ end
     p = NSGPParameters(; α=-0.01, ν=0.01, β=1.0, ρn=0.5, ρs=0.5,
                        Btab=0.4, Bptab=0.1, ξ=1.0, ε2=0.1, one_way=true)
     n = NumModelNSGP(fgp, fns, p, 0.005, 10, 1; stepper="RK2Imp")
-    SuperFluids.compute_u_adv_Fns!(n, n.phihat, n.u_hat)
+    SuperfluidDynamics.compute_u_adv_Fns!(n, n.phihat, n.u_hat)
     @test maximum(abs.(real.(parent(n.us_phys[1])))) < 1e-10
     @test maximum(abs.(real.(parent(n.us_phys[2])))) < 1e-10
     N0 = sum(abs2.(parent(fgp.ϕ)))
     for _ in 1:10
-        SuperFluids.timeStep!(n)
+        SuperfluidDynamics.timeStep!(n)
         @test all(isfinite.(parent(n.phihat)))
         @test all(isfinite.(parent(n.u_hat[1])))
     end
-    g = SuperFluids.spectral_grid(n.plan)
+    g = SuperfluidDynamics.spectral_grid(n.plan)
     d = @. g.x * n.u_hat[1] + g.y * n.u_hat[2]
     @test maximum(abs.(parent(d))) < 1e-9 * maximum(abs.(parent(n.u_hat[1])))
     N = sum(abs2.(parent(fgp.ϕ)))
@@ -1100,15 +1100,15 @@ end
     n = NumModelNSGP(fgp, fns, p, 0.003, 8, 1; stepper="RK2Imp")
     # the mutual friction force is non-zero where the counterflow and
     # superfluid vorticity are both non-zero
-    SuperFluids.compute_u_adv_Fns!(n, n.phihat, n.u_hat)
+    SuperfluidDynamics.compute_u_adv_Fns!(n, n.phihat, n.u_hat)
     @test maximum(abs.(real.(parent(n.fns_phys[1])))) > 1e-6
     @test maximum(abs.(real.(parent(n.fns_phys[2])))) > 1e-6
     for _ in 1:8
-        SuperFluids.timeStep!(n)
+        SuperfluidDynamics.timeStep!(n)
         @test all(isfinite.(parent(n.phihat)))
         @test all(isfinite.(parent(n.u_hat[1])))
     end
-    g = SuperFluids.spectral_grid(n.plan)
+    g = SuperfluidDynamics.spectral_grid(n.plan)
     d = @. g.x * n.u_hat[1] + g.y * n.u_hat[2]
     @test maximum(abs.(parent(d))) < 1e-9 * maximum(abs.(parent(n.u_hat[1])))
 end
@@ -1135,16 +1135,16 @@ end
     P0 = mom()
     # natural momentum scale (the conserved k=0 mode is ~0, so normalise by this)
     Pscale = (grid.n[1] * grid.Δx * grid.Δy) * (maximum(abs.(parent(fn.ux))) + maximum(abs.(parent(fs.ux))))
-    E0 = SuperFluids.energy(n)[4]
+    E0 = SuperfluidDynamics.energy(n)[4]
     Pmax = 0.0
     for _ in 1:40
-        SuperFluids.timeStep!(n)
+        SuperfluidDynamics.timeStep!(n)
         Pmax = max(Pmax, maximum(abs.(mom() .- P0)))
-        g = SuperFluids.spectral_grid(n.plan)
+        g = SuperfluidDynamics.spectral_grid(n.plan)
         @test maximum(abs.(parent(@. g.x * n.un_hat[1] + g.y * n.un_hat[2]))) <
               1e-9 * maximum(abs.(parent(n.un_hat[1])))
     end
-    E1 = SuperFluids.energy(n)[4]
+    E1 = SuperfluidDynamics.energy(n)[4]
     @test Pmax < 1e-13 * Pscale                 # total momentum conserved
     @test E1 < E0                                # friction dissipates
     @test E1 > 0.3 * E0                          # ... but not unphysically
@@ -1165,7 +1165,7 @@ end
     p = HBVKParameters(; ν=0.01, νs=0.01, rb=0.0, ρn=1.0, ρs=1.0)
     n = NumModelHBVK(fn, fs, p, 0.01, 20, 1; stepper="RK2")
     for _ in 1:20
-        SuperFluids.timeStep!(n)
+        SuperfluidDynamics.timeStep!(n)
     end
     @test maximum(abs.(parent(fs.ux))) < 1e-12
     @test maximum(abs.(parent(fs.uy))) < 1e-12
@@ -1193,7 +1193,7 @@ end
         Pscale = (grid.n[1] * grid.Δx * grid.Δy * grid.Δz) * (maximum(abs.(parent(fn.ux))) + maximum(abs.(parent(fs.ux))))
         Pmax = 0.0
         for _ in 1:6
-            SuperFluids.timeStep!(n)
+            SuperfluidDynamics.timeStep!(n)
             Pmax = max(Pmax, maximum(abs.(mom() .- P0)))
             @test all(isfinite.(parent(n.un_hat[1])))
             @test all(isfinite.(parent(n.us_hat[1])))
@@ -1221,7 +1221,7 @@ end
     pot = PotentialQuadratic(field; γx = ωx, γy = ωy^2)
     param = BdGParameters(coeffΔ=-0.5, β=0.0, pot=pot, Ω=0.0)
     n = NumModelBdG(field, param, 1, 1; nev=3)
-    SuperFluids.timeStep!(n)
+    SuperfluidDynamics.timeStep!(n)
 
     # chemical potential = E00 = (ωx+ωy)/2
     @test n.mu ≈ (ωx + ωy) / 2 atol=1e-3

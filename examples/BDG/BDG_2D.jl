@@ -22,12 +22,12 @@
 
 # We first load the package, in order to have all the constructors and functions available.
 
-using SuperFluids
+using SuperfluidDynamics
 
 # We setup the topology used, if we want to use `MPI` for parallelization.
 # In this case, run with `mpirun -np 1 julia --project examples/BDG/BDG_2D.jl`
 
-mpi_topo = SuperFluids.MPITopo1D()
+mpi_topo = SuperfluidDynamics.MPITopo1D()
 
 # We use [`Makie`](https://makie.juliaplots.org/stable/) (with `WGLMakie`,
 # which produces interactive WebGL plots in the documentation) for the plots:
